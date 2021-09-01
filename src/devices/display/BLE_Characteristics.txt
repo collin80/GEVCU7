@@ -1,0 +1,92 @@
+Outline of how to handle bluetooth:
+
+Scan for BLE devices immediately when starting up. Get a list of them and then scan each one
+ to see if it implements the 0x3100 service. If not then ignore it. Otherwise, pick
+the first one to implement the service and start using it to get the characteristics.
+
+Characteristics are:
+0x3101 - TimeRunning (in seconds)
+	4 bytes unsigned - number of seconds since GEVCU has started.
+
+0x3102 - TrqReqAct
+    2 bytes signed - Requested Torque in 0.1Nm increments
+    2 bytes signed - Actual torque in 0.1Nm inc
+
+0x3103 - ThrBrkLevels
+    2 bytes unsigned - Raw Throttle value (from ADC)
+    2 bytes unsigned - Raw brake value (from ADC)
+
+0x3104 - Speed
+    2 bytes unsigned - Requested RPM (always positive even for reverse)
+    2 bytes unsigned - Actual RPM (always positive)
+
+0x3105 - Modes (Writable)
+    1 byte - Power Mode (0 = Torque, 1 = Direct RPM control)
+    1 byte - Gear (0 = Neutral, 1 = Drive, 2 = Reverse, 3 = Error) - Writes to this are ignored.
+    1 byte - IsRunning (True if we're currently drive enabled) - Writes are ignored
+    1 Byte - IsFaulted (obviously, true if there is a fault) - Writes ignored
+    1 Byte - IsWarning (True is there is currently a warning in effect) - Writes Ignored
+    1 Byte - LogLevel (0 = Debugging, 1 = Info, 2 = Warn 3 = Error 4 = Off)
+
+0x3106 - PowerStatus
+    2 bytes unsigned - Bus Voltage in tenths of a volt
+    2 bytes signed - Bus Current in tenths of an amp
+    2 bytes signed - Motor Current in tenths of an amp
+    2 bytes unsigned - Kilowatt hours left in the battery pack (in full kwh)
+    2 bytes signed - Mechanical power in 0.1 kw increments
+
+0x3107 - Bitfields
+    4 Bytes unsigned - Bitfield 1 - All these bitfields are set by the motor controller code
+    4 Bytes unsigned - bitfield 2 - There doesn't seem to be any standardization here. 
+    4 Bytes unsigned - bitfield 3 - And, only the Brusa controller code even touches these.
+    4 Bytes unsigned - bitfield 4
+
+0x3108 - Temperature
+    2 bytes signed - Motor temperature in 0.1C increment
+    2 bytes signed - Inverter temperature in 0.1C increment
+    2 bytes signed - System temperature in 0.1C increment
+
+0x3109 - DigitalIO (Writable)
+    2 bytes unsigned - Precharge resistance in ohms (used to figure out how long the timing should be)
+    1 byte - Which digital output to use for precharge
+    1 byte - Which digital output to use for the main contactor
+    1 byte - which digital output to use to actuate cooling fans
+    1 byte - Temperature in C at which to turn on the cooling fans
+    1 byte - Temperature in C at which to turn them off again
+    1 byte - Which digital output to use for brake lights
+    1 byte - Which digital output to use for reverse lights
+    1 byte - Which digital input to use for enabling motor controller drive
+    1 byte - which digital input to use for going into reverse (instead of drive)
+    
+ 
+0x310A - ThrottleIO (Writable)
+    1 Byte - Number of throttle inputs (only really relevant to POT based throttles). 1-3 inputs on ADC ports
+    1 Byte - Throttle type (1 = Standard Pot, 2 = Inverse Pot)
+    2 Bytes Unsigned - Throttle 1 Minimum Value
+    2 Bytes Unsigned - Throttle 2 Minimum Value
+    2 Bytes Unsigned - Throttle 1 Maximum Value
+    2 Bytes Unsigned - Throttle 2 Maximum Value
+
+0x310B - ThrottleMap (Writable)
+    2 Bytes unsigned - Pedal position (1/10 of a %) where regen is at its maximum
+    2 bytes unsigned - Pedal position where regen is at its minimum
+    2 bytes unsigned - Pedal position where forward motion starts
+    2 bytes unsigned - Pedal position where 50% power is applied
+    1 byte - Percentage of full torque to use for minimum regen
+    1 byte - Percentage of full torque to use for maximum regen
+    1 byte - percentage of full torque to use for creep
+
+0x310C - BrakeParam (Writable)
+    2 bytes unsigned - ADC value for minimum brake signal
+    2 bytes unsigned - ADC value for maximum brake signal
+    1 byte - Percentage of full torque to use for minimum brake regen
+    1 byte - Percentage of full torque to use for maximum brake regen
+
+
+0x310D - MaxParams (Writable)
+    2 bytes unsigned - Nominal battery pack voltage (1/10 of a volt)
+    2 bytes unsigned - Maximum RPM to allow
+    2 bytes unsigned - Maximum torque to allow
+
+0x31D0 - Update counter (just for debugging)
+    4 bytes unsigned - counter that increments as other updates happen. Probably shouldn't subscribe to this as a notification. But, useful for debugging
