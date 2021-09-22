@@ -29,6 +29,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../DeviceTypes.h"
 #include "CANIODevice.h"
 
+#define POWERKEYPRO 0x700
+
 namespace LED
 {
 	enum LEDTYPE

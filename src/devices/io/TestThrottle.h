@@ -37,6 +37,8 @@
 #include "../../FaultHandler.h"
 #include "../../FaultCodes.h"
 
+#define TESTACCEL 0x104F
+
 /*
  * The extended configuration class with additional parameters for PotThrottle
  */

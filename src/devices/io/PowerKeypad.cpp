@@ -19,6 +19,7 @@ PowerkeyPad::PowerkeyPad(void)
 	}
 
 	commonName = "PowerKey Pro 2600";
+    shortName = "PowerKey";
 }
 
 void PowerkeyPad::earlyInit()

@@ -31,6 +31,7 @@
  */
 TestThrottle::TestThrottle() : Throttle() {    
     commonName = "Test/Debug Accelerator";
+    shortName = "TestAccel";
     rampingDirection = true;
     rawSignal.input1 = 0;
 }

@@ -44,6 +44,7 @@
  */
 VehicleSpecific::VehicleSpecific() : Device() {    
     commonName = "VehicleSpecific";
+    shortName = "Vehicle";
     didInitialSetup = false;
     waitTicksStartup = (5000000ul / CFG_TICK_INTERVAL_VEHICLE);
 }

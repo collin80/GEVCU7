@@ -35,6 +35,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../CanHandler.h"
 #include "../../constants.h"
 
+#define PIDLISTENER 0x6000
 
 class CanPIDConfiguration : public DeviceConfiguration {
 public:

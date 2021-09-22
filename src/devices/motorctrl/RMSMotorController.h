@@ -35,6 +35,8 @@
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
 
+#define RINEHARTINV 0x1004
+
 /*
  * Class for Rinehart PM Motor Controller specific configuration parameters
  */

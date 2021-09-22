@@ -36,6 +36,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "BatteryManager.h"
 #include "../../CanHandler.h"
 
+#define THINKBMS 0x2000
+
 class ThinkBatteryManager : public BatteryManager, CanObserver
 {
 public:

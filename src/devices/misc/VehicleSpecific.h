@@ -38,6 +38,8 @@
 #include "../../FaultHandler.h"
 #include "../../FaultCodes.h"
 
+#define VEHICLESPECIFIC 0x3000
+
 class VehicleSpecific: public Device {
 public:
     VehicleSpecific();

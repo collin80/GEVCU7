@@ -48,6 +48,7 @@ public:
 class TickHandler {
 public:
     TickHandler();
+    void setup();
     void attach(TickObserver *observer, uint32_t interval);
     void detach(TickObserver *observer);
     void handleInterrupt(int timerNumber); // must be public when from the non-class functions
@@ -60,7 +61,8 @@ protected:
 
 private:
     struct TimerEntry {
-        long interval; // interval of timer
+        long interval; // interval of timer in microseconds
+        long maxInterval; //maximum achieveable interval for this timer
         TickObserver *observer[CFG_TIMER_NUM_OBSERVERS]; // array of pointers to observers with this interval
     };
     TimerEntry timerEntry[NUM_TIMERS]; // array of timer entries
@@ -72,7 +74,7 @@ private:
     int findTimer(long interval);
     int findObserver(int timerNumber, TickObserver *observer);
 
-    Timer timers[NUM_TIMERS];
+    Timer* timers[NUM_TIMERS];
 };
 
 extern TickHandler tickHandler;

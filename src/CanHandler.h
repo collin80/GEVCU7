@@ -94,6 +94,7 @@ public:
     CanHandler(CanBusNode busNumber);
     void setup();
     uint32_t getBusSpeed();
+    void setBusSpeed(uint32_t newSpeed);
     void attach(CanObserver *observer, uint32_t id, uint32_t mask, bool extended);
     void detach(CanObserver *observer, uint32_t id, uint32_t mask);
     void process(const CAN_message_t &msg);

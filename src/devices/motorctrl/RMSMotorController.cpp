@@ -43,6 +43,7 @@ RMSMotorController::RMSMotorController() : MotorController()
     sequence = 0;
     isLockedOut = true;
     commonName = "Rinehart Motion Systems Inverter";
+    shortName = "RMSInverter";
 }
 
 void RMSMotorController::earlyInit()

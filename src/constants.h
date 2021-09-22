@@ -32,75 +32,74 @@
 
 namespace Constants {
 // misc
-static const char* trueStr = "true";
-static const char* falseStr = "false";
-static const char* notAvailable = "n/a";
+extern const char* trueStr;
+extern const char* falseStr;
+extern const char* notAvailable;
 
 // configuration
 
-static const char* numThrottlePots = "numThrottlePots";
-static const char* throttleSubType = "throttleSubType";
-static const char* throttleMin1 = "throttleMin1";
-static const char* throttleMin2 = "throttleMin2";
-static const char* throttleMax1 = "throttleMax1";
-static const char* throttleMax2 = "throttleMax2";
-static const char* throttleRegenMax = "throttleRegenMax";
-static const char* throttleRegenMin = "throttleRegenMin";
-static const char* throttleFwd = "throttleFwd";
-static const char* throttleMap = "throttleMap";
-static const char* throttleMinRegen = "throttleMinRegen";
-static const char* throttleMaxRegen = "throttleMaxRegen";
-static const char* throttleCreep = "throttleCreep";
-static const char* brakeMin = "brakeMin";
-static const char* brakeMax = "brakeMax";
-static const char* brakeMinRegen = "brakeMinRegen";
-static const char* brakeMaxRegen = "brakeMaxRegen";
-static const char* brakeLight = "brakeLight";
-static const char* revLight = "revLight";
-static const char* enableIn = "enableIn";
-static const char* reverseIn = "reverseIn";
+extern const char* numThrottlePots;
+extern const char* throttleSubType;
+extern const char* throttleMin1;
+extern const char* throttleMin2;
+extern const char* throttleMax1;
+extern const char* throttleMax2;
+extern const char* throttleRegenMax;
+extern const char* throttleRegenMin;
+extern const char* throttleFwd;
+extern const char* throttleMap;
+extern const char* throttleMinRegen;
+extern const char* throttleMaxRegen;
+extern const char* throttleCreep;
+extern const char* brakeMin;
+extern const char* brakeMax;
+extern const char* brakeMinRegen;
+extern const char* brakeMaxRegen;
+extern const char* brakeLight;
+extern const char* revLight;
+extern const char* enableIn;
+extern const char* reverseIn;
 
-static const char* speedMax = "speedMax";
-static const char* torqueMax = "torqueMax";
-static const char* logLevel = "logLevel";
+extern const char* speedMax;
+extern const char* torqueMax;
+extern const char* logLevel;
 
 // status
-static const char* timeRunning = "timeRunning";
-static const char* torqueRequested = "torqueRequested";
-static const char* torqueActual = "torqueActual";
-static const char* throttle = "throttle";
-static const char* brake = "brake";
-static const char* motorMode = "motorMode";
-static const char* speedRequested = "speedRequested";
-static const char* speedActual = "speedActual";
-static const char* dcVoltage = "dcVoltage";
-static const char* nominalVolt = "nominalVolt";
-static const char* dcCurrent = "dcCurrent";
-static const char* acCurrent = "acCurrent";
-static const char* kiloWattHours = "kiloWattHours";
-static const char* bitfield1 = "bitfield1";
-static const char* bitfield2 = "bitfield2";
-static const char* bitfield3 = "bitfield3";
-static const char* bitfield4 = "bitfield4";
-static const char* running = "running";
-static const char* faulted = "faulted";
-static const char* warning = "warning";
-static const char* gear = "gear";
-static const char* tempMotor = "tempMotor";
-static const char* tempInverter = "tempInverter";
-static const char* tempSystem = "tempSystem";
-static const char* mechPower = "mechPower";
-static const char* prechargeR = "prechargeR";
-static const char* prechargeRelay = "prechargeRelay";
-static const char* mainContactorRelay = "mainContactorRelay";
-static const char* coolFan = "coolFan";
-static const char* coolOn = "coolOn";
-static const char* coolOff = "coolOff";
-static const char* validChecksum = "Valid checksum, using stored config values";
-static const char* invalidChecksum = "Invalid checksum, using hard coded config values";
-static const char* valueOutOfRange = "value out of range: %l";
-static const char* normalOperation = "normal operation restored";
-
+extern const char* timeRunning;
+extern const char* torqueRequested;
+extern const char* torqueActual;
+extern const char* throttle;
+extern const char* brake;
+extern const char* motorMode;
+extern const char* speedRequested;
+extern const char* speedActual;
+extern const char* dcVoltage;
+extern const char* nominalVolt;
+extern const char* dcCurrent;
+extern const char* acCurrent;
+extern const char* kiloWattHours;
+extern const char* bitfield1;
+extern const char* bitfield2;
+extern const char* bitfield3;
+extern const char* bitfield4;
+extern const char* running;
+extern const char* faulted;
+extern const char* warning;
+extern const char* gear;
+extern const char* tempMotor;
+extern const char* tempInverter;
+extern const char* tempSystem;
+extern const char* mechPower;
+extern const char* prechargeR;
+extern const char* prechargeRelay;
+extern const char* mainContactorRelay;
+extern const char* coolFan;
+extern const char* coolOn;
+extern const char* coolOff;
+extern const char* validChecksum;
+extern const char* invalidChecksum;
+extern const char* valueOutOfRange;
+extern const char* normalOperation;
 }
 #endif /* CONSTANTS_H_ */
 

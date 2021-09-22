@@ -59,6 +59,7 @@ public:
     bool isEnabled();
     virtual uint32_t getTickInterval();
     const char* getCommonName();
+    const char* getShortName();
 
     virtual void loadConfiguration();
     virtual void saveConfiguration();
@@ -68,6 +69,7 @@ public:
 protected:
     PrefHandler *prefsHandler;
     const char *commonName;
+    const char *shortName;
 
 private:
     DeviceConfiguration *deviceConfiguration; // reference to the currently active configuration

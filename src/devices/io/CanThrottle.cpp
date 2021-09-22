@@ -36,6 +36,7 @@ CanThrottle::CanThrottle() : Throttle() {
     responseExtended = false;
 
     commonName = "CANBus accelerator";
+    shortName = "CANAccel";
 }
 
 void CanThrottle::earlyInit()

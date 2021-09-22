@@ -45,6 +45,7 @@ template<class T> inline Print &operator <<(Print &obj, T arg) {
 EVIC::EVIC() : Device()
 {
     commonName = "Andromeda Interfaces EVIC Display";
+    shortName = "EVIC";
 }
 
 void EVIC::earlyInit()

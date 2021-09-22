@@ -59,6 +59,7 @@ AT RV (adapter voltage) - Send something like 14.4V
 #include "ELM327Processor.h"
 
 extern PrefHandler *sysPrefs;
+#define ELM327EMU 0x650
 
 /*
  * The extended configuration class with additional parameters for ichip WLAN

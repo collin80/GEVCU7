@@ -36,6 +36,8 @@
 #include "config.h"
 #include "../Device.h"
 
+#define THROTTLE 0x1030
+
 /*
  * Data structure to hold raw signal(s) of the throttle.
  * E.g. for a three pot pedal, all signals could be used.

@@ -35,6 +35,7 @@ C300MotorController::C300MotorController() : MotorController() {
     activityCount = 0;
 //	maxTorque = 2000;
     commonName = "C300 Inverter";
+    shortName = "C300Inv";
 }
 
 void C300MotorController::earlyInit()
@@ -45,7 +46,7 @@ void C300MotorController::earlyInit()
 void C300MotorController::setup() {
     tickHandler.detach(this);
 
-    Logger::info("add device: C300 (id:%X, %X)", DMOC645, this);
+    Logger::info("add device: C300 (id:%X, %X)", C300INV, this);
 
     loadConfiguration();
     MotorController::setup(); // run the parent class version of this function

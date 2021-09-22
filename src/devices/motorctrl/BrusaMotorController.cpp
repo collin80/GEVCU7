@@ -46,6 +46,7 @@ BrusaMotorController::BrusaMotorController() : MotorController() {
     tickCounter = 0;
 
     commonName = "Brusa DMC5 Inverter";
+    shortName = "DMC5";
 }
 
 void BrusaMotorController::earlyInit()

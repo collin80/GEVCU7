@@ -35,6 +35,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CanThrottle.h"
 #include "../../constants.h"
 
+#define CANBRAKEPEDAL 0x1034
+
 class CanBrakeConfiguration : public ThrottleConfiguration {
 public:
     uint16_t minimumLevel1, maximumLevel1; // values for when the pedal is at its min and max

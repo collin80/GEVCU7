@@ -844,7 +844,7 @@ void SerialConsole::handleShortCmd() {
         systemIO.setup_ADC_params(); //change takes immediate effect
         break;
     case 'a':
-        deviceManager.sendMessage(DEVICE_ANY, ADABLUE, 0xDEADBEEF, nullptr);
+        //deviceManager.sendMessage(DEVICE_ANY, ADABLUE, 0xDEADBEEF, nullptr);
         break;
     case 'S':
         //there is not really any good way (currently) to auto generate this list
@@ -852,6 +852,7 @@ void SerialConsole::handleShortCmd() {
         //think to change that. Otherwise you must remember to update here or
         //nobody will know your device exists. Additionally, these values are
         //decoded into decimal from their hex specification in DeviceTypes.h
+        /*
         Logger::console("DMOC645 = %X", DMOC645);
         Logger::console("Brusa DMC5 = %X", BRUSA_DMC5);
         Logger::console("Brusa Charger = %X", BRUSACHARGE);
@@ -862,6 +863,7 @@ void SerialConsole::handleShortCmd() {
         Logger::console("CANBus brake = %X", CANBRAKEPEDAL);
         Logger::console("WIFI (iChip2128) = %X", ICHIP2128);
         Logger::console("Th!nk City BMS = %X", THINKBMS);
+        */
         break;
     
     

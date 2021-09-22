@@ -36,6 +36,8 @@
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
 
+#define DMOC645 0x1000
+
 /*
  * Class for DMOC specific configuration parameters
  */

@@ -1,4 +1,5 @@
 #include "ELM327Processor.h"
+#include "ELM327_Emu.h"
 
 ELM327Processor::ELM327Processor() {
     obd2Handler = OBD2Handler::getInstance();

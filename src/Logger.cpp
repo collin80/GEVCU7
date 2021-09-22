@@ -25,9 +25,75 @@
  */
 
 #include "Logger.h"
+#include "SdFat.h"
+#include "RingBuf.h"
+#include "DeviceManager.h"
+
+extern SdFs sdCard;
+extern bool sdCardPresent;
+FsFile file;
+
+// For efficiency the log has to be preallocated for a certain amount of space.
+//going to try not to do this. We don't need super high throughput for logging
+//and the log file could grow arbitrarily large
+#define LOG_FILE_SIZE 1000000  // 1M bytes.
+
+#define RING_BUF_CAPACITY 65535
+#define LOG_FILENAME "GevcuLog.txt"
+
+// RingBuf for File type FsFile.
+RingBuf<FsFile, RING_BUF_CAPACITY> rb;
 
 Logger::LogLevel Logger::logLevel = Logger::Info;
 uint32_t Logger::lastLogTime = 0;
+
+
+void Logger::initializeFile()
+{
+    // Open or create file - truncate existing file.
+    if (!file.open(LOG_FILENAME, O_RDWR | O_CREAT | O_TRUNC)) {
+        Serial.println("open failed\n");
+        return;
+    }
+    else Serial.println("File Opened OK");
+    // File must be pre-allocated to avoid huge
+    // delays searching for free clusters.
+    /*
+    if (!file.preAllocate(LOG_FILE_SIZE)) {
+        Serial.println("preAllocate failed\n");
+        file.close();
+        return;
+    }
+    else Serial.println("File Pre_Alloc OK");
+    */
+    
+    // initialize the RingBuf.
+    rb.begin(&file);
+    Serial.println("Initialized RingBuff");
+}
+
+//if there is a sector to write or 1 second has gone by then save the data
+void Logger::loop()
+{
+    static uint32_t lastWriteTime = 0;
+    if (!sdCardPresent) return;
+    size_t n = rb.bytesUsed();
+    int ret = 0;
+    //Serial.println(n);
+    //delay(100);
+    if ( ( (n >= 512) || ((millis() - lastWriteTime) > 1000) ) && !file.isBusy()) {
+      // Not busy only allows one sector before possible busy wait.
+      // Write one sector from RingBuf to file.
+      ret = rb.writeOut(512);
+      if (512 != ret) {
+        Serial.print("writeOut failed - ");
+        Serial.println(ret);
+        file.close();
+        return;
+      }
+      lastWriteTime = millis();
+    }
+}
 
 /*
  * Output a debug message with a variable amount of parameters.
@@ -200,29 +266,37 @@ boolean Logger::isDebug() {
  */
 void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list args) {
     lastLogTime = millis();
-    Serial.print(lastLogTime);
-    Serial.print(" - ");
+    String outputString = String(lastLogTime) + " - ";
+    //Serial.print(lastLogTime);
+    //Serial.print(" - ");
 
     switch (level) {
     case Debug:
-        Serial.print("DEBUG");
+        //Serial.print("DEBUG");
+        outputString += "DEBUG";
         break;
     case Info:
-        Serial.print("INFO");
+        //Serial.print("INFO");
+        outputString += "INFO";
         break;
     case Warn:
-        Serial.print("WARNING");
+        //Serial.print("WARNING");
+        outputString += "WARNING";
         break;
     case Error:
-        Serial.print("ERROR");
+        //Serial.print("ERROR");
+        outputString += "ERROR";
         break;
     }
-    Serial.print(": ");
+    //Serial.print(": ");
+    outputString += ": ";
 
     if (deviceId)
-        printDeviceName(deviceId);
+        outputString += printDeviceName(deviceId);
 
-    logMessage(format, args);
+    outputString += logMessage(format, args);
+    Serial.println(outputString);
+    if (sdCardPresent) rb.println(outputString);
 }
 
 /*
@@ -243,131 +317,106 @@ void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list 
  * %t - prints the next parameter as boolean ('T' or 'F')
  * %T - prints the next parameter as boolean ('true' or 'false')
  */
-void Logger::logMessage(const char *format, va_list args) {
+String Logger::logMessage(const char *format, va_list args) {
+    String builder;
     for (; *format != 0; ++format) {
         if (*format == '%') {
             ++format;
             if (*format == '\0')
                 break;
             if (*format == '%') {
-                Serial.print(*format);
+                //Serial.print(*format);
+                builder += *format;
                 continue;
             }
             if (*format == 's') {
                 register char *s = (char *) va_arg( args, int );
-                Serial.print(s);
+                //Serial.print(s);
+                builder += String(s);
                 continue;
             }
             if (*format == 'd' || *format == 'i') {
-                Serial.print(va_arg( args, int ), DEC);
+                //Serial.print(va_arg( args, int ), DEC);
+                builder += String(va_arg( args, int ), DEC);
                 continue;
             }
             if (*format == 'f') {
-                Serial.print(va_arg( args, double ), 2);
+                //Serial.print(va_arg( args, double ), 2);
+                builder += String(va_arg( args, double ), 2);
                 continue;
             }
             if (*format == 'x') {
-                Serial.print(va_arg( args, int ), HEX);
+                //Serial.print(va_arg( args, int ), HEX);
+                builder += String(va_arg( args, int ), HEX);
                 continue;
             }
             if (*format == 'X') {
-                Serial.print("0x");
-                Serial.print(va_arg( args, int ), HEX);
+                //Serial.print("0x");
+                //Serial.print(va_arg( args, int ), HEX);
+                builder += "0x" + String(va_arg( args, int ), HEX);
                 continue;
             }
             if (*format == 'b') {
-                Serial.print(va_arg( args, int ), BIN);
+                //Serial.print(va_arg( args, int ), BIN);
+                builder += String(va_arg( args, int ), BIN);
                 continue;
             }
             if (*format == 'B') {
-                Serial.print("0b");
-                Serial.print(va_arg( args, int ), BIN);
+                //Serial.print("0b");
+                //Serial.print(va_arg( args, int ), BIN);
+                builder += "B" + String(va_arg( args, int ), BIN);
                 continue;
             }
             if (*format == 'l') {
-                Serial.print(va_arg( args, long ), DEC);
+                //Serial.print(va_arg( args, long ), DEC);
+                builder += String(va_arg( args, long ), DEC);
                 continue;
             }
 
             if (*format == 'c') {
-                Serial.print(va_arg( args, int ));
+                //Serial.print(va_arg( args, int ));
+                builder += String(va_arg( args, int ));
                 continue;
             }
             if (*format == 't') {
                 if (va_arg( args, int ) == 1) {
-                    Serial.print("T");
+                    //Serial.print("T");
+                    builder += "T";
                 } else {
-                    Serial.print("F");
+                    //Serial.print("F");
+                    builder += "F";
                 }
                 continue;
             }
             if (*format == 'T') {
                 if (va_arg( args, int ) == 1) {
-                    Serial.print(Constants::trueStr);
+                    //Serial.print(Constants::trueStr);
+                    builder += Constants::trueStr;
                 } else {
-                    Serial.print(Constants::falseStr);
+                    //Serial.print(Constants::falseStr);
+                    builder += Constants::falseStr;
                 }
                 continue;
             }
 
         }
-        Serial.print(*format);
+        //Serial.print(*format);
+        builder += String(*format);
     }
-    Serial.println();
+    return builder;
+    //Serial.println();
 }
 
 /*
  * When the deviceId is specified when calling the logger, print the name
  * of the device after the log-level. This makes it easier to identify the
  * source of the logged message.
- * NOTE: Should be kept in synch with the defined devices.
  */
-void Logger::printDeviceName(DeviceId deviceId) {
-    switch (deviceId) {
-    case DMOC645:
-        Serial.print("DMOC645");
-        break;
-    case BRUSA_DMC5:
-        Serial.print("DMC5");
-        break;
-    case BRUSACHARGE:
-        Serial.print("NLG5");
-        break;
-    case TCCHCHARGE:
-        Serial.print("TCCH");
-        break;
-    case THROTTLE:
-        Serial.print("THROTTLE");
-        break;
-    case POTACCELPEDAL:
-        Serial.print("POTACCEL");
-        break;
-    case POTBRAKEPEDAL:
-        Serial.print("POTBRAKE");
-        break;
-    case CANACCELPEDAL:
-        Serial.print("CANACCEL");
-        break;
-    case CANBRAKEPEDAL:
-        Serial.print("CANBRAKE");
-        break;
-    case ICHIP2128:
-        Serial.print("ICHIP");
-        break;
-    case THINKBMS:
-        Serial.print("THINKBMS");
-        break;
-    case SYSTEM:
-        Serial.print("SYSTEM");
-        break;
-    case HEARTBEAT:
-        Serial.print("HEARTBEAT");
-        break;
-    case MEMCACHE:
-        Serial.print("MEMCACHE");
-        break;
-    }
-    Serial.print(" - ");
+String Logger::printDeviceName(DeviceId deviceId) {
+    Device *dev = deviceManager.getDeviceByID(deviceId);
+    if (!dev) return String("UNK - ");
+    String devString = String(dev->getShortName());
+    devString = devString + " - ";
 }
 
 

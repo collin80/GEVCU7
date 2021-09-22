@@ -33,6 +33,7 @@ Device::Device() {
     //since all derived classes eventually call this base method this will cause every device to auto register itself with the device manager
     deviceManager.addDevice(this);
     commonName = "Generic Device";
+    shortName = "GENDEV";
 }
 
 //Empty functions to handle these callbacks if the derived classes don't
@@ -46,6 +47,10 @@ void Device::earlyInit() {
 
 const char* Device::getCommonName() {
     return commonName;
+}
+
+const char* Device::getShortName() {
+    return shortName;
 }
 
 void Device::handleTick() {

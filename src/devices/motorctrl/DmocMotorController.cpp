@@ -56,6 +56,7 @@ DmocMotorController::DmocMotorController() : MotorController() {
     activityCount = 0;
 //	maxTorque = 2000;
     commonName = "DMOC645 Inverter";
+    shortName = "DMOC645";
 }
 
 void DmocMotorController::earlyInit()

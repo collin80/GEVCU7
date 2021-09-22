@@ -32,6 +32,7 @@ ThinkBatteryManager::ThinkBatteryManager() : BatteryManager() {
     allowCharge = false;
     allowDischarge = false;
     commonName = "Think City BMS";
+    shortName = "ThinkBMS";
 }
 
 void ThinkBatteryManager::earlyInit()

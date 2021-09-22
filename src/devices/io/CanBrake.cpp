@@ -36,6 +36,7 @@ CanBrake::CanBrake() : Throttle() {
     responseExtended = false;
 
     commonName = "CANBus brake";
+    shortName = "CANBrake";
 }
 
 void CanBrake::earlyInit()

@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../DeviceTypes.h"
 
 extern PrefHandler *sysPrefs;
-
+#define EVICTUS 0x4400
 
 class EVICConfiguration: public DeviceConfiguration {
 public:

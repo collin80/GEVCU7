@@ -37,6 +37,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../DeviceManager.h"
 #include "../DeviceTypes.h"
 
+#define BRUSA_DMC5 0x1001
+
 // CAN bus id's for frames sent to DMC5
 
 #define CAN_ID_CONTROL		0x210 // send commands (DMC_CTRL)

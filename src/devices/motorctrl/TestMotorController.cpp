@@ -32,6 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 TestMotorController::TestMotorController() : MotorController() {    
     selectedGear = DRIVE;
     commonName = "Test Inverter";
+    shortName = "TestInverter";
 }
 
 void TestMotorController::earlyInit()

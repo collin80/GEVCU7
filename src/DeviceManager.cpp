@@ -285,7 +285,7 @@ void DeviceManager::printDeviceList() {
 //This is entirely worthless now. the ichip2128 hasn't existed in years and we aren't using it on GEVCU7.
 //Must refactor wifi code to call to the ESP32 on board.
 void DeviceManager::updateWifi() {
-
+/*
     sendMessage(DEVICE_WIFI, ICHIP2128, MSG_CONFIG_CHANGE, NULL);  //Load all our other parameters first
 
     char param [2][30];  //A two element array containing id and enable state
@@ -314,7 +314,7 @@ void DeviceManager::updateWifi() {
             sendMessage(DEVICE_WIFI, ICHIP2128, MSG_SET_PARAM,  paramPtr);        //Send array to ichip by id (ie 1002) 0 indicates disabled
         }
     }
-
+*/
 
 }
 

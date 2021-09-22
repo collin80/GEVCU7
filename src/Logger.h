@@ -50,13 +50,15 @@ public:
     static LogLevel getLogLevel();
     static uint32_t getLastLogTime();
     static boolean isDebug();
+    static void initializeFile();
+    static void loop();
 private:
     static LogLevel logLevel;
     static uint32_t lastLogTime;
 
     static void log(DeviceId, LogLevel, const char *format, va_list);
-    static void logMessage(const char *format, va_list args);
-    static void printDeviceName(DeviceId);
+    static String logMessage(const char *format, va_list args);
+    static String printDeviceName(DeviceId);
 };
 
 #endif /* LOGGER_H_ */

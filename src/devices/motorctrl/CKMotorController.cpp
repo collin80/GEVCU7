@@ -39,6 +39,7 @@ CKMotorController::CKMotorController() : MotorController() {
     online = 0;
 	aliveCounter = 0;
     commonName = "CK Inverter Ctrl Board";
+    shortName = "CKInverter";
 }
 
 void CKMotorController::earlyInit()

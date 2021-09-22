@@ -35,6 +35,7 @@
 #include "../../Logger.h"
 #include "../../DeviceManager.h"
 
+#define POTBRAKEPEDAL 0x1032
 #define THROTTLE_INPUT_BRAKELIGHT  2
 
 /*

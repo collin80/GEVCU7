@@ -39,7 +39,7 @@ template<class T> inline Print &operator <<(Print &obj, T arg) {
 DCDCController::DCDCController() : Device()
 {
     commonName = "Delphi DC-DC Converter";
-
+    shortName = "DelphiDCDC";
 }
 
 

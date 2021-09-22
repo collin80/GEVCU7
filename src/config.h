@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define CFG_BUILD_NUM	1070      //increment this every time a git commit is done. 
 #define CFG_VERSION "GEVCU 2021-07-25"
 
+
 /*
  * SERIAL CONFIGURATION
  */
@@ -78,6 +79,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define CFG_TICK_INTERVAL_DCDC                      200000
 #define CFG_TICK_INTERVAL_EVIC                      100000
 #define CFG_TICK_INTERVAL_VEHICLE                   100000
+#define CFG_TICK_INTERVAL_SDLOGGING                 40000
 
 /*
  * CAN BUS CONFIGURATION
@@ -191,8 +193,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //Set to 0xFFFF to not set a device. Device numbers used here are found in DeviceTypes.h
 #define AUTO_ENABLE_DEV1    0x1000 //DMOC645
 #define AUTO_ENABLE_DEV2    0x1031 //pot throttle
-#define AUTO_ENABLE_DEV3    0x1041 //Adafruit BLE
-#define AUTO_ENABLE_DEV4    0x4400  //EVIC 
+#define AUTO_ENABLE_DEV3    0xFFFF 
+#define AUTO_ENABLE_DEV4    0xFFFF 
 #define AUTO_ENABLE_DEV5    0xFFFF
 #define AUTO_ENABLE_DEV6    0xFFFF
 

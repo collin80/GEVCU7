@@ -35,6 +35,8 @@
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
 
+#define C300INV 0x1005
+
 /*
  * Class for C300 specific configuration parameters
  */

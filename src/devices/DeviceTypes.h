@@ -41,39 +41,26 @@ enum DeviceType {
     DEVICE_NONE
 };
 
-enum DeviceId { //unique device ID for every piece of hardware possible
-    DMOC645 = 0x1000,
-    BRUSA_DMC5 = 0x1001,
-    CODAUQM = 0x1002,
-    CKINVERTER = 0x1003,
-    RINEHARTINV = 0x1004,
-    C300INV     = 0x1005,
-    TESTINVERTER =0x100F,
-    BRUSACHARGE = 0x1010,
-    TCCHCHARGE = 0x1011,
-    LEAR=0x1012,
-    THROTTLE = 0x1030,
-    POTACCELPEDAL = 0x1031,
-    POTBRAKEPEDAL = 0x1032,
-    CANACCELPEDAL = 0x1033,
-    CANBRAKEPEDAL = 0x1034,
-    TESTACCEL = 0x104F,
-    EVICTUS = 0x4400,
-    ICHIP2128 = 0x1040,
-    ADABLUE = 0x1041,
-    DCDC = 0x1050,
-    THINKBMS = 0x2000,
-    BUILTINBMS = 0x2100,
-    VEHICLESPECIFIC = 0x3000,
-    FAULTSYS = 0x4000,
-    SYSTEM = 0x5000,
-    HEARTBEAT = 0x5001,
-    MEMCACHE = 0x5002,
-    PIDLISTENER = 0x6000,
-    ELM327EMU = 0x650,
-    POWERKEYPRO = 0x700,
-    INVALID = 0xFFFF
-};
+/*
+you used to find a giant ENUM of all the device ids here. It isn't here now because
+now each device tracks its own ID and so the ID for each device is in that device's
+header files. This does away with this convenient list but means that device driver
+developers don't need to update this list when they add a device. Just don't use the same
+id as anything else. Yes, that's more difficult now but you can ask the system for a list
+of all registered devices and get the list that way.
+*/
+//    BRUSACHARGE = 0x1010,
+//    TCCHCHARGE = 0x1011,
+//    LEAR=0x1012,
+
+//but some devices that are internal to the system do need to be listed here.
+#define FAULTSYS 0x4000
+#define SYSTEM 0x5000
+#define HEARTBEAT 0x5001
+#define MEMCACHE 0x5002
+#define INVALID 0xFFFF
+
+typedef uint16_t DeviceId;
 
 namespace LatchModes
 {

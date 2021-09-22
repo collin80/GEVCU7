@@ -32,6 +32,7 @@
  */
 PotBrake::PotBrake() : Throttle() {
     commonName = "Potentiometer (analog) brake";
+    shortName = "PotBrake";
 }
 
 void PotBrake::earlyInit()

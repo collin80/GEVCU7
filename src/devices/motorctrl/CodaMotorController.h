@@ -36,6 +36,8 @@
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
 
+#define CODAUQM 0x1002
+
 /*
  * Class for Coda UQM Powerphase 100 specific configuration parameters
  */

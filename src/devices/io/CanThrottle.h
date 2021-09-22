@@ -35,6 +35,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../constants.h"
 #include "../../DeviceManager.h"
 
+#define CANACCELPEDAL 0x1033
+
 enum CanCarType {
     unknowkn = 0x00,
     Volvo_S80_Gas = 0x01,

@@ -36,6 +36,8 @@
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
 
+#define DCDC 0x1050
+
 /*
  * Class for Delphi DCDC specific configuration parameters
  */

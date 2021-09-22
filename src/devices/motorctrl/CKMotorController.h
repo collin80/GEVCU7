@@ -38,6 +38,8 @@
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
 
+#define CKINVERTER 0x1003
+
 /*
  * Class for controller specific configuration parameters
  */

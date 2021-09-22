@@ -34,12 +34,39 @@
 #include "TickHandler.h"
 
 int timer;
+//we're using up to 9 timers and they are defined here so that they can
+//explicitly be set to the various hardware timers. This is used to spread out
+//which timers are used and to allow a wide range of max durations
+Timer t1(GPT1);
+Timer t2(GPT2);
+Timer t3(TMR4);
+Timer t4(TMR4);
+Timer t5(PIT);
+Timer t6(TCK); //these TCK timers can be efficient cycle-wise but
+Timer t7(TCK); //they require that the yield() function is called
+Timer t8(TCK); //which makes them sensitive to long running tasks
+Timer t9(TCK); //on the main execution thread. So, they're used last
+
 
 void timerTrampoline(int tim) {
     tickHandler.handleInterrupt(tim);
 }
 
+void emptyTimerInt()
+{
+
+}
+
 TickHandler::TickHandler() {
+    timers[0] = &t1;
+    timers[1] = &t2;
+    timers[2] = &t3;
+    timers[3] = &t4;
+    timers[4] = &t5;
+    timers[5] = &t6;
+    timers[6] = &t7;
+    timers[7] = &t8;
+    timers[8] = &t9;
     for (int i = 0; i < NUM_TIMERS; i++) {
         timerEntry[i].interval = 0;
         for (int j = 0; j < CFG_TIMER_NUM_OBSERVERS; j++) {
@@ -49,6 +76,17 @@ TickHandler::TickHandler() {
 #ifdef CFG_TIMER_USE_QUEUING
     bufferHead = bufferTail = 0;
 #endif
+}
+
+void TickHandler::setup()
+{
+    for (int i = 0; i < NUM_TIMERS; i++)
+    {
+        timers[i]->begin(emptyTimerInt, 100000);
+        timerEntry[i].maxInterval = (long)(timers[i]->getMaxPeriod() * 1000000.0);
+        Logger::console("Timer %i max interval is: %i", i, timerEntry[i].maxInterval);
+        timers[i]->stop(); //don't keep idle timers running
+    }
 }
 
 /**
@@ -78,8 +116,43 @@ void TickHandler::attach(TickObserver* observer, uint32_t interval) {
     }
     timerEntry[timer].observer[observerIndex] = observer;
     Logger::debug("attached TickObserver (%X) as number %d to timer %d, %dus interval", observer, observerIndex, timer, interval);
-
-    timers[timer].beginPeriodic([] { timerTrampoline(timer); }, interval);
+    //I might be dumb but using a line like:
+    // timers[timer]->beginPeriodic([timer]() { timerTrampoline(timer); }, interval);
+    // doesn't work. Instead the value passed by the lambda function ends up always being the last timer you made
+    // instead of each timer passing its own number. This is likely a failure of syntax on my part.
+    // This switch construct works around my ignorance. Anyone seeing this who knows C++ lambda functions
+    // better than I apparently do is free to correct the syntax and shrink this down to one line again.
+    switch (timer)
+    {
+    case 0:
+        timers[0]->beginPeriodic([]() { timerTrampoline(0); }, interval);
+        break;
+    case 1:
+        timers[1]->beginPeriodic([]() { timerTrampoline(1); }, interval);
+        break;
+    case 2:
+        timers[2]->beginPeriodic([]() { timerTrampoline(2); }, interval);
+        break;
+    case 3:
+        timers[3]->beginPeriodic([]() { timerTrampoline(3); }, interval);
+        break;
+    case 4:
+        timers[4]->beginPeriodic([]() { timerTrampoline(4); }, interval);
+        break;
+    case 5:
+        timers[5]->beginPeriodic([]() { timerTrampoline(5); }, interval);
+        break;
+    case 6:
+        timers[6]->beginPeriodic([]() { timerTrampoline(6); }, interval);
+        break;
+    case 7:
+        timers[7]->beginPeriodic([]() { timerTrampoline(7); }, interval);
+        break;
+    case 8:
+        timers[8]->beginPeriodic([]() { timerTrampoline(8); }, interval);
+        break;
+    }
+    
 }
 
 /**
@@ -91,6 +164,7 @@ void TickHandler::detach(TickObserver* observer) {
             if (timerEntry[timer].observer[observerIndex] == observer) {
                 Logger::debug("removing TickObserver (%X) as number %d from timer %d", observer, observerIndex, timer);
                 timerEntry[timer].observer[observerIndex] = NULL;
+                timers[timer]->stop();
             }
         }
     }
@@ -146,7 +220,7 @@ void TickHandler::handleInterrupt(int timerNumber) {
 #ifdef CFG_TIMER_USE_QUEUING
             tickBuffer[bufferHead] = timerEntry[timerNumber].observer[i];
             bufferHead = (bufferHead + 1) % CFG_TIMER_BUFFER_SIZE;
-//Logger::debug("bufferHead=%d, bufferTail=%d, observer=%d", bufferHead, bufferTail, timerEntry[timerNumber].observer[i]);
+            //Logger::debug("TN: %i bufferHead=%d, bufferTail=%d, observer=%x", timerNumber, bufferHead, bufferTail, timerEntry[timerNumber].observer[i]);
 #else
             timerEntry[timerNumber].observer[i]->handleTick();
 #endif //CFG_TIMER_USE_QUEUING

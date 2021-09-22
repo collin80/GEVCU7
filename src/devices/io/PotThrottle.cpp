@@ -31,6 +31,7 @@
  */
 PotThrottle::PotThrottle() : Throttle() {    
     commonName = "Potentiometer (analog) accelerator";
+    shortName = "PotAccel";
 }
 
 void PotThrottle::earlyInit()

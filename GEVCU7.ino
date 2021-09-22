@@ -27,21 +27,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
  
 /*
-Notes on GEVCU7 conversion - Switched processors to the Teensy 4.1 IMXRT Arm M7 processor. This
-yields much more powerful performance but also means that all the low level code is different.
-We're using the M.2 interfaced MicroMod board. This processor has a ton of functionality but
-sometimes it is different from the SAM3X. Use the TeensyTimerTool library for intervals.
-The Teensy chip has 20 available timers (!) so we should not run out. The TickHandler class
-will abstract away the details of this. In general, keep as much code 100% compatible as possible.
-Hide implementation in the low level classes and allow the device classes to work as is across
-GEVCU5, 6, 7 if at all possible. Break out drivers to their own repo which is referenced by 
-the other repos. I have moved everything that should be in common between GEVCU6 and 7 to
-the "devices" folder inside of GEVCU7 source. Everything there should be able to be shared.
-Only the stuff in the actual GEVCU7 folder really needs to be specific - those are the lower
-level routines that talk to the actual hardware.
+Notes on GEVCU7 conversion - Quite far into the conversion process. it compiles
+now and most stuff should kind of work. No hardware to test on though.
+Currently nothing is being done with the onboard ESP32. It must be able to
+be programmed from this sketch. I think the easiest approach is to allow
+firmware upgrades from sdcard. Hopefully both processors can be updated
+from sdcard. I would also like to be able to log to sdcard to get longer
+running logs of the system. Addionally, it would be nice to be able to 
+log entire CAN buses to sdcard for analysis. This could be done either in
+GVRET format or some special binary format to make it more efficient.
 */
 
 #include "GEVCU.h"
+#include "src/devices/DeviceTypes.h"
 
 // The following includes are required in the .ino file by the Arduino IDE in order to properly
 // identify the required libraries for the build.
@@ -66,6 +64,8 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 byte i = 0;
 
 SdFs sdCard;
+
+bool sdCardPresent;
 
 WDT_T4<WDT3> wdt; //use the RTWDT which should be the safest one
 
@@ -148,14 +148,80 @@ void initializeDevices() {
     //this makes initialization easier but means a device could freeze the system. Might want to do
     //asynchronous or threaded messages at some point but that opens up many other cans of worms.
     deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_STARTUP, NULL); //allows each device to register it's preference handler
-    deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_SETUP, NULL); //then use the preference handler to initialize only enabled devices
+    //deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_SETUP, NULL); //then use the preference handler to initialize only enabled devices
 
-    sysPrefs->forceCacheWrite(); //if anything updated configuration during init then save that updated info immediately
+    //sysPrefs->forceCacheWrite(); //if anything updated configuration during init then save that updated info immediately
 }
 
 void wdtCallback() 
 {
     Serial.println("Watchdog was not fed. It will eat you soon. Sorry...");
+}
+
+void sendTestCANFrames()
+{
+    CAN_message_t output;
+    output.len = 8;
+    output.id = 0x123;
+    output.flags.extended = 0; //standard frame
+    output.buf[0] = 2;
+    output.buf[1] = 127;
+    output.buf[2] = 0;
+    output.buf[3] = 52;
+    output.buf[4] = 26;
+    output.buf[5] = 59;
+    output.buf[6] = 4;
+    output.buf[7] = 0xAB;
+    canHandlerEv.sendFrame(output);
+    output.id = 0x345;
+	canHandlerCar.sendFrame(output);
+    output.id = 0x678;
+    canHandlerCar2.sendFrame(output);
+    output.id = 0x789;
+    canHandlerSingleWire.sendFrame(output);
+}
+
+void testGEVCUHardware()
+{
+    int val;
+    Serial.print("ADC: ");
+    for (int i = 0; i < 8; i++)
+    {
+        val = systemIO.getAnalogIn(i);
+        Serial.print(val);
+        Serial.print("  ");
+    }
+    Serial.println();
+
+    Serial.print("DIN: ");
+    for (int i = 0; i < 12; i++)
+    {
+        if (systemIO.getDigitalIn(i)) Serial.print("1  ");
+        else Serial.print("0  ");
+    }
+    Serial.println();
+
+    for (int i = 0; i < 8; i++)
+    {
+        systemIO.setDigitalOutput(i, true);
+    }
+
+    delay(500);
+    for (int i = 0; i < 8; i++)
+    {
+        systemIO.setDigitalOutput(i, false);
+    }
+    delay(500);
+    digitalWrite(45, HIGH);
+    uint32_t thisTime = millis();
+    while ((millis() - thisTime) < 5000)
+    {
+        while (Serial2.available())
+        {
+            Serial.write(Serial2.read());
+        }   
+    }
+    digitalWrite(45, LOW);
 }
 
 void setup() {
@@ -164,13 +230,16 @@ void setup() {
     //config.window = 100; /* in milliseconds, 32ms to 522.232s, must be smaller than timeout */
     config.timeout = 5000; /* in milliseconds, 32ms to 522.232s */
     config.callback = wdtCallback;
-    wdt.begin(config);
+    //wdt.begin(config);
 
 #ifdef DEBUG_STARTUP_DELAY
     for (int c = 0; c < 200; c++) {
         delay(25);  //This delay lets you see startup.  But it breaks DMOC645 really badly.  You have to have comm quickly upon start up
+        wdt.feed();
     }
 #endif
+
+    Logger::setLoglevel((Logger::LogLevel)0); //force debugging logging on during early start up
        
 	pinMode(BLINK_LED, OUTPUT);
 	digitalWrite(BLINK_LED, LOW);
@@ -179,13 +248,25 @@ void setup() {
 	Serial.print("Build number: ");
 	Serial.println(CFG_BUILD_NUM);
 
+    Serial.print("Attempting to mount sdCard ");
 	//init SD card early so we can use it for logging everything else if needed.
 	if (!sdCard.begin(SD_CONFIG))
 	{
-    	sdCard.initErrorHalt(&Serial);
+    	//sdCard.initErrorHalt(&Serial);
+        Serial.println("- Could not initialize sdCard");
+        sdCardPresent = false;
   	}
+    else 
+    {
+        sdCardPresent = true;
+        Serial.println(" OK!");
+        Logger::initializeFile();
+    }
+    wdt.feed();
 
-	//Wire.begin((uint32_t)1000000);
+    tickHandler.setup();
+
+	Wire.begin();
 	Logger::info("TWI init ok");
 	memCache = new MemCache();
 	Logger::info("add MemCache (id: %X, %X)", MEMCACHE, memCache);
@@ -207,6 +288,8 @@ void setup() {
 	systemIO.setup();  
 	canHandlerEv.setup();
 	canHandlerCar.setup();
+    canHandlerCar2.setup();
+    //canHandlerSingleWire.setup();
 	Logger::info("SYSIO init ok");	
 
 	initializeDevices();
@@ -215,22 +298,26 @@ void setup() {
 	//btDevice = static_cast<ADAFRUITBLE *>(deviceManager.getDeviceByID(ADABLUE));
     //deviceManager.sendMessage(DEVICE_WIFI, ADABLUE, MSG_CONFIG_CHANGE, NULL); //Load config into BLE interface
 
-	Logger::info("System Ready");	
+	Logger::info("System Ready");
+
+    sendTestCANFrames();
+    testGEVCUHardware();
 }
 
+//there really isn't much in the loop here. Most everything is done via interrupts and timer ticks. If you have
+//timer queuing on then those tasks will be dispatched here. Otherwise the loop just cycles very rapidly while
+//all the real work is done via interrupt.
 void loop() {
 #ifdef CFG_TIMER_USE_QUEUING
 	tickHandler.process();
 #endif
 
-	// check if incoming frames are available in the can buffer and process them
-    //no longer needed. All three buses on GEVCU7 are interrupt driven
-	//canHandlerEv.process();
-	//canHandlerCar.process();
-
 	serialConsole->loop();
+    Logger::loop();
     
     //if (btDevice) btDevice->loop();
     
     wdt.feed();
+
+    //testGEVCUHardware();
 }

@@ -55,6 +55,7 @@ CodaMotorController::CodaMotorController() : MotorController()
     activityCount = 0;
     sequence=0;
     commonName = "Coda UQM Powerphase 100 Inverter";
+    shortName = "CodaUQM";
 }
 
 void CodaMotorController::earlyInit()

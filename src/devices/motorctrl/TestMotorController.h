@@ -37,6 +37,8 @@
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
 
+#define TESTINVERTER 0x100F
+
 /*
  * Class for DMOC specific configuration parameters
  */

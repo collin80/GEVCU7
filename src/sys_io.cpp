@@ -97,6 +97,8 @@ void SystemIO::setup() {
     pinMode(3, OUTPUT); //PWM0 = ADC Select A
     digitalWrite(2, LOW); //both off by default to select mux 0
     digitalWrite(3, LOW); 
+
+    initDigitalMultiplexor(); //set I/O direction for all pins, polarity, etc.
 }
 
 void SystemIO::installExtendedIO(CANIODevice *device)
@@ -450,15 +452,19 @@ void SystemIO::initDigitalMultiplexor()
     Wire.beginTransmission(PCA_ADDR);  // setup to write to PCA chip
     Wire.write(PCA_CFG_0);
     Wire.write(0); //all zeros means all outputs
-    //Wire.write(PCA_CFG_1); //chip allows for chaining to next register, no need to send a command byte here
+    Wire.endTransmission();
+
+    Wire.begin();
+    Wire.beginTransmission(PCA_ADDR);  // setup to write to PCA chip
+    Wire.write(PCA_CFG_1);
     Wire.write(0xFF); //all 1's means all inputs
     Wire.endTransmission();
 
     Wire.beginTransmission(PCA_ADDR);  // setup to write to PCA chip
-    Wire.write(PCA_POLARITY_0);
-    Wire.write(0); // don't invert polarity of outputs (you can't anyway)
-    Wire.write(0xFF); //but all inputs are active low so invert all those
+    Wire.write(PCA_POLARITY_1);
+    Wire.write(0xFF); //all inputs are active low so invert all those
     Wire.endTransmission();
+    
 }
 
 int SystemIO::_pGetDigitalInput(int pin) //all inputs are on port 1

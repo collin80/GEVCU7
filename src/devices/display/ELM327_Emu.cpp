@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ELM327Emu::ELM327Emu() {
 
     commonName = "ELM327 Emulator over BLE";
+    shortName = "ELM327";
 }
 
 void ELM327Emu::earlyInit()
