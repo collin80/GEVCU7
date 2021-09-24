@@ -130,7 +130,7 @@ void DeviceManager::sendMessage(DeviceType devType, DeviceId devId, uint32_t msg
                 {
                     if ( (devId == INVALID) || (devId == devices[i]->getId()) )
                     {
-                        Logger::debug("Sending msg to device with ID %X", devices[i]->getId());
+                        Logger::debug("Sending msg to device with ID %X (%s)", devices[i]->getId(), devices[i]->getShortName());
                         devices[i]->handleMessage(msgType, message);
                     }
                 }

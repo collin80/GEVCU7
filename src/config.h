@@ -177,6 +177,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #define CFG_THROTTLE_NONE	255
 #define BLINK_LED           13 //13 is L, 73 is TX, 72 is RX
+#define SD_DETECT           5
 
 #define NUM_ANALOG	8
 #define NUM_DIGITAL	12

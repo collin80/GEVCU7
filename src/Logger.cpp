@@ -414,9 +414,9 @@ String Logger::logMessage(const char *format, va_list args) {
  */
 String Logger::printDeviceName(DeviceId deviceId) {
     Device *dev = deviceManager.getDeviceByID(deviceId);
-    if (!dev) return String("UNK - ");
-    String devString = String(dev->getShortName());
-    devString = devString + " - ";
+    if (!dev) return String("[UNK] ");
+    String devString = "[" + String(dev->getShortName()) + "] ";
+    return devString;
 }
 
 

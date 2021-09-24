@@ -36,6 +36,10 @@ from sdcard. I would also like to be able to log to sdcard to get longer
 running logs of the system. Addionally, it would be nice to be able to 
 log entire CAN buses to sdcard for analysis. This could be done either in
 GVRET format or some special binary format to make it more efficient.
+
+D0 in documentation is Teensy Pin 4 and is connected to DIG_INT (interrupt from 16 way I/O expander)
+D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card is inserted when line is low)
+
 */
 
 #include "GEVCU.h"
@@ -148,7 +152,7 @@ void initializeDevices() {
     //this makes initialization easier but means a device could freeze the system. Might want to do
     //asynchronous or threaded messages at some point but that opens up many other cans of worms.
     deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_STARTUP, NULL); //allows each device to register it's preference handler
-    //deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_SETUP, NULL); //then use the preference handler to initialize only enabled devices
+    deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_SETUP, NULL); //then use the preference handler to initialize only enabled devices
 
     //sysPrefs->forceCacheWrite(); //if anything updated configuration during init then save that updated info immediately
 }
@@ -232,6 +236,9 @@ void setup() {
     config.callback = wdtCallback;
     //wdt.begin(config);
 
+    pinMode(BLINK_LED, OUTPUT);
+    pinMode(SD_DETECT, INPUT_PULLUP);
+
 #ifdef DEBUG_STARTUP_DELAY
     for (int c = 0; c < 200; c++) {
         delay(25);  //This delay lets you see startup.  But it breaks DMOC645 really badly.  You have to have comm quickly upon start up
@@ -241,27 +248,35 @@ void setup() {
 
     Logger::setLoglevel((Logger::LogLevel)0); //force debugging logging on during early start up
        
-	pinMode(BLINK_LED, OUTPUT);
 	digitalWrite(BLINK_LED, LOW);
     Serial.begin(115200);
 	Serial.println(CFG_VERSION);
 	Serial.print("Build number: ");
 	Serial.println(CFG_BUILD_NUM);
 
-    Serial.print("Attempting to mount sdCard ");
-	//init SD card early so we can use it for logging everything else if needed.
-	if (!sdCard.begin(SD_CONFIG))
-	{
-    	//sdCard.initErrorHalt(&Serial);
-        Serial.println("- Could not initialize sdCard");
-        sdCardPresent = false;
-  	}
-    else 
+    if (!digitalRead(SD_DETECT))
     {
-        sdCardPresent = true;
-        Serial.println(" OK!");
-        Logger::initializeFile();
+        Serial.print("Attempting to mount sdCard ");
+	    //init SD card early so we can use it for logging everything else if needed.
+	    if (!sdCard.begin(SD_CONFIG))
+	    {
+    	    //sdCard.initErrorHalt(&Serial);
+            Serial.println("- Could not initialize sdCard");
+            sdCardPresent = false;
+  	    }
+        else 
+        {
+            sdCardPresent = true;
+            Serial.println(" OK!");
+            Logger::initializeFile();
+        }
     }
+    else
+    {
+        Serial.println("No sdCard detected.");
+        sdCardPresent = false;
+    }
+
     wdt.feed();
 
     tickHandler.setup();

@@ -234,7 +234,7 @@ void PotThrottle::loadConfiguration() {
 #else
     if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
 #endif
-        Logger::debug(POTACCELPEDAL, (char *)Constants::validChecksum);
+        Logger::debug(POTACCELPEDAL, Constants::validChecksum);
         prefsHandler->read(EETH_MIN_ONE, (uint16_t *)&config->minimumLevel1);
         prefsHandler->read(EETH_MAX_ONE, (uint16_t *)&config->maximumLevel1);
         prefsHandler->read(EETH_MIN_TWO, (uint16_t *)&config->minimumLevel2);
@@ -253,7 +253,7 @@ void PotThrottle::loadConfiguration() {
             config->numberPotMeters = 2;
         }
     } else { //checksum invalid. Reinitialize values and store to EEPROM
-        Logger::warn(POTACCELPEDAL, (char *)Constants::invalidChecksum);
+        Logger::warn(POTACCELPEDAL, Constants::invalidChecksum);
 
         config->minimumLevel1 = Throttle1MinValue;
         config->maximumLevel1 = Throttle1MaxValue;
