@@ -207,7 +207,9 @@ void Logger::error(DeviceId deviceId, const char *message, ...) {
 void Logger::console(const char *message, ...) {
     va_list args;
     va_start(args, message);
-    Logger::logMessage(message, args);
+    char buff[200];
+    vsprintf(buff, message, args);
+    Serial.println(buff);
     va_end(args);
 }
 
@@ -251,160 +253,43 @@ boolean Logger::isDebug() {
  *
  * Supports printf() like syntax:
  *
- * %% - outputs a '%' character
- * %s - prints the next parameter as string
- * %d - prints the next parameter as decimal
- * %f - prints the next parameter as double float
- * %x - prints the next parameter as hex value
- * %X - prints the next parameter as hex value with '0x' added before
- * %b - prints the next parameter as binary value
- * %B - prints the next parameter as binary value with '0b' added before
- * %l - prints the next parameter as long
- * %c - prints the next parameter as a character
- * %t - prints the next parameter as boolean ('T' or 'F')
- * %T - prints the next parameter as boolean ('true' or 'false')
  */
 void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list args) {
-    lastLogTime = millis();
-    String outputString = String(lastLogTime) + " - ";
-    //Serial.print(lastLogTime);
-    //Serial.print(" - ");
+    //lastLogTime = millis();
+    lastLogTime = micros();
+    //String outputString = String(lastLogTime) + " - ";
 
     switch (level) {
     case Debug:
-        //Serial.print("DEBUG");
-        outputString += "DEBUG";
+        Serial.print("D");
+        //outputString += "D";
         break;
     case Info:
-        //Serial.print("INFO");
-        outputString += "INFO";
+        Serial.print("I");
+        //outputString += "I";
         break;
     case Warn:
-        //Serial.print("WARNING");
-        outputString += "WARNING";
+        Serial.print("W");
+        //outputString += "W";
         break;
     case Error:
-        //Serial.print("ERROR");
-        outputString += "ERROR";
+        Serial.print("E");
+        //outputString += "E";
         break;
     }
-    //Serial.print(": ");
-    outputString += ": ";
+    Serial.printf("(%f) ", lastLogTime / 1000000.0f);
 
     if (deviceId)
-        outputString += printDeviceName(deviceId);
+        //outputString += printDeviceName(deviceId);
+        Serial.print(printDeviceName(deviceId));
 
-    outputString += logMessage(format, args);
-    Serial.println(outputString);
-    if (sdCardPresent) rb.println(outputString);
-}
-
-/*
- * Output a log message (called by log(), console())
- *
- * Supports printf() like syntax:
- *
- * %% - outputs a '%' character
- * %s - prints the next parameter as string
- * %d - prints the next parameter as decimal
- * %f - prints the next parameter as double float
- * %x - prints the next parameter as hex value
- * %X - prints the next parameter as hex value with '0x' added before
- * %b - prints the next parameter as binary value
- * %B - prints the next parameter as binary value with '0b' added before
- * %l - prints the next parameter as long
- * %c - prints the next parameter as a character
- * %t - prints the next parameter as boolean ('T' or 'F')
- * %T - prints the next parameter as boolean ('true' or 'false')
- */
-String Logger::logMessage(const char *format, va_list args) {
-    String builder;
-    for (; *format != 0; ++format) {
-        if (*format == '%') {
-            ++format;
-            if (*format == '\0')
-                break;
-            if (*format == '%') {
-                //Serial.print(*format);
-                builder += *format;
-                continue;
-            }
-            if (*format == 's') {
-                register char *s = (char *) va_arg( args, int );
-                //Serial.print(s);
-                builder += String(s);
-                continue;
-            }
-            if (*format == 'd' || *format == 'i') {
-                //Serial.print(va_arg( args, int ), DEC);
-                builder += String(va_arg( args, int ), DEC);
-                continue;
-            }
-            if (*format == 'f') {
-                //Serial.print(va_arg( args, double ), 2);
-                builder += String(va_arg( args, double ), 2);
-                continue;
-            }
-            if (*format == 'x') {
-                //Serial.print(va_arg( args, int ), HEX);
-                builder += String(va_arg( args, int ), HEX);
-                continue;
-            }
-            if (*format == 'X') {
-                //Serial.print("0x");
-                //Serial.print(va_arg( args, int ), HEX);
-                builder += "0x" + String(va_arg( args, int ), HEX);
-                continue;
-            }
-            if (*format == 'b') {
-                //Serial.print(va_arg( args, int ), BIN);
-                builder += String(va_arg( args, int ), BIN);
-                continue;
-            }
-            if (*format == 'B') {
-                //Serial.print("0b");
-                //Serial.print(va_arg( args, int ), BIN);
-                builder += "B" + String(va_arg( args, int ), BIN);
-                continue;
-            }
-            if (*format == 'l') {
-                //Serial.print(va_arg( args, long ), DEC);
-                builder += String(va_arg( args, long ), DEC);
-                continue;
-            }
-
-            if (*format == 'c') {
-                //Serial.print(va_arg( args, int ));
-                builder += String(va_arg( args, int ));
-                continue;
-            }
-            if (*format == 't') {
-                if (va_arg( args, int ) == 1) {
-                    //Serial.print("T");
-                    builder += "T";
-                } else {
-                    //Serial.print("F");
-                    builder += "F";
-                }
-                continue;
-            }
-            if (*format == 'T') {
-                if (va_arg( args, int ) == 1) {
-                    //Serial.print(Constants::trueStr);
-                    builder += Constants::trueStr;
-                } else {
-                    //Serial.print(Constants::falseStr);
-                    builder += Constants::falseStr;
-                }
-                continue;
-            }
-
-        }
-        //Serial.print(*format);
-        builder += String(*format);
-    }
-    return builder;
-    //Serial.println();
+    //outputString += logMessage(format, args);
+    //Serial.println(outputString);
+    char buff[200];
+    vsprintf(buff, format, args);
+    Serial.print(buff);
+    Serial.println();
+    //if (sdCardPresent) rb.println(outputString);
 }
 
 /*
@@ -414,8 +299,8 @@ String Logger::logMessage(const char *format, va_list args) {
  */
 String Logger::printDeviceName(DeviceId deviceId) {
     Device *dev = deviceManager.getDeviceByID(deviceId);
-    if (!dev) return String("[UNK] ");
-    String devString = "[" + String(dev->getShortName()) + "] ";
+    if (!dev) return String(" ");
+    String devString = String("[") + dev->getShortName() + String("] ");
     return devString;
 }
 

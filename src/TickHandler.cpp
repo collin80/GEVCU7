@@ -84,7 +84,7 @@ void TickHandler::setup()
     {
         timers[i]->begin(emptyTimerInt, 100000);
         timerEntry[i].maxInterval = (long)(timers[i]->getMaxPeriod() * 1000000.0);
-        Logger::console("Timer %i max interval is: %i", i, timerEntry[i].maxInterval);
+        //Logger::console("Timer %i max interval is: %i", i, timerEntry[i].maxInterval);
         timers[i]->stop(); //don't keep idle timers running
     }
 }

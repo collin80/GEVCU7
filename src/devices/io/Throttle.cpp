@@ -220,7 +220,7 @@ void Throttle::loadConfiguration() {
         config->minimumRegen = ThrottleMinRegenValue; //percentage of minimal power to use when regen starts
         config->maximumRegen = ThrottleMaxRegenValue; //percentage of full power to use for regen at throttle
     }
-    Logger::debug(THROTTLE, "RegenMax: %l RegenMin: %l Fwd: %l Map: %l", config->positionRegenMaximum, config->positionRegenMinimum,
+    Logger::debug(THROTTLE, "RegenMax: %i RegenMin: %i Fwd: %i Map: %i", config->positionRegenMaximum, config->positionRegenMinimum,
                   config->positionForwardMotionStart, config->positionHalfPower);
     Logger::debug(THROTTLE, "MinRegen: %d MaxRegen: %d", config->minimumRegen, config->maximumRegen);
 }

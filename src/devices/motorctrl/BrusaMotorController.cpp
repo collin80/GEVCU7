@@ -134,7 +134,7 @@ void BrusaMotorController::sendControl() {
     }
 
     if (Logger::isDebug())
-        Logger::debug(BRUSA_DMC5, "requested Speed: %l rpm, requested Torque: %f Nm", speedRequested, (float)torqueRequested/10.0F);
+        Logger::debug(BRUSA_DMC5, "requested Speed: %i rpm, requested Torque: %f Nm", speedRequested, (float)torqueRequested/10.0F);
 
     canHandlerEv.sendFrame(outputFrame);
 }

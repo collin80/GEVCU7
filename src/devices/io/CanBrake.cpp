@@ -213,7 +213,7 @@ void CanBrake::loadConfiguration() {
         config->carType = Volvo_S80_Gas;
         saveConfiguration();
     }
-    Logger::debug(CANBRAKEPEDAL, "T1 MIN: %l MAX: %l Type: %d", config->minimumLevel1, config->maximumLevel1, config->carType);
+    Logger::debug(CANBRAKEPEDAL, "T1 MIN: %i MAX: %i Type: %d", config->minimumLevel1, config->maximumLevel1, config->carType);
 }
 
 /*

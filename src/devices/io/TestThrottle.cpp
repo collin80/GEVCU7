@@ -99,7 +99,7 @@ bool TestThrottle::validateSignal(RawSignalData *rawSignal) {
     if (calcThrottle1 > (1000 + CFG_THROTTLE_TOLERANCE))
     {
         if (status == OK)
-            Logger::error(TESTACCEL, "ERR_HIGH_T1: throttle 1 value out of range: %l", calcThrottle1);
+            Logger::error(TESTACCEL, "ERR_HIGH_T1: throttle 1 value out of range: %i", calcThrottle1);
         status = ERR_HIGH_T1;
         faultHandler.raiseFault(TESTACCEL, FAULT_THROTTLE_HIGH_A, true);
         return false;
@@ -111,7 +111,7 @@ bool TestThrottle::validateSignal(RawSignalData *rawSignal) {
 
     if (calcThrottle1 < (0 - CFG_THROTTLE_TOLERANCE)) {
         if (status == OK)
-            Logger::error(TESTACCEL, "ERR_LOW_T1: throttle 1 value out of range: %l ", calcThrottle1);
+            Logger::error(TESTACCEL, "ERR_LOW_T1: throttle 1 value out of range: %i ", calcThrottle1);
         status = ERR_LOW_T1;
         faultHandler.raiseFault(TESTACCEL, FAULT_THROTTLE_LOW_A, true);
         return false;
@@ -184,7 +184,7 @@ void TestThrottle::loadConfiguration() {
         
         saveConfiguration();
     }
-    Logger::debug(TESTACCEL, "T1 MIN: %l MAX: %l", config->minimumLevel1, config->maximumLevel1);
+    Logger::debug(TESTACCEL, "T1 MIN: %i MAX: %i", config->minimumLevel1, config->maximumLevel1);
 }
 
 /*

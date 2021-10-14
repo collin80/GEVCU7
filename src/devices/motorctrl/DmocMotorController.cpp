@@ -98,7 +98,7 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
     int temp;
     online = true; //if a frame got to here then it passed the filter and must have been from the DMOC
 
-    Logger::debug("DMOC CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[70]);
+    Logger::debug(DMOC645, "CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[70]);
 
 
     switch (frame.id) {
@@ -169,7 +169,7 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
             faulted=true;
             break;
         }
-        Logger::debug("Reported OpState: %d", temp);
+        Logger::debug(DMOC645, "Reported OpState: %d", temp);
         activityCount++;
         break;
 
@@ -199,7 +199,7 @@ void DmocMotorController::handleTick() {
         if (activityCount > 40) //If we are receiving regular CAN messages from DMOC, this will very quickly get to over 40. We'll limit
             // it to 60 so if we lose communications, within 20 ticks we will decrement below this value.
         {
-            Logger::debug("Enable Input Active? %T         Reverse Input Active? %T" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
+            Logger::debug(DMOC645, "Enable Input Active? %T         Reverse Input Active? %T" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
             if(getEnableIn()<0)setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
             if(getReverseIn()<0)setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
         }
@@ -268,7 +268,7 @@ void DmocMotorController::sendCmd1() {
 
     output.buf[7] = calcChecksum(output);
  
-    Logger::debug("DMOC 0x232 tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
+    Logger::debug(DMOC645, "0x232 tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
                   output.buf[4], output.buf[5], output.buf[6], output.buf[7]);
 
     canHandlerEv.sendFrame(output);
@@ -301,7 +301,7 @@ void DmocMotorController::sendCmd2() {
 
     torqueCommand = 30000; //set offset  for zero torque commanded
 
-    Logger::debug("Throttle requested: %i", throttleRequested);
+    Logger::debug(DMOC645, "Throttle requested: %i", throttleRequested);
 
     torqueRequested=0;
     if (actualState == ENABLE) { //don't even try sending torque commands until the DMOC reports it is ready
@@ -350,7 +350,7 @@ void DmocMotorController::sendCmd2() {
 
     canHandlerEv.sendFrame(output);
     timestamp();
-    Logger::debug("Torque command: %X  %X  %X  %X  %X  %X  %X  CRC: %X",output.buf[0],
+    Logger::debug(DMOC645, "Torque command: %X  %X  %X  %X  %X  %X  %X  CRC: %X",output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7]);
 
 }
