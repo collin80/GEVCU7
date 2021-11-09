@@ -98,5 +98,10 @@ void Device::setConfiguration(DeviceConfiguration *configuration) {
     this->deviceConfiguration = configuration;
 }
 
+const std::vector<ConfigEntry> *Device::getConfigEntries()
+{
+    return &cfgEntries;
+}
+
 
 

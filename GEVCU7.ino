@@ -52,11 +52,16 @@ D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card i
 #include <SPI.h>
 #include "SdFat.h"
 #include "Watchdog_t4.h"
+#include "src/devices/esp32/esp_loader.h"
+#include "src/devices/esp32/gevcu_port.h"
 
 // Use Teensy SDIO
 #define SD_CONFIG  SdioConfig(FIFO_SDIO)
 
-#define DEBUG_STARTUP_DELAY         //if this is defined there is a large start up delay so you can see the start up messages. NOT for production!
+//if this is defined there is a large start up delay so you can see the start up messages. NOT for production!
+#define DEBUG_STARTUP_DELAY
+//If this is defined then we will ignore the hardware sd inserted signal and just claim it's inserted. Required for first prototype.
+#define ASSUME_SDCARD_INSERTED
 
 //Evil, global variables
 PrefHandler *sysPrefs;
@@ -228,6 +233,79 @@ void testGEVCUHardware()
     digitalWrite(45, LOW);
 }
 
+esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
+{
+    esp_loader_error_t err;
+    static uint8_t payload[1024];
+
+    size_t size = file->fileSize();
+
+    Logger::debug("Erasing flash (this may take a while)...");
+    err = esp_loader_flash_start(address, size, sizeof(payload));
+    if (err != ESP_LOADER_SUCCESS) {
+        Logger::debug("Erasing flash failed with error %d.", err);
+        return err;
+    }
+    Logger::debug("Start programming %u bytes\n", size);
+
+    size_t binary_size = size;
+    size_t written = 0;
+    int lastPercentage = 0;
+
+    Serial.print("Progress Percentage: ");
+
+    while (size > 0) {
+        size_t to_read = min(size, sizeof(payload));
+        file->read(payload, to_read);
+
+        err = esp_loader_flash_write(payload, to_read);
+        if (err != ESP_LOADER_SUCCESS) {
+            Logger::debug("\nPacket could not be written! Error %d.", err);
+            return err;
+        }
+
+        size -= to_read;
+        //bin_addr += to_read;
+        written += to_read;
+
+        int progress = (int)(((float)written / binary_size) * 100);
+        if (progress > (lastPercentage + 4))
+        {
+            Serial.printf("%d ", progress);
+            Serial.flush();
+            lastPercentage = progress;
+        }
+    };
+
+    Serial.printf("\n\nFinished programming\n");
+
+    return ESP_LOADER_SUCCESS;
+}
+
+bool flashESP32(const char *filename, uint32_t address)
+{
+    FsFile file;
+    if (file.open(filename, O_READ))
+    {
+        Logger::debug("Found an esp32 update image. Flashing it to esp32");
+        loader_port_gevcu_init(115200);
+        esp_loader_connect_args_t conn = ESP_LOADER_CONNECT_DEFAULT();
+        esp_loader_error_t err = esp_loader_connect(&conn);
+        if (err != ESP_LOADER_SUCCESS) {
+            Logger::debug("Cannot connect to target. Error: %u\n", err);
+        }
+        Logger::debug("Connected to target\n");
+        if (flash_esp32_binary(&file, address) == ESP_LOADER_SUCCESS)
+        {
+            loader_port_reset_target();
+            sdCard.remove(filename);
+            return true;
+        }
+        file.close();        
+    }
+    return false;
+}
+
 void setup() {
     WDT_timings_t config;
     //GEVCU might loop very rapidly sometimes so windowing mode would be tough. Revisit later
@@ -254,8 +332,10 @@ void setup() {
 	Serial.print("Build number: ");
 	Serial.println(CFG_BUILD_NUM);
 
+#ifndef ASSUME_SDCARD_INSERTED
     if (!digitalRead(SD_DETECT))
     {
+#endif
         Serial.print("Attempting to mount sdCard ");
 	    //init SD card early so we can use it for logging everything else if needed.
 	    if (!sdCard.begin(SD_CONFIG))
@@ -270,11 +350,35 @@ void setup() {
             Serial.println(" OK!");
             Logger::initializeFile();
         }
+# ifndef ASSUME_SDCARD_INSERTED
     }
     else
     {
         Serial.println("No sdCard detected.");
         sdCardPresent = false;
+    }
+#endif
+
+    if (sdCardPresent)
+    {
+        //here, directly after trying to find the SDCard is the best place to check the sdcard for firmware files
+        //and flash them to the appropriate places if they exist.
+        FsFile file;
+        if (!file.open("GEVCU7.hex", O_READ)) {
+            Logger::debug("No teensy firmware to flash. Skipping.");
+        }
+        else
+        {
+            file.close();
+            Logger::debug("Found teensy firmware. Flashing it");
+        }
+
+        //for ESP32 the first thing to do is to upgrade the bootloader if it's there on the sdcard
+        flashESP32("esp32_bootloader.bin", 0x1000);
+        flashESP32("esp32_otadata.bin", 0xE000);
+        flashESP32("esp32_partitions.bin", 0x8000);
+        flashESP32("esp32_program.bin", 0x10000);
+        flashESP32("esp32_website.bin", 0x290000ull);
     }
 
     wdt.feed();
@@ -315,8 +419,9 @@ void setup() {
 
 	Logger::info("System Ready");
 
-    sendTestCANFrames();
-    testGEVCUHardware();
+    //just for testing obviously. Don't leave these uncommented.
+    //sendTestCANFrames();
+    //testGEVCUHardware();
 }
 
 //there really isn't much in the loop here. Most everything is done via interrupts and timer ticks. If you have

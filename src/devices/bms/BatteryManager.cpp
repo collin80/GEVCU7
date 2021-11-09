@@ -48,6 +48,27 @@ void BatteryManager::handleTick() {
 }
 
 void BatteryManager::setup() {
+
+    BatteryManagerConfiguration *config = (BatteryManagerConfiguration *) getConfiguration();
+
+    ConfigEntry entry;
+    entry = {"CAPACITY", "Capacity of battery pack in tenths ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000000};
+    cfgEntries.push_back(entry);
+    //entry = {"AHLEFT", "Number of amp hours remaining in pack in tenths ampere-hours", &config->packAHRemaining / 100000, CFG_ENTRY_VAR_TYPE::INT32, 0, 1000000};
+    //cfgEntries.push_back(entry);
+    entry = {"VOLTLIMHI", "High limit for pack voltage in tenths of a volt", &config->highVoltLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 8000};
+    cfgEntries.push_back(entry);
+    entry = {"VOLTLIMLO", "Low limit for pack voltage in tenths of a volt", &config->lowVoltLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 8000};
+    cfgEntries.push_back(entry);
+    entry = {"CELLLIMHI", "High limit for cell voltage in hundredths of a volt", &config->highCellLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 500};
+    cfgEntries.push_back(entry);
+    entry = {"CELLLIMLO", "Low limit for cell voltage in hundredths of a volt", &config->lowCellLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 500};
+    cfgEntries.push_back(entry);
+    entry = {"TEMPLIMHI", "High limit for pack and cell temperature in tenths of a degree C", &config->highTempLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 2550};
+    cfgEntries.push_back(entry);
+    entry = {"TEMPLIMLO", "Low limit for pack and cell temperature in tenths of a degree C", &config->lowTempLimit, CFG_ENTRY_VAR_TYPE::INT16, -2550, 2550};
+    cfgEntries.push_back(entry);
+
 #ifndef USE_HARD_CODED
     if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
     }

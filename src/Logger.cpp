@@ -84,13 +84,14 @@ void Logger::loop()
     if ( ( (n >= 512) || ((millis() - lastWriteTime) > 1000) ) && !file.isBusy()) {
       // Not busy only allows one sector before possible busy wait.
       // Write one sector from RingBuf to file.
-      ret = rb.writeOut(512);
-      if (512 != ret) {
-        Serial.print("writeOut failed - ");
-        Serial.println(ret);
+      int writeBytes = min(n, 512);
+      ret = rb.writeOut(writeBytes);
+      if (writeBytes != ret) {
+        Serial.printf("Writeout failed. Want to write %u bytes but wrote %u\n", writeBytes, ret);
         file.close();
         return;
       }
+      else file.flush(); //make sure it is updated on disk
       lastWriteTime = millis();
     }
 }
@@ -257,39 +258,41 @@ boolean Logger::isDebug() {
 void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list args) {
     //lastLogTime = millis();
     lastLogTime = micros();
-    //String outputString = String(lastLogTime) + " - ";
+    String outputString;// = String(lastLogTime) + " - ";
 
     switch (level) {
     case Debug:
-        Serial.print("D");
-        //outputString += "D";
+        //Serial.print("D");
+        outputString += "D";
         break;
     case Info:
-        Serial.print("I");
-        //outputString += "I";
+        //Serial.print("I");
+        outputString += "I";
         break;
     case Warn:
-        Serial.print("W");
-        //outputString += "W";
+        //Serial.print("W");
+        outputString += "W";
         break;
     case Error:
-        Serial.print("E");
-        //outputString += "E";
+        //Serial.print("E");
+        outputString += "E";
         break;
     }
-    Serial.printf("(%f) ", lastLogTime / 1000000.0f);
+    char buff[200];
+    snprintf(buff, 200, "(%f) ", lastLogTime / 1000000.0f);
+    outputString += buff;
 
     if (deviceId)
-        //outputString += printDeviceName(deviceId);
-        Serial.print(printDeviceName(deviceId));
+        outputString += printDeviceName(deviceId);
+        //Serial.print(printDeviceName(deviceId));
 
     //outputString += logMessage(format, args);
     //Serial.println(outputString);
-    char buff[200];
-    vsprintf(buff, format, args);
-    Serial.print(buff);
-    Serial.println();
-    //if (sdCardPresent) rb.println(outputString);
+    vsnprintf(buff, 200, format, args);
+    outputString += buff;
+    //outputString += "\n";
+    Serial.println(outputString);
+    if (sdCardPresent) rb.println(outputString);
 }
 
 /*

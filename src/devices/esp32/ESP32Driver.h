@@ -7,6 +7,7 @@
 
 class ESP32Driver : public Device
 {
+public:
     virtual void handleTick();
     virtual void setup();
     void earlyInit();
@@ -17,5 +18,7 @@ class ESP32Driver : public Device
 
     virtual void loadConfiguration();
     virtual void saveConfiguration();
+private:
+    String bufferedLine;
 };
 

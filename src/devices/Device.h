@@ -28,6 +28,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define DEVICE_H_
 
 #include <Arduino.h>
+#include <vector>
 #include "../config.h"
 #include "DeviceTypes.h"
 #include "../eeprom_layout.h"
@@ -65,14 +66,16 @@ public:
     virtual void saveConfiguration();
     DeviceConfiguration *getConfiguration();
     void setConfiguration(DeviceConfiguration *);
+    const std::vector<ConfigEntry> *getConfigEntries();
 
 protected:
     PrefHandler *prefsHandler;
     const char *commonName;
     const char *shortName;
+    std::vector<ConfigEntry> cfgEntries;
 
 private:
-    DeviceConfiguration *deviceConfiguration; // reference to the currently active configuration
+    DeviceConfiguration *deviceConfiguration; // reference to the currently active configuration    
 };
 
 #endif /* DEVICE_H_ */

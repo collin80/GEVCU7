@@ -128,13 +128,13 @@ void loader_port_delay_ms(uint32_t ms)
 
 void loader_port_start_timer(uint32_t ms)
 {
-    s_time_end = millis() + ms * 1000;
+    s_time_end = millis() + ms; //* 1000;
 }
 
 
 uint32_t loader_port_remaining_time(void)
 {
-    int64_t remaining = (s_time_end - millis()) / 1000;
+    int64_t remaining = (s_time_end - millis());
     return (remaining > 0) ? (uint32_t)remaining : 0;
 }
 

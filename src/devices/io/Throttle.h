@@ -33,6 +33,7 @@
 #define THROTTLE_H_
 
 #include <Arduino.h>
+#include <vector>
 #include "config.h"
 #include "../Device.h"
 
@@ -82,7 +83,9 @@ public:
     virtual ThrottleStatus getStatus();
     virtual bool isFaulted();
     virtual DeviceType getType();
-
+    virtual void setup();
+    virtual void earlyInit();
+    
     virtual RawSignalData *acquireRawSignal();
     void loadConfiguration();
     void saveConfiguration();
@@ -93,7 +96,7 @@ protected:
     virtual int16_t calculatePedalPosition(RawSignalData *);
     virtual int16_t mapPedalPosition(int16_t);
     int16_t normalizeAndConstrainInput(int32_t, int32_t, int32_t);
-    int32_t normalizeInput(int32_t, int32_t, int32_t);
+    int32_t normalizeInput(int32_t, int32_t, int32_t);    
 
 private:
     int16_t level; // the final signed throttle level. [-1000, 1000] in permille of maximum

@@ -62,6 +62,53 @@ void SerialConsole::loop() {
     }
 }
 
+void SerialConsole::printConfigEntry(const ConfigEntry &entry)
+{
+    String str = "   ";
+    str += entry.cfgName + "=";
+    switch (entry.varType)
+    {
+    case CFG_ENTRY_VAR_TYPE::BYTE:
+        str += "%u - " + entry.helpText;
+        Logger::console(str.c_str(), *(uint8_t *)entry.varPtr);
+        break;
+    case CFG_ENTRY_VAR_TYPE::FLOAT:
+        str += "%f - " + entry.helpText;
+        Logger::console(str.c_str(), *(float *)entry.varPtr);
+        break;
+    case CFG_ENTRY_VAR_TYPE::INT16:
+        str += "%i - " + entry.helpText;
+        Logger::console(str.c_str(), *(int16_t *)entry.varPtr);
+        break;
+    case CFG_ENTRY_VAR_TYPE::INT32:
+        str += "%i - " + entry.helpText;
+        Logger::console(str.c_str(), *(int32_t *)entry.varPtr);
+        break;
+    case CFG_ENTRY_VAR_TYPE::STRING:
+        str += "%s - " + entry.helpText;
+        Logger::console(str.c_str(), *(char *)entry.varPtr);
+        break;
+    case CFG_ENTRY_VAR_TYPE::UINT16:
+        str += "%u - " + entry.helpText;
+        Logger::console(str.c_str(), *(uint16_t *)entry.varPtr);
+        break;
+    case CFG_ENTRY_VAR_TYPE::UINT32:
+        str += "%u - " + entry.helpText;
+        Logger::console(str.c_str(), *(uint32_t *)entry.varPtr);
+        break;    
+    }
+}
+
+void SerialConsole::getConfigEntriesForDevice(Device *dev)
+{
+    const std::vector<ConfigEntry> *entries = dev->getConfigEntries();
+    for (const ConfigEntry ent : *entries)
+    {
+        printConfigEntry(ent);
+    }
+}
+
+
 void SerialConsole::printMenu() {
     MotorController* motorController = (MotorController*) deviceManager.getMotorController();
     Throttle *accelerator = deviceManager.getAccelerator();
@@ -105,66 +152,8 @@ void SerialConsole::printMenu() {
         Logger::console("   MRELAY=%i - Which output to use for main contactor (255 to disable)", config->mainContactorRelay);
           
         SerialUSB<<"\nMOTOR CONTROLS\n\n";
-        Logger::console("   TORQ=%i - Set torque upper limit (tenths of a Nm)", config->torqueMax);
-        Logger::console("   RPM=%i - Set maximum RPM", config->speedMax);
-        Logger::console("   REVLIM=%i - How much torque to allow in reverse (Tenths of a percent)", config->reversePercent);
-        Logger::console("   ENABLEIN=%i - Digital input to enable motor controller (0-3, 255 for none)", config->enableIn);
-        Logger::console("   REVIN=%i - Digital input to reverse motor rotation (0-3, 255 for none)", config->reverseIn);
-        Logger::console("   TAPERHI=%i - Regen taper upper RPM (0 - 10000)", config->regenTaperUpper);
-        Logger::console("   TAPERLO=%i - Regen taper lower RPM (0 - 10000)", config->regenTaperLower);
-    }
-    
-    
-    if (accelerator && accelerator->getConfiguration()) {
-        PotThrottleConfiguration *config = (PotThrottleConfiguration *) accelerator->getConfiguration();
-        SerialUSB<<"\nTHROTTLE CONTROLS\n\n";
-        SerialUSB.println("   z = detect throttle min/max, num throttles and subtype");
-        SerialUSB.println("   Z = save throttle values");       
-        Logger::console("   TPOT=%i - Number of pots to use (1 or 2)", config->numberPotMeters);
-        Logger::console("   TTYPE=%i - Set throttle subtype (1=std linear, 2=inverse)", config->throttleSubType);
-        Logger::console("   T1ADC=%i - Set throttle 1 ADC pin", config->AdcPin1);
-        Logger::console("   T1MN=%i - Set throttle 1 min value", config->minimumLevel1);
-        Logger::console("   T1MX=%i - Set throttle 1 max value", config->maximumLevel1);
-        Logger::console("   T2ADC=%i - Set throttle 2 ADC pin", config->AdcPin2);
-        Logger::console("   T2MN=%i - Set throttle 2 min value", config->minimumLevel2);
-        Logger::console("   T2MX=%i - Set throttle 2 max value", config->maximumLevel2);
-        Logger::console("   TRGNMAX=%i - Tenths of a percent of pedal where regen is at max", config->positionRegenMaximum);
-        Logger::console("   TRGNMIN=%i - Tenths of a percent of pedal where regen is at min", config->positionRegenMinimum);
-        Logger::console("   TFWD=%i - Tenths of a percent of pedal where forward motion starts", config->positionForwardMotionStart);
-        Logger::console("   TMAP=%i - Tenths of a percent of pedal where 50% throttle will be", config->positionHalfPower);
-        Logger::console("   TMINRN=%i - Percent of full torque to use for min throttle regen", config->minimumRegen);
-        Logger::console("   TMAXRN=%i - Percent of full torque to use for max throttle regen", config->maximumRegen);
-        Logger::console("   TCREEP=%i - Percent of full torque to use for creep (0=disable)", config->creep);
-    }
+        getConfigEntriesForDevice(motorController);
 
-
-    if (brake && brake->getConfiguration()) {
-        PotThrottleConfiguration *config = (PotThrottleConfiguration *) brake->getConfiguration();
-        SerialUSB<<"\nBRAKE CONTROLS\n\n";
-        SerialUSB.println("   b = detect brake min/max");
-        SerialUSB.println("   B = save brake values");
-        Logger::console("   B1ADC=%i - Set brake ADC pin", config->AdcPin1);
-        Logger::console("   B1MN=%i - Set brake min value", config->minimumLevel1);
-        Logger::console("   B1MX=%i - Set brake max value", config->maximumLevel1);
-        Logger::console("   BMINR=%i - Percent of full torque for start of brake regen", config->minimumRegen);
-        Logger::console("   BMAXR=%i - Percent of full torque for maximum brake regen", config->maximumRegen);
-    }
-    
-    if (bms && bms->getConfiguration()) {
-        BatteryManagerConfiguration *config = static_cast<BatteryManagerConfiguration *>(bms->getConfiguration());
-        SerialUSB << "\nBATTERY MANAGEMENT CONTROLS\n\n";
-        Logger::console("   CAPACITY=%i - Capacity of battery pack in tenths ampere-hours", config->packCapacity);
-        Logger::console("   AHLEFT=%i - Number of amp hours remaining in pack in tenths ampere-hours", config->packAHRemaining / 100000);
-        Logger::console("   VOLTLIMHI=%i - High limit for pack voltage in tenths of a volt", config->highVoltLimit);
-        Logger::console("   VOLTLIMLO=%i - Low limit for pack voltage in tenths of a volt", config->lowVoltLimit);
-        Logger::console("   CELLLIMHI=%i - High limit for cell voltage in hundredths of a volt", config->highCellLimit);
-        Logger::console("   CELLLIMLO=%i - Low limit for cell voltage in hundredths of a volt", config->lowCellLimit);
-        Logger::console("   TEMPLIMHI=%i - High limit for pack and cell temperature in tenths of a degree C", config->highTempLimit);
-        Logger::console("   TEMPLIMLO=%i - Low limit for pack and cell temperature in tenths of a degree C", config->lowTempLimit);        
-    }
-
-    if (motorController && motorController->getConfiguration()) {
-        MotorControllerConfiguration *config = (MotorControllerConfiguration *) motorController->getConfiguration();
         SerialUSB<<"\nOTHER VEHICLE CONTROLS\n\n";
         Logger::console("   COOLFAN=%i - Digital output to turn on cooling fan(0-7, 255 for none)", config->coolFan);
         Logger::console("   COOLON=%i - Inverter temperature C to turn cooling on", config->coolOn);
@@ -172,7 +161,27 @@ void SerialConsole::printMenu() {
         Logger::console("   BRAKELT = %i - Digital output to turn on brakelight (0-7, 255 for none)", config->brakeLight);
         Logger::console("   REVLT=%i - Digital output to turn on reverse light (0-7, 255 for none)", config->revLight);  
         Logger::console("   NOMV=%i - Fully charged pack voltage that automatically resets kWh counter", config->nominalVolt/10);        
-    } 
+    }
+
+    if (accelerator && accelerator->getConfiguration()) {
+        SerialUSB<<"\nTHROTTLE CONTROLS\n\n";
+        SerialUSB.println("   z = detect throttle min/max, num throttles and subtype");
+        SerialUSB.println("   Z = save throttle values");
+        getConfigEntriesForDevice(accelerator);
+    }
+
+    if (brake && brake->getConfiguration()) {
+        SerialUSB<<"\nBRAKE CONTROLS\n\n";
+        SerialUSB.println("   b = detect brake min/max");
+        SerialUSB.println("   B = save brake values");
+        getConfigEntriesForDevice(brake);
+    }
+    
+    if (bms && bms->getConfiguration()) {
+        BatteryManagerConfiguration *config = static_cast<BatteryManagerConfiguration *>(bms->getConfiguration());
+        SerialUSB << "\nBATTERY MANAGEMENT CONTROLS\n\n";
+        getConfigEntriesForDevice(bms);        
+    }
   
     SerialUSB<<"\nANALOG AND DIGITAL IO\n\n";
     SerialUSB.println("   A = Autocompensate ADC inputs");

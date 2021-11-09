@@ -9,7 +9,7 @@ ESP32Driver::ESP32Driver() : Device()
 
 void ESP32Driver::earlyInit()
 {
-    //prefsHandler = new PrefHandler(ESP32);
+    prefsHandler = new PrefHandler(ESP32);
 }
 
 void ESP32Driver::setup()
@@ -22,20 +22,32 @@ void ESP32Driver::setup()
 
     Device::setup(); // run the parent class version of this function
 
+    Serial2.begin(115200);
+    Serial2.setTimeout(2);
+
     pinMode(ESP32_ENABLE, OUTPUT);
     pinMode(ESP32_BOOT, OUTPUT);
-    digitalWrite(ESP32_ENABLE, LOW);
-    digitalWrite(ESP32_BOOT, HIGH);
-    Serial2.begin(115200);
+    digitalWrite(ESP32_ENABLE, LOW); //start in reset
+    digitalWrite(ESP32_BOOT, HIGH); //use normal mode not bootloader mode (bootloader is active low)
+    delay(20);
+    digitalWrite(ESP32_ENABLE, HIGH); //now bring it out of reset.
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CODAUQM);
+    tickHandler.attach(this, 5000);
 }
-
 
 void ESP32Driver::handleTick() {
 
     Device::handleTick(); //kick the ball up to papa
-
+    while (Serial2.available())
+    {
+        char c = Serial2.read();
+        if (c == '\n')
+        {
+            Logger::debug("ESP32: %s", bufferedLine.c_str());
+            bufferedLine = "";
+        }
+        else bufferedLine += c;
+    }
 }
 
 DeviceId ESP32Driver::getId() {
@@ -63,3 +75,5 @@ void ESP32Driver::loadConfiguration() {
 void ESP32Driver::saveConfiguration() {
     Device::saveConfiguration();
 }
+
+ESP32Driver esp32Driver;

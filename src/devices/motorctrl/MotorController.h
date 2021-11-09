@@ -48,21 +48,37 @@ public:
     uint16_t torqueSlewRate; // for torque mode only: slew rate of torque value, 0=disabled, in 0.1Nm/sec
     uint16_t speedSlewRate; //  for speed mode only: slew rate of speed value, 0=disabled, in rpm/sec
     uint8_t reversePercent;
+    uint16_t regenTaperUpper; //upper limit where regen tapering starts
+    uint16_t regenTaperLower; //lower RPM limit below which no regen will happen
+
+    //what the hell are these things doing in the motor controller class?! What where we smoking?!
+    //These don't really have anything to do with the motor controller. They should be moved to
+    //a separate class that is used for general car I/O stuff.
+
+    //these seem to all be BMS related stuff. Probably got stuck here when we weren't using a BMS
+    //so there wasn't really any better place. We know better now.
     uint16_t kilowattHrs;
+    uint16_t nominalVolt; //nominal pack voltage in tenths of a volt - seems to actually be fully charged voltage. Misnamed?!
+    uint8_t capacity;
+
+    //belongs in a power management class
     uint16_t prechargeR; //resistance of precharge resistor in tenths of ohm
-    uint16_t nominalVolt; //nominal pack voltage in tenths of a volt
     uint8_t prechargeRelay; //# of output to use for this relay or 255 if there is no relay
     uint8_t mainContactorRelay; //# of output to use for this relay or 255 if there is no relay
+    
     uint8_t coolFan;
     uint8_t coolOn;
     uint8_t coolOff;
     uint8_t brakeLight;
     uint8_t revLight;
+
+    //well, these might be able to be in the motor controller class. But, really people
+    //could have many ways to select a gear - discrete inputs like this, or via a CAN gearbox
+    //or via an analog input that detects the position of a shifter. So, really this belongs
+    //elsewhere too.
     uint8_t enableIn;
     uint8_t reverseIn;
-    uint8_t capacity;
-    uint16_t regenTaperUpper; //upper limit where regen tapering starts
-    uint16_t regenTaperLower; //lower RPM limit below which no regen will happen
+
 };
 
 class MotorController: public Device {

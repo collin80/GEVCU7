@@ -80,11 +80,10 @@ SystemType SystemIO::getSystemType() {
 
 void SystemIO::setup() {
     int i;
-    
-    //the first order of business is to figure out what hardware we are running on and fill in
-    //the pin tables.
 
     sysPrefs->read(EESYS_SYSTEM_TYPE, (uint8_t *) &sysType);
+
+    analogReadRes(12);
 
     setup_ADC_params();
 
@@ -249,7 +248,15 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
         digitalWrite(2, (neededMux & 2) ? HIGH : LOW);
         digitalWrite(3, (neededMux & 1) ? HIGH : LOW);
         adcMuxSelect = neededMux;
-        delayMicroseconds(100); //allow for some settling time.
+        //the analog multiplexor input switch pins are on direct outputs from the teensy
+        //and so will change very rapidly. The multiplexor also switches inputs in less than
+        //1 microsecond. The inputs are all buffered with 1uF caps and so perhaps the slowest
+        //part of switching is allowing the analog input pin on the teensy to settle
+        //to the new value of the analog input. Even so, this should happen very rapidly.
+        //Perhaps only 1us goes by between switching the mux and the new value appearing
+        //but give it at least a few microseconds for everything to switch and the new value to
+        //settle at the Teensy ADC pin.
+        delayMicroseconds(5);
     }
     //Analog inputs 0-3 are always on ADC0, 4-7 are on ADC1
     if (which < 4) valu = analogRead(0);

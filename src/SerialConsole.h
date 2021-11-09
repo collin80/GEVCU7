@@ -27,6 +27,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SERIALCONSOLE_H_
 #define SERIALCONSOLE_H_
 
+#include <vector>
 #include "config.h"
 #include "Heartbeat.h"
 #include "MemCache.h"
@@ -71,6 +72,8 @@ private:
     void handleConfigCmd();
     void resetWiReachMini();
     void getResponse();
+    void printConfigEntry(const ConfigEntry &entry);
+    void getConfigEntriesForDevice(Device *dev);
 };
 
 #endif /* SERIALCONSOLE_H_ */

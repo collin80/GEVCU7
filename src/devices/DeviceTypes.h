@@ -27,6 +27,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef DEVICE_TYPES_H_
 #define DEVICE_TYPES_H_
 
+#include <Arduino.h>
+
 enum DeviceType {
     DEVICE_ANY,
     DEVICE_MOTORCTRL,
@@ -39,6 +41,34 @@ enum DeviceType {
     DEVICE_WIFI,
     DEVICE_IO,
     DEVICE_NONE
+};
+
+enum CFG_ENTRY_VAR_TYPE
+{
+    BYTE,
+    STRING,
+    INT16,
+    UINT16,
+    INT32,
+    UINT32,
+    FLOAT
+};
+
+/*
+ConfigEntry records store configuration options that a given device would like to expose to the world
+so that they can be edited either on the serial console or the webpage (or any other way, CAN, etc).
+Includes basically all the stuff that SerialConsole used to have hard coded.
+There are hierachical calls to parent classes to find all configuration items. So, classes can
+register config entries but also subclasses can have their own on top of the base class, etc.
+*/
+struct ConfigEntry
+{
+    String cfgName; //the short name we'll use to set this on the serial console. AKA: CFGNAME=SomeValue
+    String helpText; //also shown on serial console to explain the configuration option
+    void *varPtr; //pointer to the variable whose value we'd like to get or set
+    CFG_ENTRY_VAR_TYPE varType; //what sort of variable were we pointing to?
+    float minValue; //minimum acceptable value
+    float maxValue; //maximum acceptable value
 };
 
 /*
@@ -54,10 +84,12 @@ of all registered devices and get the list that way.
 //    LEAR=0x1012,
 
 //but some devices that are internal to the system do need to be listed here.
-#define FAULTSYS 0x4000
-#define SYSTEM 0x5000
-#define HEARTBEAT 0x5001
-#define MEMCACHE 0x5002
+//System devices reserve IDs 0xF000 through 0xFFFF which is a lot of reserved
+//IDs but you also aren't going to be registering more than 61k devices anyway.
+#define FAULTSYS 0xF000
+#define SYSTEM 0xF100
+#define HEARTBEAT 0xF200
+#define MEMCACHE 0xF300
 #define INVALID 0xFFFF
 
 typedef uint16_t DeviceId;

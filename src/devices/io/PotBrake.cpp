@@ -48,7 +48,21 @@ void PotBrake::setup() {
 
     Logger::info("add device: PotBrake (id: %X, %X)", POTBRAKEPEDAL, this);
 
+    PotBrakeConfiguration *config = (PotBrakeConfiguration *) getConfiguration();
+
     Throttle::setup(); //call base class
+
+    ConfigEntry entry;
+    entry = {"B1ADC", "Set brake ADC pin", &config->AdcPin1, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255};
+    cfgEntries.push_back(entry);
+    entry = {"B1MN", "Set brake min value", &config->minimumLevel1, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096};
+    cfgEntries.push_back(entry);
+    entry = {"B1MX", "Set brake max value", &config->maximumLevel1, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096};
+    cfgEntries.push_back(entry);
+    entry = {"BMINR", "Percent of full torque for start of brake regen", &config->minimumRegen, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100};
+    cfgEntries.push_back(entry);
+    entry = {"BMAXR", "Percent of full torque for maximum brake regen", &config->maximumRegen, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100};
+    cfgEntries.push_back(entry);
 
     //set digital ports to inputs and pull them up all inputs currently active low
     //pinMode(THROTTLE_INPUT_BRAKELIGHT, INPUT_PULLUP); //Brake light switch

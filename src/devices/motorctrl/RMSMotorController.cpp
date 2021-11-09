@@ -368,7 +368,7 @@ void RMSMotorController::handleCANMsgIntState(uint8_t *data)
 		isCANControlled = true;
 	}
 	
-	Logger::debug("Enabled: %t    Forward: %t", isEnabled, invDirection);
+	Logger::debug("Enabled: %u    Forward: %u", isEnabled, invDirection);
 }
 
 void RMSMotorController::handleCANMsgFaults(uint8_t *data)

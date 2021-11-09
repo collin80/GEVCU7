@@ -73,6 +73,29 @@ MotorController::MotorController() : Device() {
 void MotorController::setup() {
 
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
+
+    cfgEntries.reserve(20);
+
+    ConfigEntry entry;
+    entry = {"TORQ", "Set torque upper limit (tenths of a Nm)", &config->torqueMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000};
+    cfgEntries.push_back(entry);
+    entry = {"TORQSLEW", "Torque slew rate (per second, tenths of a Nm)", &config->torqueSlewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000};
+    cfgEntries.push_back(entry);
+    entry = {"RPM", "Set maximum RPM", &config->speedMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 30000};
+    cfgEntries.push_back(entry);
+    entry = {"RPMSLEW", "RPM Slew rate (per second)", &config->speedSlewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000};
+    cfgEntries.push_back(entry);
+    entry = {"REVLIM", "How much torque to allow in reverse (Tenths of a percent)", &config->reversePercent, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000};
+    cfgEntries.push_back(entry);
+    entry = {"ENABLEIN", "Digital input to enable motor controller (0-3, 255 for none)", &config->enableIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255};
+    cfgEntries.push_back(entry);
+    entry = {"REVIN", "Digital input to reverse motor rotation (0-3, 255 for none)", &config->reverseIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255};
+    cfgEntries.push_back(entry);
+    entry = {"TAPERHI", "Regen taper upper RPM (0 - 20000)", &config->regenTaperUpper, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000};
+    cfgEntries.push_back(entry);
+    entry = {"TAPERLO", "Regen taper lower RPM (0 - 20000)", &config->regenTaperLower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000};
+    cfgEntries.push_back(entry);
+
     statusBitfield1 = 0;
     statusBitfield2 = 0;
     statusBitfield3 = 0;
