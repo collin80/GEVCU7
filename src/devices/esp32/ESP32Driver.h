@@ -4,6 +4,7 @@
 #include "../../TickHandler.h"
 
 #define ESP32 0x800
+#define CFG_TICK_INTERVAL_WIFI                      200000
 
 class ESP32Driver : public Device
 {

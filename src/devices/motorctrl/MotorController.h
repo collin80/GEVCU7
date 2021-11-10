@@ -41,6 +41,31 @@
 #define MOTORCTL_INPUT_REVERSE     5
 #define MOTORCTL_INPUT_LIMP        6
 
+#define CFG_TICK_INTERVAL_MOTOR_CONTROLLER          40000
+
+#define MaxTorqueValue      3000 //in tenths of a Nm
+#define	MaxRPMValue         6000 //DMOC will ignore this but we can use it ourselves for limiting
+#define RPMSlewRateValue    10000 // rpm/sec the requested speed should change (speed mode)
+#define TorqueSlewRateValue 6000 // 0.1Nm/sec the requested torque output should change (torque mode)
+#define KilowattHrs         11000 //not currently used
+#define PrechargeR          6000 //millliseconds precharge
+#define NominalVolt         3300 //a reasonable figure for a lithium cell pack driving the DMOC (in tenths of a volt)
+#define PrechargeRelay      0
+#define MainContactorRelay  1
+#define ReversePercent      50
+#define CoolFan             6  //output to use for cooling fan
+#define CoolOn              40 //temperature (in C) to turn on cooling fan
+#define BrakeLight          255 //temperature to turn it off
+#define CoolOff             35 //temperature to turn it off
+#define RevLight            255 //temperature to turn it off
+#define EnableIn            0//temperature to turn it off
+#define ReverseIn           1 //temperature to turn it off
+#define MaxRegenWatts       40000 //in actual watts, there is no scale here
+#define MaxAccelWatts       150000
+#define BatteryCapacity     100
+#define RegenTaperUpper     500
+#define RegenTaperLower     75
+
 class MotorControllerConfiguration : public DeviceConfiguration {
 public:
     uint16_t speedMax; // in rpm

@@ -39,6 +39,32 @@
 
 #define THROTTLE 0x1030
 
+#define ThrottleNumPots			1		//# of pots to use by default
+#define ThrottleADC1			0		//Which pin to use
+#define ThrottleADC2			1		//Which pin to use
+#define ThrottleSubtype			1		//subtype 1 is a standard linear pot throttle
+#define ThrottleRegenMinValue	270		//where does Regen stop (1/10 of percent)
+#define ThrottleRegenMaxValue	0		//where Regen is at maximum (1/10 of percent)
+#define ThrottleFwdValue		280		//where does forward motion start
+#define ThrottleMapValue		750		//Where is the 1/2 way point for throttle
+#define ThrottleMinRegenValue	0		//how many percent of full power to use at minimal regen
+#define ThrottleMaxRegenValue	70		//how many percent of full power to use at maximum regen
+#define ThrottleCreepValue		0		//how many percent of full power to use at creep
+#define ThrottleMaxErrValue		150		//tenths of percentage allowable deviation between pedals
+#define Throttle1MinValue		20		//Value ADC reads when pedal is up
+#define Throttle1MaxValue		3150		//Value ADC reads when pedal fully depressed
+#define Throttle2MinValue		0		//Value ADC reads when pedal is up
+#define Throttle2MaxValue		0	//Value ADC reads when pedal fully depressed
+#define BrakeMinValue			100		//Value ADC reads when brake is not pressed
+#define BrakeMaxValue			3200		//Value ADC reads when brake is pushed all of the way down
+#define BrakeMinRegenValue		0		//percent of full power to use for brake regen (min)
+#define BrakeMaxRegenValue		50		//percent of full power to use for brake regen (max)
+#define BrakeADC				0       //which ADC pin to use
+
+//these two should be configuration options instead.
+#define CFG_CANTHROTTLE_MAX_NUM_LOST_MSG            3 // maximum number of lost messages allowed
+#define CFG_THROTTLE_TOLERANCE  150 //the max that things can go over or under the min/max without fault - 1/10% each #
+
 /*
  * Data structure to hold raw signal(s) of the throttle.
  * E.g. for a three pot pedal, all signals could be used.

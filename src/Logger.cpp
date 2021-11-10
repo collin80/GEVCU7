@@ -40,6 +40,7 @@ FsFile file;
 
 #define RING_BUF_CAPACITY 65535
 #define LOG_FILENAME "GevcuLog.txt"
+#define CFG_TICK_INTERVAL_SDLOGGING                 40000
 
 // RingBuf for File type FsFile.
 RingBuf<FsFile, RING_BUF_CAPACITY> rb;

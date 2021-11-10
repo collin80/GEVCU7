@@ -37,6 +37,7 @@
 #include "../../CanHandler.h"
 
 #define DMOC645 0x1000
+#define CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC     40000
 
 /*
  * Class for DMOC specific configuration parameters

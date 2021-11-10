@@ -37,6 +37,7 @@
 #include "../../CanHandler.h"
 
 #define CODAUQM 0x1002
+#define CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CODAUQM  10000
 
 /*
  * Class for Coda UQM Powerphase 100 specific configuration parameters

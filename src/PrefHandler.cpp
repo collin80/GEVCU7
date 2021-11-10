@@ -218,6 +218,11 @@ bool PrefHandler::write(uint16_t address, uint32_t val) {
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
+bool PrefHandler::write(uint16_t address, float val) {
+    if (address >= EE_DEVICE_SIZE) return false;
+    return memCache->Write((uint32_t)address + base_address + lkg_address, val);
+}
+
 bool PrefHandler::read(uint16_t address, uint8_t *val) {
     if (address >= EE_DEVICE_SIZE) return false;
     return memCache->Read((uint32_t)address + base_address + lkg_address, val);
@@ -229,6 +234,11 @@ bool PrefHandler::read(uint16_t address, uint16_t *val) {
 }
 
 bool PrefHandler::read(uint16_t address, uint32_t *val) {
+    if (address >= EE_DEVICE_SIZE) return false;
+    return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+}
+
+bool PrefHandler::read(uint16_t address, float *val) {
     if (address >= EE_DEVICE_SIZE) return false;
     return memCache->Read((uint32_t)address + base_address + lkg_address, val);
 }

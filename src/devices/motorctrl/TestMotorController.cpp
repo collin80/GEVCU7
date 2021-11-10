@@ -53,7 +53,7 @@ void TestMotorController::setup() {
     setSelectedGear(DRIVE);
     setOpState(ENABLE);
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_TEST);
 }
 
 void TestMotorController::handleTick() {
@@ -141,7 +141,7 @@ DeviceId TestMotorController::getId() {
 
 uint32_t TestMotorController::getTickInterval()
 {
-    return CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC;
+    return CFG_TICK_INTERVAL_MOTOR_CONTROLLER_TEST;
 }
 
 void TestMotorController::loadConfiguration() {

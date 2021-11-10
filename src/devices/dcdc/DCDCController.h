@@ -37,6 +37,7 @@
 #include "../../CanHandler.h"
 
 #define DCDC 0x1050
+#define CFG_TICK_INTERVAL_DCDC                      200000
 
 /*
  * Class for Delphi DCDC specific configuration parameters

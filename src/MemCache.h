@@ -51,6 +51,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 #define AGING_PERIOD       60
 
+#define CFG_TICK_INTERVAL_MEM_CACHE                 40000
+
 //Current parameters as of 26th of August 2021 = 128 * 40ms * 60 = 307.2 seconds to flush = about 10 years EEPROM life
 
 class MemCache: public TickObserver {
@@ -71,12 +73,14 @@ public:
     boolean Write(uint32_t address, uint8_t valu);
     boolean Write(uint32_t address, uint16_t valu);
     boolean Write(uint32_t address, uint32_t valu);
+    boolean Write(uint32_t address, float valu);
     boolean Write(uint32_t address, void* data, uint16_t len);
 
     //It's sort of weird to make the read function take a reference but it allows for overloading
     boolean Read(uint32_t address, uint8_t* valu);
     boolean Read(uint32_t address, uint16_t* valu);
     boolean Read(uint32_t address, uint32_t* valu);
+    boolean Read(uint32_t address, float* valu);    
     boolean Read(uint32_t address, void* data, uint16_t len);
 
     MemCache();

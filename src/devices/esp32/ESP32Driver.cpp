@@ -56,7 +56,7 @@ DeviceId ESP32Driver::getId() {
 
 uint32_t ESP32Driver::getTickInterval()
 {
-    return CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CODAUQM;
+    return 5000;
 }
 
 void ESP32Driver::loadConfiguration() {

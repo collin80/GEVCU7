@@ -38,6 +38,7 @@
 #include "../../FaultCodes.h"
 
 #define TESTACCEL 0x104F
+#define CFG_TICK_INTERVAL_POT_THROTTLE              40000
 
 /*
  * The extended configuration class with additional parameters for PotThrottle

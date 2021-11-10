@@ -63,7 +63,7 @@ void CKMotorController::setup() {
     setOpState(ENABLE);
     CK_milli = millis();
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CK);
 }
 
 /*
@@ -238,7 +238,7 @@ DeviceId CKMotorController::getId() {
 
 uint32_t CKMotorController::getTickInterval()
 {
-    return CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC;
+    return CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CK;
 }
 
 void CKMotorController::loadConfiguration() {

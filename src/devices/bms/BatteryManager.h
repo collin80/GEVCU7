@@ -33,6 +33,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../config.h"
 #include "../Device.h"
 
+#define DefaultPackCapacity   1000       //in tenths of AH
+#define DefaultPackRemaining  50000000l //in millionths of AH
+#define DefaultHighVLim       3850 //tenths of a V
+#define DefaultLowVLim        2400 //tenths of a V
+#define DefaultHighCellLim    3900 //Hundredths of a V
+#define DefaultLowCellLim     2400 //Hundedths of a V
+#define DefaultHighTempLim    600  //Tenths of a degree. Toasty!
+#define DefaultLowTempLim     -200 //Tenths of a degree. Chilly!
+
 class BatteryManagerConfiguration : public DeviceConfiguration {
 public:
     uint16_t packCapacity;

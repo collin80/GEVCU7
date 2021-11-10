@@ -32,6 +32,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "DeviceManager.h"
 #include "sys_io.h"
 
+#define CFG_TICK_INTERVAL_HEARTBEAT                 2000000
+
 class Heartbeat: public TickObserver {
 public:
     Heartbeat();

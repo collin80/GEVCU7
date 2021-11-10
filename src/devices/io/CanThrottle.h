@@ -36,6 +36,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../DeviceManager.h"
 
 #define CANACCELPEDAL 0x1033
+#define CFG_TICK_INTERVAL_CAN_THROTTLE              40000
 
 enum CanCarType {
     unknowkn = 0x00,

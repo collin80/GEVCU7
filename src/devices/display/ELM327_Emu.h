@@ -60,6 +60,7 @@ AT RV (adapter voltage) - Send something like 14.4V
 
 extern PrefHandler *sysPrefs;
 #define ELM327EMU 0x650
+#define CFG_TICK_INTERVAL_WIFI                      200000
 
 /*
  * The extended configuration class with additional parameters for ichip WLAN

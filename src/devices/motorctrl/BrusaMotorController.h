@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../DeviceTypes.h"
 
 #define BRUSA_DMC5 0x1001
+#define CFG_TICK_INTERVAL_MOTOR_CONTROLLER_BRUSA    20000
 
 // CAN bus id's for frames sent to DMC5
 

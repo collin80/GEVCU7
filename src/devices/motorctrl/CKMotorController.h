@@ -39,6 +39,7 @@
 #include "../../CanHandler.h"
 
 #define CKINVERTER 0x1003
+#define CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CK     40000
 
 /*
  * Class for controller specific configuration parameters

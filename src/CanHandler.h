@@ -38,6 +38,21 @@ GEVCU6 and GEVCU7.
 #include <FlexCAN_T4.h>
 #include "Logger.h"
 
+/*
+ * CAN BUS CONFIGURATION
+ */
+#define CFG_CAN0_SPEED                              500 // specify the speed of the CAN0 bus (EV) in thousands. 
+#define CFG_CAN1_SPEED                              500 // specify the speed of the CAN1 bus (Car) in thousands
+#define CFG_CAN2_SPEED                              500 // speed of third CAN channel. 
+#define CFG_SWCAN_SPEED                             33  //shares with another CAN channel but when active this is the default speed
+
+//CAN message ID ASSIGNMENTS FOR I/0 MANAGEMENT
+//should make these configurable.
+#define CAN_SWITCH 0x606
+#define CAN_OUTPUTS 0x607
+#define CAN_ANALOG_INPUTS 0x608
+#define CAN_DIGITAL_INPUTS 0x609
+
 enum SDO_COMMAND
 {
     SDO_WRITE = 0x20,
@@ -73,12 +88,12 @@ public:
     virtual void handleSDOResponse(SDO_FRAME &frame);
     void setCANOpenMode(bool en);
     bool isCANOpen();
-    void setNodeID(int id);
-    int getNodeID();
+    void setNodeID(unsigned int id);
+    unsigned int getNodeID();
 
 private:
     bool canOpenMode;
-    int nodeID;
+    unsigned int nodeID;
 };
 
 class CanHandler

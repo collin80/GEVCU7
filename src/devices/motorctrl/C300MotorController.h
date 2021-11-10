@@ -36,6 +36,7 @@
 #include "../../CanHandler.h"
 
 #define C300INV 0x1005
+#define CFG_TICK_INTERVAL_MOTOR_CONTROLLER_C300     20000
 
 /*
  * Class for C300 specific configuration parameters

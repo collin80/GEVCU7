@@ -52,9 +52,11 @@ public:
     bool write(uint16_t address, uint8_t val);
     bool write(uint16_t address, uint16_t val);
     bool write(uint16_t address, uint32_t val);
+    bool write(uint16_t address, float val);
     bool read(uint16_t address, uint8_t *val);
     bool read(uint16_t address, uint16_t *val);
     bool read(uint16_t address, uint32_t *val);
+    bool read(uint16_t address, float *val);
     uint8_t calcChecksum();
     void saveChecksum();
     bool checksumValid();

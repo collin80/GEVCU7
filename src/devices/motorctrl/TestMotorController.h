@@ -38,6 +38,7 @@
 #include "../../CanHandler.h"
 
 #define TESTINVERTER 0x100F
+#define CFG_TICK_INTERVAL_MOTOR_CONTROLLER_TEST     40000
 
 /*
  * Class for DMOC specific configuration parameters

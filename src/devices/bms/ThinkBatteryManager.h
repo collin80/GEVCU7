@@ -37,6 +37,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../CanHandler.h"
 
 #define THINKBMS 0x2000
+#define CFG_TICK_INTERVAL_BMS_THINK                 500000
 
 class ThinkBatteryManager : public BatteryManager, CanObserver
 {

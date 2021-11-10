@@ -698,12 +698,12 @@ void CanObserver::setCANOpenMode(bool en)
     canOpenMode = en;
 }
 
-void CanObserver::setNodeID(int id)
+void CanObserver::setNodeID(unsigned int id)
 {
     nodeID = id & 0x7F;
 }
 
-int CanObserver::getNodeID()
+unsigned int CanObserver::getNodeID()
 {
     return nodeID;
 }

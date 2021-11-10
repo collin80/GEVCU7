@@ -84,12 +84,14 @@ of all registered devices and get the list that way.
 //    LEAR=0x1012,
 
 //but some devices that are internal to the system do need to be listed here.
-//System devices reserve IDs 0xF000 through 0xFFFF which is a lot of reserved
-//IDs but you also aren't going to be registering more than 61k devices anyway.
-#define FAULTSYS 0xF000
-#define SYSTEM 0xF100
-#define HEARTBEAT 0xF200
-#define MEMCACHE 0xF300
+//System devices reserve IDs 0x7000 through 0x7FFF which is a lot of reserved
+//IDs but you also aren't going to be registering thousands of devices either
+//IDs 0x8000 and up are off limits as the high bit is used for enable/disable
+//but this still leaves many IDs possible.
+#define FAULTSYS 0x7000
+#define SYSTEM 0x7100
+#define HEARTBEAT 0x7200
+#define MEMCACHE 0x7300
 #define INVALID 0xFFFF
 
 typedef uint16_t DeviceId;

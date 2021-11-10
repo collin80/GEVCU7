@@ -39,6 +39,7 @@
 #include "../../FaultCodes.h"
 
 #define VEHICLESPECIFIC 0x3000
+#define CFG_TICK_INTERVAL_VEHICLE                   100000
 
 class VehicleSpecific: public Device {
 public:
