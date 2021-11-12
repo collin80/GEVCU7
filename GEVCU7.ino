@@ -88,41 +88,40 @@ void initSysEEPROM() {
 	uint32_t thirtytwo;
 
 	eight = 7; //GEVCU 7.0 board
-	sysPrefs->write(EESYS_SYSTEM_TYPE, eight);
+	sysPrefs->write("SysType", eight);
 
 	sixteen = 1024; //no gain
-	sysPrefs->write(EESYS_ADC0_GAIN, sixteen);
-	sysPrefs->write(EESYS_ADC1_GAIN, sixteen);
-	sysPrefs->write(EESYS_ADC2_GAIN, sixteen);
-	sysPrefs->write(EESYS_ADC3_GAIN, sixteen);
-	sysPrefs->write(EESYS_ADC4_GAIN, sixteen);
-	sysPrefs->write(EESYS_ADC5_GAIN, sixteen);
-	sysPrefs->write(EESYS_ADC6_GAIN, sixteen);
-	sysPrefs->write(EESYS_ADC7_GAIN, sixteen);
+	sysPrefs->write("Adc0Gain", sixteen);
+	sysPrefs->write("Adc1Gain", sixteen);
+	sysPrefs->write("Adc2Gain", sixteen);
+	sysPrefs->write("Adc3Gain", sixteen);
+	sysPrefs->write("Adc4Gain", sixteen);
+	sysPrefs->write("Adc5Gain", sixteen);
+	sysPrefs->write("Adc6Gain", sixteen);
+	sysPrefs->write("Adc7Gain", sixteen);
 
 	sixteen = 0; //no offset
-	sysPrefs->write(EESYS_ADC0_OFFSET, sixteen);
-	sysPrefs->write(EESYS_ADC1_OFFSET, sixteen);
-	sysPrefs->write(EESYS_ADC2_OFFSET, sixteen);
-	sysPrefs->write(EESYS_ADC3_OFFSET, sixteen);
-	sysPrefs->write(EESYS_ADC4_OFFSET, sixteen);
-	sysPrefs->write(EESYS_ADC5_OFFSET, sixteen);
-	sysPrefs->write(EESYS_ADC6_OFFSET, sixteen);
-	sysPrefs->write(EESYS_ADC7_OFFSET, sixteen);
+	sysPrefs->write("Adc0Offset", sixteen);
+	sysPrefs->write("Adc1Offset", sixteen);
+	sysPrefs->write("Adc2Offset", sixteen);
+	sysPrefs->write("Adc3Offset", sixteen);
+	sysPrefs->write("Adc4Offset", sixteen);
+	sysPrefs->write("Adc5Offset", sixteen);
+	sysPrefs->write("Adc6Offset", sixteen);
+	sysPrefs->write("Adc7Offset", sixteen);
 
 
 	sixteen = CFG_CAN0_SPEED;
-	sysPrefs->write(EESYS_CAN0_BAUD, sixteen);
+	sysPrefs->write("CAN0Speed", sixteen);
     sixteen = CFG_CAN1_SPEED;
-	sysPrefs->write(EESYS_CAN1_BAUD, sixteen);
+	sysPrefs->write("CAN1Speed", sixteen);
 	sixteen = CFG_CAN2_SPEED;
-	sysPrefs->write(EESYS_CAN2_BAUD, sixteen);
+	sysPrefs->write("CAN2Speed", sixteen);
     sixteen = 11111; //tripled so 33.333k speed
-	sysPrefs->write(EESYS_SWCAN_BAUD, sixteen);
-
+	sysPrefs->write("SWCANSpeed", sixteen);
 
 	eight = 2;  //0=debug, 1=info,2=warn,3=error,4=off
-	sysPrefs->write(EESYS_LOG_LEVEL, eight);
+	sysPrefs->write("LogLevel", eight);
 
 	sysPrefs->saveChecksum();
     sysPrefs->forceCacheWrite();
@@ -399,11 +398,10 @@ void setup() {
         else {Logger::info("Using existing EEPROM system values");}//checksum is good, read in the values stored in EEPROM
 
 	uint8_t loglevel;
-	sysPrefs->read(EESYS_LOG_LEVEL, &loglevel);
+	sysPrefs->read("LogLevel", &loglevel, 1);
 	loglevel = 0; //force debugging log level
     Logger::console("LogLevel: %i", loglevel);
 	Logger::setLoglevel((Logger::LogLevel)loglevel);
-    //Logger::setLoglevel((Logger::LogLevel)0);
 	systemIO.setup();  
 	canHandlerEv.setup();
 	canHandlerCar.setup();

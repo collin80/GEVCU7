@@ -50,7 +50,7 @@ void SerialConsole::init() {
     loopcount=0;
     cancel=false;
 
-    sysPrefs->read(EESYS_SYSTEM_TYPE, &systype);
+    sysPrefs->read("SysType", &systype, 7);
 }
 
 void SerialConsole::loop() {
@@ -108,6 +108,89 @@ void SerialConsole::getConfigEntriesForDevice(Device *dev)
     }
 }
 
+//have to run through all devices registered and for each enabled device
+//check whether it has the settingName in its configuration entries
+//If so process the config entry and return. Otherwise keep going.
+//doesn't yet actually tell the device to update EEPROM and doesn't output
+//anything yet if setting was a success. But, it's getting there.
+void SerialConsole::updateSetting(char *settingName, char *valu)
+{
+    Device *deviceMatched;
+    const ConfigEntry *entry = deviceManager.findConfigEntry(settingName, &deviceMatched);
+    uint8_t ui8;
+    float fl;
+    int16_t i16;
+    int32_t i32;
+    uint16_t ui16;
+    uint32_t ui32;
+
+    int result = 0;
+    if (!entry)
+    {
+        Logger::console("No such configuration parameter exists!");
+        return;
+    }
+    switch (entry->varType)
+    {
+    case CFG_ENTRY_VAR_TYPE::BYTE:
+        ui8 = (uint8_t)strtol(valu, NULL, 0);
+        if (ui8 < entry->minValue) result = 1;
+        else if (ui8 > entry->maxValue) result = 2;
+        else *(uint8_t *)entry->varPtr = ui8;
+        break;
+    case CFG_ENTRY_VAR_TYPE::FLOAT:
+        fl = strtof(valu, NULL);
+        if (fl < entry->minValue) result = 1;
+        else if (fl > entry->maxValue) result = 2;
+        else *(float *)entry->varPtr = fl;
+        break;
+    case CFG_ENTRY_VAR_TYPE::INT16:
+        i16 = (int16_t)strtol(valu, NULL, 0);
+        if (i16 < entry->minValue) result = 1;
+        else if (i16 > entry->maxValue) result = 2;
+        else *(int16_t *)entry->varPtr = i16;
+        break;
+    case CFG_ENTRY_VAR_TYPE::INT32:
+        i32 = (int32_t)strtol(valu, NULL, 0);
+        if (i32 < entry->minValue) result = 1;
+        else if (i32 > entry->maxValue) result = 2;
+        else *(int32_t *)entry->varPtr = i32;
+        break;
+    case CFG_ENTRY_VAR_TYPE::STRING:
+        //this is an interesting one. It's easy in principle but we don't know
+        //the actual size of the storage buffer so it could overwrite memory.
+        //If this GEVCU thing gets popular it might be necessary to fix this
+        //otherwise this is the entry point to smashing the stack for fun and profit.
+        strcpy((char *)entry->varPtr, valu);
+        break;
+    case CFG_ENTRY_VAR_TYPE::UINT16:
+        ui16 = (uint16_t)strtol(valu, NULL, 0);
+        if (ui16 < entry->minValue) result = 1;
+        else if (ui16 > entry->maxValue) result = 2;
+        else *(uint16_t *)entry->varPtr = ui16;
+        break;
+    case CFG_ENTRY_VAR_TYPE::UINT32:
+        ui32 = (uint32_t)strtol(valu, NULL, 0);
+        if (ui32 < entry->minValue) result = 1;
+        else if (ui32 > entry->maxValue) result = 2;
+        else *(uint32_t *)entry->varPtr = ui32;
+        break;    
+    }
+    if (result == 0) //value was stored
+    {
+        Logger::console("%s was set as value for parameter %s", valu, settingName);
+        deviceMatched->saveConfiguration();
+    }
+    if (result == 1) //value was too low
+    {
+        Logger::console("Value was below minimum value of %f for parameter %s", entry->minValue, entry->cfgName);
+    }
+    if (result == 2) //value was too high
+    {
+        Logger::console("Value was above maximum value of %f for parameter %s", entry->maxValue, entry->cfgName);
+    }
+}
+
 
 void SerialConsole::printMenu() {
     MotorController* motorController = (MotorController*) deviceManager.getMotorController();
@@ -116,18 +199,18 @@ void SerialConsole::printMenu() {
     BatteryManager *bms = static_cast<BatteryManager *>(deviceManager.getDeviceByType(DEVICE_BMS));
    
     //Show build # here as well in case people are using the native port and don't get to see the start up messages
-    SerialUSB.print("Build number: ");
-    SerialUSB.println(CFG_BUILD_NUM);
-    if (motorController) {
-        SerialUSB.println(
-            "Motor Controller Status: isRunning: " + String(motorController->isRunning()) + " isFaulted: " + String(motorController->isFaulted()));
+    Logger::console("Build number: %u", CFG_BUILD_NUM);
+    if (motorController) 
+    {
+        Logger::console("Motor Controller Status: isRunning: %i  isFaulted: %i", 
+            motorController->isRunning(), motorController->isFaulted());  
     }
-    SerialUSB<<"\n*************SYSTEM MENU *****************\n";
-    SerialUSB<<"Enable line endings of some sort (LF, CR, CRLF)\n";
-    SerialUSB<<"Most commands case sensitive\n\n";
-    SerialUSB<<"GENERAL SYSTEM CONFIGURATION\n\n";
-    SerialUSB.println("   E = dump system EEPROM values");
-    SerialUSB.println("   h = help (displays this message)");
+    Logger::console("\n*************SYSTEM MENU *****************");
+    Logger::console("Enable line endings of some sort (LF, CR, CRLF)");
+    Logger::console("Most commands case sensitive\n");
+    Logger::console("GENERAL SYSTEM CONFIGURATION\n");
+    Logger::console("   E = dump system EEPROM values");
+    Logger::console("   h = help (displays this message)");
   
     Logger::console("   LOGLEVEL=%i - set log level (0=debug, 1=info, 2=warn, 3=error, 4=off)", Logger::getLogLevel());
     Logger::console("   CAN0SPEED=%i - set first CAN bus speed (in thousands)", canHandlerEv.getBusSpeed() / 1000);
@@ -135,26 +218,25 @@ void SerialConsole::printMenu() {
     Logger::console("   CAN2SPEED=%i - set third CAN bus speed (in thousands)", canHandlerCar2.getBusSpeed() / 1000);
     Logger::console("   SWCANSPEED=%i - set SingleWire CAN bus speed (in thousands)", canHandlerSingleWire.getBusSpeed() / 1000);
 
-
-    SerialUSB<<"\nDEVICE SELECTION AND ACTIVATION\n\n";
-    SerialUSB.println("     q = Dump Device Table");
-    SerialUSB.println("     Q = Reinitialize device table");
-    SerialUSB.println("     S = show possible device IDs");
+    Logger::console("\nDEVICE SELECTION AND ACTIVATION\n");
+    Logger::console("     q = Dump Device Table");
+    Logger::console("     Q = Reinitialize device table");
+    Logger::console("     S = show possible device IDs");
     Logger::console("     NUKE=1 - Resets all device settings in EEPROM. You have been warned.");
 
     deviceManager.printDeviceList();
     
     if (motorController && motorController->getConfiguration()) {
         MotorControllerConfiguration *config = (MotorControllerConfiguration *) motorController->getConfiguration(); 
-        SerialUSB<<"\nPRECHARGE CONTROLS\n\n";
+        Logger::console("\nPRECHARGE CONTROLS\n");
         Logger::console("   PREDELAY=%i - Precharge delay time in milliseconds ", config->prechargeR);
         Logger::console("   PRELAY=%i - Which output to use for precharge contactor (255 to disable)", config->prechargeRelay);
         Logger::console("   MRELAY=%i - Which output to use for main contactor (255 to disable)", config->mainContactorRelay);
           
-        SerialUSB<<"\nMOTOR CONTROLS\n\n";
+        Logger::console("\nMOTOR CONTROLS\n");
         getConfigEntriesForDevice(motorController);
 
-        SerialUSB<<"\nOTHER VEHICLE CONTROLS\n\n";
+        Logger::console("\nOTHER VEHICLE CONTROLS\n");
         Logger::console("   COOLFAN=%i - Digital output to turn on cooling fan(0-7, 255 for none)", config->coolFan);
         Logger::console("   COOLON=%i - Inverter temperature C to turn cooling on", config->coolOn);
         Logger::console("   COOLOFF=%i - Inverter temperature C to turn cooling off", config->coolOff);
@@ -164,67 +246,67 @@ void SerialConsole::printMenu() {
     }
 
     if (accelerator && accelerator->getConfiguration()) {
-        SerialUSB<<"\nTHROTTLE CONTROLS\n\n";
-        SerialUSB.println("   z = detect throttle min/max, num throttles and subtype");
-        SerialUSB.println("   Z = save throttle values");
+        Logger::console("\nTHROTTLE CONTROLS\n");
+        Logger::console("   z = detect throttle min/max, num throttles and subtype");
+        Logger::console("   Z = save throttle values");
         getConfigEntriesForDevice(accelerator);
     }
 
     if (brake && brake->getConfiguration()) {
-        SerialUSB<<"\nBRAKE CONTROLS\n\n";
-        SerialUSB.println("   b = detect brake min/max");
-        SerialUSB.println("   B = save brake values");
+        Logger::console("\nBRAKE CONTROLS\n");
+        Logger::console("   b = detect brake min/max");
+        Logger::console("   B = save brake values");
         getConfigEntriesForDevice(brake);
     }
     
     if (bms && bms->getConfiguration()) {
         BatteryManagerConfiguration *config = static_cast<BatteryManagerConfiguration *>(bms->getConfiguration());
-        SerialUSB << "\nBATTERY MANAGEMENT CONTROLS\n\n";
+        Logger::console("\nBATTERY MANAGEMENT CONTROLS\n");
         getConfigEntriesForDevice(bms);        
     }
   
-    SerialUSB<<"\nANALOG AND DIGITAL IO\n\n";
-    SerialUSB.println("   A = Autocompensate ADC inputs");
-    SerialUSB.println("   J = set all digital outputs low");
-    SerialUSB.println("   K = set all digital outputs high");
+    Logger::console("\nANALOG AND DIGITAL IO\n");
+    Logger::console("   A = Autocompensate ADC inputs");
+    Logger::console("   J = set all digital outputs low");
+    Logger::console("   K = set all digital outputs high");
  
     if (heartbeat != NULL) {
-        SerialUSB.println("   L = show raw analog/digital input/output values (toggle)");
+        Logger::console("   L = show raw analog/digital input/output values (toggle)");
     }
     Logger::console("   OUTPUT=<0-7> - toggles state of specified digital output");
    
     uint16_t val;
-    sysPrefs->read(EESYS_ADC0_OFFSET, &val);
+    sysPrefs->read("Adc0Offset", &val, 0);
     Logger::console("   ADC0OFF=%i - set ADC0 offset", val);
-    sysPrefs->read(EESYS_ADC0_GAIN, &val);
+    sysPrefs->read("Adc0Gain", &val, 1024);
     Logger::console("   ADC0GAIN=%i - set ADC0 gain (1024 is 1 gain)", val);
-    sysPrefs->read(EESYS_ADC1_OFFSET, &val);
+    sysPrefs->read("Adc1Offset", &val, 0);
     Logger::console("   ADC1OFF=%i - set ADC1 offset", val);
-    sysPrefs->read(EESYS_ADC1_GAIN, &val);
+    sysPrefs->read("Adc1Gain", &val, 1024);
     Logger::console("   ADC1GAIN=%i - set ADC1 gain (1024 is 1 gain)", val);
-    sysPrefs->read(EESYS_ADC2_OFFSET, &val);
+    sysPrefs->read("Adc2Offset", &val, 0);
     Logger::console("   ADC2OFF=%i - set ADC2 offset", val);
-    sysPrefs->read(EESYS_ADC2_GAIN, &val);
+    sysPrefs->read("Adc2Gain", &val, 1024);
     Logger::console("   ADC2GAIN=%i - set ADC2 gain (1024 is 1 gain)", val);
-    sysPrefs->read(EESYS_ADC3_OFFSET, &val);
+    sysPrefs->read("Adc3Offset", &val, 0);
     Logger::console("   ADC3OFF=%i - set ADC3 offset", val);
-    sysPrefs->read(EESYS_ADC3_GAIN, &val);
+    sysPrefs->read("Adc3Gain", &val, 1024);
     Logger::console("   ADC3GAIN=%i - set ADC3 gain (1024 is 1 gain)", val);
-    sysPrefs->read(EESYS_ADC4_OFFSET, &val);
+    sysPrefs->read("Adc4Offset", &val, 0);
     Logger::console("   ADC4OFF=%i - set ADC4 offset", val);
-    sysPrefs->read(EESYS_ADC4_GAIN, &val);
+    sysPrefs->read("Adc4Gain", &val, 1024);
     Logger::console("   ADC4GAIN=%i - set ADC4 gain (1024 is 1 gain)", val);
-    sysPrefs->read(EESYS_ADC5_OFFSET, &val);
+    sysPrefs->read("Adc5Offset", &val, 0);
     Logger::console("   ADC5OFF=%i - set ADC5 offset", val);
-    sysPrefs->read(EESYS_ADC5_GAIN, &val);
+    sysPrefs->read("Adc5Gain", &val, 1024);
     Logger::console("   ADC5GAIN=%i - set ADC5 gain (1024 is 1 gain)", val);
-    sysPrefs->read(EESYS_ADC6_OFFSET, &val);
+    sysPrefs->read("Adc6Offset", &val, 0);
     Logger::console("   ADC6OFF=%i - set ADC6 offset", val);
-    sysPrefs->read(EESYS_ADC6_GAIN, &val);
+    sysPrefs->read("Adc6Gain", &val, 1024);
     Logger::console("   ADC6GAIN=%i - set ADC6 gain (1024 is 1 gain)", val);
-    sysPrefs->read(EESYS_ADC7_OFFSET, &val);
+    sysPrefs->read("Adc7Offset", &val, 0);
     Logger::console("   ADC7OFF=%i - set ADC7 offset", val);
-    sysPrefs->read(EESYS_ADC7_GAIN, &val);
+    sysPrefs->read("Adc7Gain", &val, 1024);
     Logger::console("   ADC7GAIN=%i - set ADC7 gain (1024 is 1 gain)", val);
 }
 
@@ -264,9 +346,6 @@ void SerialConsole::handleConsoleCmd() {
     handlingEvent = false;
 }
 
-/*For simplicity the configuration setting code uses four characters for each configuration choice. This makes things easier for
- comparison purposes.
- */
 void SerialConsole::handleConfigCmd() {
     PotThrottleConfiguration *acceleratorConfig = NULL;
     PotThrottleConfiguration *brakeConfig = NULL;
@@ -286,6 +365,7 @@ void SerialConsole::handleConfigCmd() {
         return; //4 digit command, =, value is at least 6 characters
     cmdBuffer[ptrBuffer] = 0; //make sure to null terminate
     String cmdString = String();
+    char *strVal;
     unsigned char whichEntry = '0';
     i = 0;
 
@@ -311,9 +391,15 @@ void SerialConsole::handleConfigCmd() {
 
     // strtol() is able to parse also hex values (e.g. a string "0xCAFE"), useful for enable/disable by device id
     newValue = strtol((char *) (cmdBuffer + i), NULL, 0);
+    strVal = (char *)(cmdBuffer + i); //leave it as a string
 
     cmdString.toUpperCase();
-    if (cmdString == String("TORQ") && motorConfig) {
+    
+    //most all config stuff is done via a generic interface now. So for device settings there is 
+    //nothing here any longer. The call to updateSetting handles all that now.
+
+
+/*    if (cmdString == String("TORQ") && motorConfig) {
         Logger::console("Setting Torque Limit to %i", newValue);
         motorConfig->torqueMax = newValue;
         motorController->saveConfiguration();
@@ -457,7 +543,7 @@ void SerialConsole::handleConfigCmd() {
             motorController->saveConfiguration();
         }
         else Logger::console("Invalid RPM value. Please enter a value higher than low limit and under 10000");
-    } else if (cmdString == String("ENABLE")) {
+    } else */if (cmdString == String("ENABLE")) {
         if (PrefHandler::setDeviceStatus(newValue, true)) {
             sysPrefs->saveChecksum();
             sysPrefs->forceCacheWrite(); //just in case someone takes us literally and power cycles quickly
@@ -477,7 +563,7 @@ void SerialConsole::handleConfigCmd() {
         }
     } else if (cmdString == String("SYSTYPE")) {
         if (newValue < 7 && newValue > 0) {
-            sysPrefs->write(EESYS_SYSTEM_TYPE, (uint8_t)(newValue));
+            sysPrefs->write("SysType", (uint8_t)(newValue));
             sysPrefs->saveChecksum();
             sysPrefs->forceCacheWrite(); //just in case someone takes us literally and power cycles quickly
             Logger::console("System type updated. Power cycle to apply.");
@@ -485,7 +571,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid system type. Please enter a value 1 - 4");
     } else if (cmdString == String("ADC0OFF")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC0_OFFSET, (uint16_t)(newValue));
+            sysPrefs->write("Adc0Offset", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC0 Offset to %i", newValue);
@@ -493,7 +579,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid offset. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC0GAIN")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC0_GAIN, (uint16_t)(newValue));
+            sysPrefs->write("Adc0Gain", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC0 Gain to %i", newValue);
@@ -501,7 +587,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid gain. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC1OFF")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC1_OFFSET, (uint16_t)(newValue));
+            sysPrefs->write("Adc1Offset", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC1 Offset to %i", newValue);
@@ -509,7 +595,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid offset. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC1GAIN")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC1_GAIN, (uint16_t)(newValue));
+            sysPrefs->write("Adc1Gain", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC1 Gain to %i", newValue);
@@ -517,7 +603,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid gain. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC2OFF")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC2_OFFSET, (uint16_t)(newValue));
+            sysPrefs->write("Adc2Offset", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC2 Offset to %i", newValue);
@@ -525,7 +611,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid offset. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC2GAIN")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC2_GAIN, (uint16_t)(newValue));
+            sysPrefs->write("Adc2Gain", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC2 Gain to %i", newValue);
@@ -533,7 +619,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid gain. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC3OFF")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC3_OFFSET, (uint16_t)(newValue));
+            sysPrefs->write("Adc3Offset", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC3 Offset to %i", newValue);
@@ -541,7 +627,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid offset. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC3GAIN")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC3_GAIN, (uint16_t)(newValue));
+            sysPrefs->write("Adc3Gain", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC3 Gain to %i", newValue);
@@ -549,7 +635,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid gain. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC4OFF")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC4_OFFSET, (uint16_t)(newValue));
+            sysPrefs->write("Adc4Offset", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC4 Offset to %i", newValue);
@@ -557,7 +643,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid offset. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC4GAIN")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC4_GAIN, (uint16_t)(newValue));
+            sysPrefs->write("Adc4Gain", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC4 Gain to %i", newValue);
@@ -565,7 +651,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid gain. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC5OFF")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC5_OFFSET, (uint16_t)(newValue));
+            sysPrefs->write("Adc5Offset", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC5 Offset to %i", newValue);
@@ -573,7 +659,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid offset. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC5GAIN")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC5_GAIN, (uint16_t)(newValue));
+            sysPrefs->write("Adc5Gain", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC5 Gain to %i", newValue);
@@ -581,7 +667,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid gain. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC6OFF")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC6_OFFSET, (uint16_t)(newValue));
+            sysPrefs->write("Adc6Offset", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC6 Offset to %i", newValue);
@@ -589,7 +675,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid offset. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC6GAIN")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC6_GAIN, (uint16_t)(newValue));
+            sysPrefs->write("Adc6Gain", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC6 Gain to %i", newValue);
@@ -597,7 +683,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid gain. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC7OFF")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC7_OFFSET, (uint16_t)(newValue));
+            sysPrefs->write("Adc7Offset", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC7 Offset to %i", newValue);
@@ -605,7 +691,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid offset. Enter value from 0 to 65535");
     } else if (cmdString == String("ADC7GAIN")) {
         if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write(EESYS_ADC7_GAIN, (uint16_t)(newValue));
+            sysPrefs->write("Adc7Gain", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             systemIO.setup_ADC_params(); //change takes immediate effect
             Logger::console("Setting ADC7 Gain to %i", newValue);
@@ -613,7 +699,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid gain. Enter value from 0 to 65535");
     } else if (cmdString == String("CAN0SPEED")) {
         if (newValue >= 33 && newValue <= 1000) {
-            sysPrefs->write(EESYS_CAN0_BAUD, (uint16_t)(newValue));
+            sysPrefs->write("CAN0Speed", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             canHandlerEv.setup();
             Logger::console("Setting CAN0 speed to %i", newValue);
@@ -621,7 +707,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid speed. Enter a value between 33 and 1000");
     } else if (cmdString == String("CAN1SPEED")) {
         if (newValue >= 33 && newValue <= 1000) {
-            sysPrefs->write(EESYS_CAN1_BAUD, (uint16_t)(newValue));
+            sysPrefs->write("CAN1Speed", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             canHandlerCar.setup();
             Logger::console("Setting CAN1 speed to %i", newValue);
@@ -629,7 +715,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid speed. Enter a value between 33 and 1000");
     } else if (cmdString == String("CAN2SPEED")) {
         if (newValue >= 33 && newValue <= 1000) {
-            sysPrefs->write(EESYS_CAN2_BAUD, (uint16_t)(newValue));
+            sysPrefs->write("CAN2Speed", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             canHandlerCar2.setup();
             Logger::console("Setting CAN2 speed to %i", newValue);
@@ -637,7 +723,7 @@ void SerialConsole::handleConfigCmd() {
         else Logger::console("Invalid speed. Enter a value between 33 and 1000");
     } else if (cmdString == String("SWCANSPEED")) {
         if (newValue >= 33 && newValue <= 200) {
-            sysPrefs->write(EESYS_SWCAN_BAUD, (uint16_t)(newValue));
+            sysPrefs->write("SWCANSpeed", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
             canHandlerSingleWire.setup();
             Logger::console("Setting SWCAN speed to %i", newValue);
@@ -666,7 +752,7 @@ void SerialConsole::handleConfigCmd() {
             Logger::setLoglevel(Logger::Off);
             break;
         }
-        if (!sysPrefs->write(EESYS_LOG_LEVEL, (uint8_t)newValue))
+        if (!sysPrefs->write("LogLevel", (uint8_t)newValue))
             Logger::error("Couldn't write log level!");
         sysPrefs->saveChecksum();
 
@@ -708,7 +794,7 @@ void SerialConsole::handleConfigCmd() {
                         systemIO.getDigitalOutput(0), systemIO.getDigitalOutput(1), systemIO.getDigitalOutput(2), systemIO.getDigitalOutput(3), 
                         systemIO.getDigitalOutput(4), systemIO.getDigitalOutput(5), systemIO.getDigitalOutput(6), systemIO.getDigitalOutput(7));
 
-    } else if (cmdString == String("CAPACITY") && bmsConfig ) {
+    } /*else if (cmdString == String("CAPACITY") && bmsConfig ) {
         if (newValue >= 0 && newValue <= 6000) {
             bmsConfig->packCapacity = newValue;
             bms->saveConfiguration();
@@ -764,7 +850,7 @@ void SerialConsole::handleConfigCmd() {
             Logger::console("Battery Temperature Lower Limit set to: %d", bmsConfig->lowTempLimit);
         }
         else Logger::console("Invalid temperature lower limit please enter a value between -2000 and 2000");
-    } else if (cmdString == String("NUKE")) {
+    } */else if (cmdString == String("NUKE")) {
         if (newValue == 1) {
             Logger::console("Start of EEPROM Nuke");
             memCache->InvalidateAll(); //first force writing of all dirty pages and invalidate them
@@ -772,7 +858,8 @@ void SerialConsole::handleConfigCmd() {
             Logger::console("Device settings have been nuked. Reboot to reload default settings");
         }
     } else {
-        Logger::console("Unknown command");
+        //Logger::console("Unknown command");
+        updateSetting(cmdString.c_str(), strVal);
         updateWifi = false;
     }
     // send updates to ichip wifi
@@ -855,26 +942,9 @@ void SerialConsole::handleShortCmd() {
     case 'a':
         //deviceManager.sendMessage(DEVICE_ANY, ADABLUE, 0xDEADBEEF, nullptr);
         break;
-    case 'S':
-        //there is not really any good way (currently) to auto generate this list
-        //the information just isn't stored anywhere in code. Perhaps we might
-        //think to change that. Otherwise you must remember to update here or
-        //nobody will know your device exists. Additionally, these values are
-        //decoded into decimal from their hex specification in DeviceTypes.h
-        /*
-        Logger::console("DMOC645 = %X", DMOC645);
-        Logger::console("Brusa DMC5 = %X", BRUSA_DMC5);
-        Logger::console("Brusa Charger = %X", BRUSACHARGE);
-        Logger::console("TCCH Charger = %X", TCCHCHARGE);
-        Logger::console("Pot based accelerator = %X", POTACCELPEDAL);
-        Logger::console("Pot based brake = %X", POTBRAKEPEDAL);
-        Logger::console("CANBus accelerator = %X", CANACCELPEDAL);
-        Logger::console("CANBus brake = %X", CANBRAKEPEDAL);
-        Logger::console("WIFI (iChip2128) = %X", ICHIP2128);
-        Logger::console("Th!nk City BMS = %X", THINKBMS);
-        */
+    case 'S': //generate a list of devices.
+        deviceManager.printDeviceList();        
         break;
-    
     
     case 'X':
         setup(); //this is probably a bad idea. Do not do this while connected to anything you care about - only for debugging in safety!
@@ -887,8 +957,5 @@ void SerialConsole::handleShortCmd() {
         break;
     }
 }
-
-
-
 
 

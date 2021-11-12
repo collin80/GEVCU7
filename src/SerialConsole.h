@@ -74,6 +74,7 @@ private:
     void getResponse();
     void printConfigEntry(const ConfigEntry &entry);
     void getConfigEntriesForDevice(Device *dev);
+    void updateSetting(char *settingName, char *valu);
 };
 
 #endif /* SERIALCONSOLE_H_ */

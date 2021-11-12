@@ -1,9 +1,7 @@
 /*
  * eeprom_layout.h
  *
-EEPROM Map. There is support for up to 6 devices: 
-A motor controller, display, charger, BMS, Throttle, 
-and a misc device (EPAS, WOC, etc)
+EEPROM Map.
 
 There is a 256KB eeprom chip which stores these settings. 
 The 4K is allocated to primary storage and 4K is allocated to a "known good"
@@ -39,6 +37,16 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "config.h"
 
 /*
+
+Rethink this entire thing. For one, the devices should be setting their own EEPROM addresses
+or otherwise not need to worry about the actual placement. Maybe store settings based on
+a hash of the given variable name. A 32 bit hash shouldn't collide very often at all so
+it may be possible to store settings that way. That adds 4 bytes of overhead but the EEPROM
+is quite large so there's no reason it can't store enough data.
+
+*/
+
+/*
 The device table is just a list of IDs. The devices register for a spot in the table.
 Since each device has a 16 bit ID and the reserved space is 128 bytes we can support
 64 different devices in the table and EEPROM
@@ -49,7 +57,7 @@ First device entry is 0xDEAD if valid - otherwise table is initialized
 */
 #define EE_DEVICE_TABLE         512 //where is the table of devices found in EEPROM?
 
-#define EE_DEVICE_SIZE          512 //# of bytes allocated to each device
+#define EE_DEVICE_SIZE          1024 //# of bytes allocated to each device
 #define EE_DEVICES_BASE         1024 //start of where devices in the table can use
 #define EE_SYSTEM_START         128
 
@@ -70,50 +78,6 @@ the end of the stardard data. The below numbers are offsets from the device's ee
 //first, things in common to all devices - leave 20 bytes for this
 #define EE_CHECKSUM              0 //1 byte - checksum for this section of EEPROM to makesure it is valid
 #define EE_DEVICE_ID             1 //2 bytes - the value of the ENUM DEVID of this device.
-
-//Motor controller data
-#define EEMC_MAX_RPM             20 //2 bytes, unsigned int for maximum allowable RPM
-#define EEMC_MAX_TORQUE          22 //2 bytes, unsigned int - maximum torque in tenths of a Nm
-#define EEMC_PRECHARGE_RELAY     24 //1 byte - 255 = no precharge relay 0-3 = yes, there is one (and the output is the number stored)
-#define EEMC_CONTACTOR_RELAY     25 //1 byte - 255 = no contactor relay 0-3 = yes there is
-#define EEMC_COOL_FAN            26 //1 byte output controlling external cooling relay
-#define EEMC_COOL_ON             27 //1 bytes temperature at which external cooling is switched on
-#define EEMC_COOL_OFF            28 //1 byte temperature at which external cooling is switched off
-#define EEMC_KILOWATTHRS         29 //4 bytes - capacitance of controller capacitor bank in micro farads (uf) - set to zero to disable RC precharge
-#define EEMC_PRECHARGE_R         33 //2 bytes - Resistance of precharge resistor in tenths of an ohm
-#define EEMC_NOMINAL_V           35 //2 bytes - nominal system voltage to expect (in tenths of a volt)
-#define EEMC_REVERSE_LIMIT       37 //2 bytes - a percentage to knock the requested torque down by while in reverse.
-#define EEMC_RPM_SLEW_RATE       39 //2 bytes - slew rate (rpm/sec) at which speed should change (only in speed mode)
-#define EEMC_TORQUE_SLEW_RATE    41 //2 bytes - slew rate (0.1Nm/sec) at which the torque should change
-#define EEMC_BRAKE_LIGHT         42
-#define EEMC_REV_LIGHT           43
-#define EEMC_ENABLE_IN           44
-#define EEMC_REVERSE_IN          45
-#define EEMC_MOTOR_MODE          46
-#define EEMC_TAPER_UPPER         50 //2 bytes
-#define EEMC_TAPER_LOWER         52 //2 bytes
-
-//throttle data
-#define EETH_MIN_ONE             20 //2 bytes - ADC value of minimum value for first channel
-#define EETH_MAX_ONE             22 //2 bytes - ADC value of maximum value for first channel
-#define EETH_MIN_TWO             24 //2 bytes - ADC value of minimum value for second channel
-#define EETH_MAX_TWO             26 //2 bytes - ADC value of maximum value for second channel
-#define EETH_REGEN_MIN           28 //2 bytes - unsigned int - tenths of a percent (0-1000) of pedal position where regen stops
-#define EETH_FWD                 30 //2 bytes - unsigned int - tenths of a percent (0-1000) of pedal position where forward motion starts 
-#define EETH_MAP                 32 //2 bytes - unsigned int - tenths of a percent (0-1000) of pedal position where forward motion is at 50% throttle
-#define EETH_BRAKE_MIN           34 //2 bytes - ADC value of minimum value for brake input
-#define EETH_BRAKE_MAX           36 //2 bytes - ADC value of max value for brake input
-#define EETH_MAX_ACCEL_REGEN     38 //2 bytes - maximum percentage of throttle to command on accel pedal regen
-#define EETH_MAX_BRAKE_REGEN     40 //2 bytes - maximum percentage of throttle to command for braking regen. Starts at min brake regen and works up to here.
-#define EETH_NUM_THROTTLES       42 //1 byte - How many throttle inputs should we use? (1 or 2)
-#define EETH_THROTTLE_TYPE       43 //1 byte - Allow for different throttle types. For now 1 = Linear pots, 2 = Inverse relationship between pots. See Throttle.h
-#define EETH_MIN_BRAKE_REGEN     44 //2 bytes - the starting level for brake regen as a percentage of throttle
-#define EETH_MIN_ACCEL_REGEN     46 //2 bytes - the starting level for accelerator regen as a percentage of throttle
-#define EETH_REGEN_MAX           48 //2 bytes - unsigned int - tenths of a percent (0-1000) of pedal position where regen is at maximum
-#define EETH_CREEP               50 //2 bytes - percentage of throttle used to simulate creep
-#define EETH_CAR_TYPE            52 //1 byte - type of car for querying the throttle position via CAN bus
-#define EETH_ADC_1               53 //1 byte - which ADC port to use for first throttle input
-#define EETH_ADC_2               54 //1 byte - which ADC port to use for second throttle input
 
 //System Data
 #define EESYS_LOG_LEVEL          5   //1 byte - the log level
@@ -138,15 +102,6 @@ the end of the stardard data. The below numbers are offsets from the device's ee
 #define EESYS_CAN1_BAUD          82  //2 bytes - Baud rate of CAN1 in 1000's of baud. So a value of 500 = 500k baud. Set to 0 to disable CAN1
 #define EESYS_CAN2_BAUD          84  //2 bytes - baud rate of CAN2 in 1k baud. 500=500,000. Set to 0 to disable
 #define EESYS_SWCAN_BAUD         86  //2 bytes - baud rate of SWCAN in 3 baud increments. 33.333k is thus 11,111 and 100k is 33333. Set to 0 to disable
-
-#define EEBMS_CAPACITY           20 //2 bytes - pack capacity in 1/10 amp hours
-#define EEBMS_AH                 22 //4 bytes - Current number of AH remaining in pack (in millionths of an AH)
-#define EEBMS_HI_VOLT_LIM        26 //2 bytes - Voltage above which the BMS should disallow charging - Tenths of a V
-#define EEBMS_LO_VOLT_LIM        28 //2 bytes - Voltage below which the BMS show disallow any discharge - Tenths of a V
-#define EEBMS_HI_CELL_LIM        30 //2 bytes - Cell voltage above which a fault is raised - In hundredths of a volt
-#define EEBMS_LO_CELL_LIM        32 //2 bytes - Cell voltage under which a fault is raised - In hundredths of a volt
-#define EEBMS_HI_TEMP_LIM        34 //2 bytes - Cell temperature over which a fault is raised - In tenths of a degree C
-#define EEBMS_LO_TEMP_LIM        36 //2 bytes - Cell temperature under which a fault is raised - Tenths of a degree C
 
 #define EEFAULT_VALID            0 //1 byte - Set to value of 0xB2 if fault data has been initialized
 #define EEFAULT_READPTR          1 //2 bytes - index where reading should start (first unacknowledged fault)

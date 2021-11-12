@@ -266,6 +266,35 @@ uint8_t DeviceManager::countDeviceType(DeviceType deviceType) {
     return count;
 }
 
+/*
+Inputs:
+    settingName is a string that specifies the name of the setting to find.
+    matchingDevice is a pointer to the memory location where a pointer is stored. If provided
+    it will be used to update that variable to point to the Device that matched.
+Outputs:
+    returns a pointer to the ConfigEntry that matches. Returns nullptr if nothing matched.
+*/
+const ConfigEntry* DeviceManager::findConfigEntry(char *settingName, Device **matchingDevice)
+{
+    for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++) {
+        if (devices[i] && devices[i]->isEnabled()) 
+        {
+            const std::vector<ConfigEntry> *entries = devices[i]->getConfigEntries();
+            for (int idx = 0; idx < entries->size(); idx++)
+            {
+                //Serial.printf("%s %s\n", settingName, ent.cfgName.c_str());
+                if (!strcmp(settingName, entries->at(idx).cfgName.c_str()))
+                {
+                    //Serial.printf("Found it. Address is %x\n", &entries->at(idx));
+                    if (matchingDevice) *matchingDevice = devices[i];
+                    return &entries->at(idx);
+                }
+            }    
+        }
+    }
+    return nullptr;
+}
+
 void DeviceManager::printDeviceList() {
     Logger::console("\n  ENABLED devices: (DISABLE=0xFFFF to disable where FFFF is device number)\n");
     for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++) {

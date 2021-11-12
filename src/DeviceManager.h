@@ -26,6 +26,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef DEVICEMGR_H_
 #define DEVICEMGR_H_
 
+#include <vector>
 #include "config.h"
 #include "devices/io/Throttle.h"
 #include "devices/motorctrl/MotorController.h"
@@ -59,6 +60,7 @@ public:
     void printDeviceList();
     void updateWifi();
     Device *updateWifiByID(DeviceId);
+    const ConfigEntry* findConfigEntry(char *settingName, Device **matchingDevice);
 
 protected:
 

@@ -163,27 +163,11 @@ void TestThrottle::loadConfiguration() {
 
     Throttle::loadConfiguration(); // call parent
 
-#ifdef USE_HARD_CODED
-    if (false) {
-#else
-    if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-#endif
+    //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
         Logger::debug(TESTACCEL, (char *)Constants::validChecksum);
-        prefsHandler->read(EETH_MIN_ONE, &config->minimumLevel1);
-        prefsHandler->read(EETH_MAX_ONE, &config->maximumLevel1);
+        prefsHandler->read("ThrottleMin1", &config->minimumLevel1, 100);
+        prefsHandler->read("ThrottleMax1", &config->maximumLevel1, 1700);
 
-        // ** This is potentially a condition that is only met if you don't have the EEPROM hardware **
-        // If preferences have never been set before, numThrottlePots and throttleSubType
-        // will both be zero.  We really should refuse to operate in this condition and force
-        // calibration, but for now at least allow calibration to work by setting numThrottlePots = 2
-    } else { //checksum invalid. Reinitialize values and store to EEPROM
-        Logger::warn(TESTACCEL, (char *)Constants::invalidChecksum);
-
-        config->minimumLevel1 = Throttle1MinValue;
-        config->maximumLevel1 = Throttle1MaxValue;
-        
-        saveConfiguration();
-    }
     Logger::debug(TESTACCEL, "T1 MIN: %i MAX: %i", config->minimumLevel1, config->maximumLevel1);
 }
 
@@ -195,8 +179,8 @@ void TestThrottle::saveConfiguration() {
 
     Throttle::saveConfiguration(); // call parent
 
-    prefsHandler->write(EETH_MIN_ONE, config->minimumLevel1);
-    prefsHandler->write(EETH_MAX_ONE, config->maximumLevel1);
+    prefsHandler->write("ThrottleMin1", config->minimumLevel1);
+    prefsHandler->write("ThrottleMax1", config->maximumLevel1);
     prefsHandler->saveChecksum();
 }
 

@@ -57,20 +57,33 @@ SystemIO::SystemIO()
 void SystemIO::setup_ADC_params()
 {
     int i;
-    //requires the value to be contiguous in memory
-    for (i = 0; i < 8; i++) {
-        sysPrefs->read(EESYS_ADC0_GAIN + 4*i, &adc_comp[i].gain);
-        sysPrefs->read(EESYS_ADC0_OFFSET + 4*i, &adc_comp[i].offset);
-        if (adc_comp[i].gain == 0xFFFF) adc_comp[i].gain = 1024;
+    
+    sysPrefs->read("Adc0Gain", &adc_comp[0].gain, 1024);
+    sysPrefs->read("Adc0Offset", &adc_comp[0].offset, 0);
+    sysPrefs->read("Adc1Gain", &adc_comp[1].gain, 1024);
+    sysPrefs->read("Adc1Offset", &adc_comp[1].offset, 0);
+    sysPrefs->read("Adc2Gain", &adc_comp[2].gain, 1024);
+    sysPrefs->read("Adc2Offset", &adc_comp[2].offset, 0);
+    sysPrefs->read("Adc3Gain", &adc_comp[3].gain, 1024);
+    sysPrefs->read("Adc3Offset", &adc_comp[3].offset, 0);
+    sysPrefs->read("Adc4Gain", &adc_comp[4].gain, 1024);
+    sysPrefs->read("Adc4Offset", &adc_comp[4].offset, 0);
+    sysPrefs->read("Adc5Gain", &adc_comp[5].gain, 1024);
+    sysPrefs->read("Adc5Offset", &adc_comp[5].offset, 0);
+    sysPrefs->read("Adc6Gain", &adc_comp[6].gain, 1024);
+    sysPrefs->read("Adc6Offset", &adc_comp[6].offset, 0);
+    sysPrefs->read("Adc7Gain", &adc_comp[7].gain, 1024);
+    sysPrefs->read("Adc7Offset", &adc_comp[7].offset, 0);
+
+    for (int i = 0; i < 8; i++) 
         Logger::debug("ADC:%d GAIN: %d Offset: %d", i, adc_comp[i].gain, adc_comp[i].offset);
-    }
 }
 
 void SystemIO::setSystemType(SystemType systemType) {
     if (systemType >= GEVCU1 && systemType <= GEVCU6)
     {
         sysType = systemType;
-        sysPrefs->write(EESYS_SYSTEM_TYPE, (uint8_t)sysType);
+        sysPrefs->write("SysType", (uint8_t)sysType);
     }
 }
 
@@ -81,7 +94,7 @@ SystemType SystemIO::getSystemType() {
 void SystemIO::setup() {
     int i;
 
-    sysPrefs->read(EESYS_SYSTEM_TYPE, (uint8_t *) &sysType);
+    sysPrefs->read("SysType", (uint8_t *) &sysType, 7);
 
     analogReadRes(12);
 
@@ -261,6 +274,7 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
     //Analog inputs 0-3 are always on ADC0, 4-7 are on ADC1
     if (which < 4) valu = analogRead(0);
     else valu = analogRead(1);
+    return valu;
 }
 
 
@@ -299,7 +313,8 @@ boolean SystemIO::setAnalogOut(uint8_t which, int32_t level)
     if (which >= numAnaOut) return false;
     CANIODevice *dev;
     dev = extendedAnalogOut[which].device;
-    if (dev) dev->setAnalogOutput(extendedAnalogOut[which].localOffset, level);    
+    if (dev) dev->setAnalogOutput(extendedAnalogOut[which].localOffset, level);
+    return true;   
 }
 
 int32_t SystemIO::getAnalogOut(uint8_t which)
@@ -307,7 +322,8 @@ int32_t SystemIO::getAnalogOut(uint8_t which)
     if (which >= numAnaOut) return 0;
     CANIODevice *dev;
     dev = extendedAnalogOut[which].device;
-    if (dev) return dev->getAnalogOutput(extendedAnalogOut[which].localOffset);    
+    if (dev) return dev->getAnalogOutput(extendedAnalogOut[which].localOffset);
+    return 0;    
 }
 
 //get value of one of the 12 digital inputs (or more if extended I/O added more)
@@ -343,6 +359,7 @@ boolean SystemIO::getDigitalIn(uint8_t which) {
         dev = extendedDigitalIn[which - NUM_DIGITAL].device;
         if (dev) return dev->getDigitalInput(extendedDigitalIn[which - NUM_DIGITAL].localOffset);
     }
+    return false;
 }
 
 //set output high or not
@@ -375,6 +392,7 @@ boolean SystemIO::getDigitalOutput(uint8_t which) {
         dev = extendedDigitalOut[which - NUM_OUTPUT].device;
         if (dev) return dev->getDigitalOutput(extendedDigitalOut[which - NUM_OUTPUT].localOffset);
     }
+    return false;
 }
 
 /*
@@ -395,7 +413,9 @@ bool SystemIO::calibrateADCOffset(int adc, bool update)
         delay(2);
     }
     accum /= 500;
-    if (update) sysPrefs->write(EESYS_ADC0_OFFSET + (4*adc), (uint16_t)(accum));    
+    char paramName[20];
+    snprintf(paramName, 20, "Adc%uOffset", adc);
+    if (update) sysPrefs->write((const char *)paramName, (uint16_t)(accum));    
     Logger::console("ADC %i offset is now %i", adc, accum);
     return true;
 }
@@ -444,8 +464,9 @@ bool SystemIO::calibrateADCGain(int adc, int32_t target, bool update)
     //1024 is one to one so all gains are multiplied by that much to bring them into fixed point math.
     //we've got a reading accum and a target. The rational gain is target/accum    
     adc_comp[adc].gain = (int16_t)((16384ull * target) / accum);
-    
-    if (update) sysPrefs->write(EESYS_ADC0_GAIN + (4 * adc), adc_comp[adc].gain);
+    char paramName[20];
+    snprintf(paramName, 20, "Adc%uGain", adc);
+    if (update) sysPrefs->write((const char *)paramName, adc_comp[adc].gain);
     Logger::console("Accum: %i    Target: %i", accum, target);
     Logger::console("ADC %i gain is now %i", adc, adc_comp[adc].gain);
     return true;
@@ -507,7 +528,7 @@ void SystemIO::_pSetDigitalOutput(int pin, int state)
 
 int SystemIO::_pGetDigitalOutput(int pin)
 {
-    if ( (pin < 0) || (pin > 7) ) return;
+    if ( (pin < 0) || (pin > 7) ) return 0;
     Wire.beginTransmission(PCA_ADDR);
     Wire.write(PCA_READ_IN0);
     Wire.endTransmission();

@@ -40,6 +40,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define PREF_MODE_NORMAL  false
 #define PREF_MODE_LKG     true
 
+//we leave 20 bytes at the start of each device block. The first byte is the CRC, the next 2 are the device ID.
+//After that are 17 reserved bytes.
+#define SETTINGS_START  20
+
 extern MemCache *memCache;
 
 class PrefHandler {
@@ -49,14 +53,15 @@ public:
     PrefHandler(DeviceId id);
     ~PrefHandler();
     void LKG_mode(bool mode);
-    bool write(uint16_t address, uint8_t val);
-    bool write(uint16_t address, uint16_t val);
-    bool write(uint16_t address, uint32_t val);
-    bool write(uint16_t address, float val);
-    bool read(uint16_t address, uint8_t *val);
-    bool read(uint16_t address, uint16_t *val);
-    bool read(uint16_t address, uint32_t *val);
-    bool read(uint16_t address, float *val);
+    bool write(const char *key, uint8_t val);
+    bool write(const char *key, uint16_t val);
+    bool write(const char *key, uint32_t val);
+    bool write(const char *key, float val);
+    bool read(const char *key, uint8_t *val, uint8_t defval);
+    bool read(const char *key, uint16_t *val, uint16_t defval);
+    bool read(const char *key, uint32_t *val, uint32_t defval);
+    bool read(const char *key, float *val, float defval);
+
     uint8_t calcChecksum();
     void saveChecksum();
     bool checksumValid();
@@ -75,7 +80,12 @@ private:
     bool use_lkg; //use last known good config?
     bool enabled;
     int position; //position within the device table
-    
+    volatile bool semKeyLookup;
+
+    uint32_t fnvHash(const char *input);
+    uint32_t findSettingLocation(uint32_t hash);
+    uint32_t findEmptySettingLoc();
+    uint32_t keyToAddress(const char *key, bool createIfNecessary);
     static void processAutoEntry(uint16_t val, uint16_t pos);
 };
 

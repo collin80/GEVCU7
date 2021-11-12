@@ -250,20 +250,16 @@ void PotThrottle::loadConfiguration() {
 
     Throttle::loadConfiguration(); // call parent
 
-#ifdef USE_HARD_CODED
-    if (false) {
-#else
-    if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-#endif
+    //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
         Logger::debug(POTACCELPEDAL, Constants::validChecksum);
-        prefsHandler->read(EETH_MIN_ONE, (uint16_t *)&config->minimumLevel1);
-        prefsHandler->read(EETH_MAX_ONE, (uint16_t *)&config->maximumLevel1);
-        prefsHandler->read(EETH_MIN_TWO, (uint16_t *)&config->minimumLevel2);
-        prefsHandler->read(EETH_MAX_TWO, (uint16_t *)&config->maximumLevel2);
-        prefsHandler->read(EETH_NUM_THROTTLES, &config->numberPotMeters);
-        prefsHandler->read(EETH_THROTTLE_TYPE, &config->throttleSubType);
-        prefsHandler->read(EETH_ADC_1, &config->AdcPin1);
-        prefsHandler->read(EETH_ADC_2, &config->AdcPin2);
+        prefsHandler->read("ThrottleMin1", (uint16_t *)&config->minimumLevel1, 20);        
+        prefsHandler->read("ThrottleMax1", (uint16_t *)&config->maximumLevel1, 3150);
+        prefsHandler->read("ThrottleMin2", (uint16_t *)&config->minimumLevel1, 0);        
+        prefsHandler->read("ThrottleMax2", (uint16_t *)&config->maximumLevel1, 0);
+        prefsHandler->read("NumThrottles", &config->numberPotMeters, 1);
+        prefsHandler->read("ThrottleType", &config->throttleSubType, 1);
+        prefsHandler->read("ADC1", &config->AdcPin1, 0);
+        prefsHandler->read("ADC2", &config->AdcPin2, 1);
 
         // ** This is potentially a condition that is only met if you don't have the EEPROM hardware **
         // If preferences have never been set before, numThrottlePots and throttleSubType
@@ -273,20 +269,7 @@ void PotThrottle::loadConfiguration() {
             Logger::debug(POTACCELPEDAL, "THROTTLE APPEARS TO NEED CALIBRATION/DETECTION - choose 'z' on the serial console menu");
             config->numberPotMeters = 2;
         }
-    } else { //checksum invalid. Reinitialize values and store to EEPROM
-        Logger::warn(POTACCELPEDAL, Constants::invalidChecksum);
-
-        config->minimumLevel1 = Throttle1MinValue;
-        config->maximumLevel1 = Throttle1MaxValue;
-        config->minimumLevel2 = Throttle2MinValue;
-        config->maximumLevel2 = Throttle2MaxValue;
-        config->numberPotMeters = ThrottleNumPots;
-        config->throttleSubType = ThrottleSubtype;
-        config->AdcPin1 = ThrottleADC1;
-        config->AdcPin2 = ThrottleADC2;
-
-        saveConfiguration();
-    }
+    //}
     Logger::debug(POTACCELPEDAL, "# of pots: %d       subtype: %d", config->numberPotMeters, config->throttleSubType);
     Logger::debug(POTACCELPEDAL, "T1 MIN: %i MAX: %i      T2 MIN: %i MAX: %i", config->minimumLevel1, config->maximumLevel1, config->minimumLevel2,
                   config->maximumLevel2);
@@ -300,14 +283,14 @@ void PotThrottle::saveConfiguration() {
 
     Throttle::saveConfiguration(); // call parent
 
-    prefsHandler->write(EETH_MIN_ONE, (uint16_t)config->minimumLevel1);
-    prefsHandler->write(EETH_MAX_ONE, (uint16_t)config->maximumLevel1);
-    prefsHandler->write(EETH_MIN_TWO, (uint16_t)config->minimumLevel2);
-    prefsHandler->write(EETH_MAX_TWO, (uint16_t)config->maximumLevel2);
-    prefsHandler->write(EETH_NUM_THROTTLES, config->numberPotMeters);
-    prefsHandler->write(EETH_THROTTLE_TYPE, config->throttleSubType);
-    prefsHandler->write(EETH_ADC_1, config->AdcPin1);
-    prefsHandler->write(EETH_ADC_2, config->AdcPin2);
+    prefsHandler->write("ThrottleMin1", (uint16_t)config->minimumLevel1);
+    prefsHandler->write("ThrottleMax1", (uint16_t)config->maximumLevel1);
+    prefsHandler->write("ThrottleMin2", (uint16_t)config->minimumLevel2);
+    prefsHandler->write("ThrottleMax2", (uint16_t)config->maximumLevel2);
+    prefsHandler->write("NumThrottles", config->numberPotMeters);
+    prefsHandler->write("ThrottleType", config->throttleSubType);
+    prefsHandler->write("ADC1", config->AdcPin1);
+    prefsHandler->write("ADC2", config->AdcPin2);
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
 }

@@ -171,22 +171,12 @@ void CanThrottle::loadConfiguration() {
 
     Throttle::loadConfiguration(); // call parent
 
-#ifdef USE_HARD_CODED
-    if (false) {
-#else
-    if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-#endif
+
+    //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
         Logger::debug(CANACCELPEDAL, (char *)Constants::validChecksum);
-        prefsHandler->read(EETH_MIN_ONE, &config->minimumLevel1);
-        prefsHandler->read(EETH_MAX_ONE, &config->maximumLevel1);
-        prefsHandler->read(EETH_CAR_TYPE, &config->carType);
-    } else { //checksum invalid. Reinitialize values and store to EEPROM
-        Logger::warn(CANACCELPEDAL, (char *)Constants::invalidChecksum);
-        config->minimumLevel1 = Throttle1MinValue;
-        config->maximumLevel1 = Throttle1MaxValue;
-        config->carType = Volvo_S80_Gas;
-        saveConfiguration();
-    }
+        prefsHandler->read("ThrottleMin1", &config->minimumLevel1, 400);
+        prefsHandler->read("ThrottleMax1", &config->maximumLevel1, 1800);
+        prefsHandler->read("ThrottleCarType", &config->carType, Volvo_S80_Gas);
     Logger::debug(CANACCELPEDAL, "T1 MIN: %i MAX: %i Type: %d", config->minimumLevel1, config->maximumLevel1, config->carType);
 }
 
@@ -198,9 +188,9 @@ void CanThrottle::saveConfiguration() {
 
     Throttle::saveConfiguration(); // call parent
 
-    prefsHandler->write(EETH_MIN_ONE, config->minimumLevel1);
-    prefsHandler->write(EETH_MAX_ONE, config->maximumLevel1);
-    prefsHandler->write(EETH_CAR_TYPE, config->carType);
+    prefsHandler->write("ThrottleMin1", config->minimumLevel1);
+    prefsHandler->write("ThrottleMax1", config->maximumLevel1);
+    prefsHandler->write("ThrottleCarType", config->carType);
     prefsHandler->saveChecksum();
 }
 

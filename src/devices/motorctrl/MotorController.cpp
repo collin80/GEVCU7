@@ -100,7 +100,7 @@ void MotorController::setup() {
     statusBitfield2 = 0;
     statusBitfield3 = 0;
     statusBitfield4 = 0;
-    prefsHandler->read(EEMC_KILOWATTHRS, &kiloWattHours); //retrieve kilowatt hours from EEPROM
+    prefsHandler->read("KilowattHours", &kiloWattHours, 0); //retrieve kilowatt hours from EEPROM
     nominalVolts = config->nominalVolt;
     capacity = config->capacity;
     donePrecharge = false;
@@ -235,7 +235,7 @@ void MotorController::handleTick() {
         checkReverseLight();
 
         //Store kilowatt hours, but only once in awhile.
-        prefsHandler->write(EEMC_KILOWATTHRS, kiloWattHours);
+        prefsHandler->write("KilowattHours", kiloWattHours);
         prefsHandler->saveChecksum();
 
     }
@@ -586,64 +586,32 @@ void MotorController::loadConfiguration() {
 
     Device::loadConfiguration(); // call parent
 
-#ifdef USE_HARD_CODED
-    if (false) {
-#else
-    if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-#endif
+    //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
         Logger::info((char *)Constants::validChecksum);
-        prefsHandler->read(EEMC_MAX_RPM, &config->speedMax);
-        prefsHandler->read(EEMC_MAX_TORQUE, &config->torqueMax);
-        prefsHandler->read(EEMC_RPM_SLEW_RATE, &config->speedSlewRate);
-        prefsHandler->read(EEMC_TORQUE_SLEW_RATE, &config->torqueSlewRate);
-        prefsHandler->read(EEMC_REVERSE_LIMIT, &config->reversePercent);
-        prefsHandler->read(EEMC_KILOWATTHRS, &config->kilowattHrs);
-        prefsHandler->read(EEMC_PRECHARGE_R, &config->prechargeR);
-        prefsHandler->read(EEMC_NOMINAL_V, &config->nominalVolt);
-        prefsHandler->read(EEMC_PRECHARGE_RELAY, &config->prechargeRelay);
-        prefsHandler->read(EEMC_CONTACTOR_RELAY, &config->mainContactorRelay);
-        prefsHandler->read(EEMC_COOL_FAN, &config->coolFan);
-        prefsHandler->read(EEMC_COOL_ON, &config->coolOn);
-        prefsHandler->read(EEMC_COOL_OFF, &config->coolOff);
-        prefsHandler->read(EEMC_BRAKE_LIGHT, &config->brakeLight);
-        prefsHandler->read(EEMC_REV_LIGHT, &config->revLight);
-        prefsHandler->read(EEMC_ENABLE_IN, &config->enableIn);
-        prefsHandler->read(EEMC_REVERSE_IN, &config->reverseIn);
-        prefsHandler->read(EEMC_TAPER_UPPER, &config->regenTaperUpper);
-        prefsHandler->read(EEMC_TAPER_LOWER, &config->regenTaperLower);
-        //prefsHandler->read(EESYS_CAPACITY, &config->capacity);
-        config->capacity = 0;
+        prefsHandler->read("MaxRPM", &config->speedMax, 6000);
+        prefsHandler->read("MaxTorque", &config->torqueMax, 3000);
+        prefsHandler->read("RPMSlew", &config->speedSlewRate, 10000);
+        prefsHandler->read("TorqueSlew", &config->torqueSlewRate, 6000);
+        prefsHandler->read("ReversePercentage", &config->reversePercent, 50);
+        prefsHandler->read("PrechargeDelay", &config->prechargeR, 6000);
+        prefsHandler->read("NominalVoltage", &config->nominalVolt, 3300);
+        prefsHandler->read("PrechargeOutput", &config->prechargeRelay, 0);
+        prefsHandler->read("MainContactorOut", &config->mainContactorRelay, 1);
+        prefsHandler->read("CoolFanOutput", &config->coolFan, 6);
+        prefsHandler->read("CoolOnTemp", &config->coolOn, 40);
+        prefsHandler->read("CoolOffTemp", &config->coolOff, 35);
+        prefsHandler->read("BrakeLightOutput", &config->brakeLight, 255);
+        prefsHandler->read("ReverseLightOutput", &config->revLight, 255);
+        prefsHandler->read("Enable_DIN", &config->enableIn, 0);
+        prefsHandler->read("Reverse_DIN", &config->reverseIn, 1);
+        prefsHandler->read("RegenTaperUpper", &config->regenTaperUpper, 500);
+        prefsHandler->read("RegenTaperLower", &config->regenTaperLower, 75);
         if (config->regenTaperLower < 0 || config->regenTaperLower > 10000 ||
             config->regenTaperUpper < config->regenTaperLower || config->regenTaperUpper > 10000) {
-            config->regenTaperLower = RegenTaperLower;
-            config->regenTaperUpper = RegenTaperUpper;
+            config->regenTaperLower = 75;
+            config->regenTaperUpper = 500;
         }
-    }
-    else { //checksum invalid. Reinitialize values and store to EEPROM
-        Logger::info((char *)Constants::invalidChecksum);
-        config->speedMax = MaxRPMValue;
-        config->torqueMax = MaxTorqueValue;
-        config->speedSlewRate = RPMSlewRateValue;
-        config->torqueSlewRate = TorqueSlewRateValue;
-        config->reversePercent = ReversePercent;
-        config->kilowattHrs = KilowattHrs;
-        config->prechargeR = PrechargeR;
-        config->nominalVolt = NominalVolt;
-        config->prechargeRelay = PrechargeRelay;
-        config->mainContactorRelay = MainContactorRelay;
-        config->coolFan = CoolFan;
-        config->coolOn = CoolOn;
-        config->coolOff = CoolOff;
-        config->brakeLight = BrakeLight;
-        config->revLight = RevLight;
-        config->enableIn = EnableIn;
-        config->reverseIn = ReverseIn;
-        config->regenTaperLower = RegenTaperLower;
-        config->regenTaperUpper = RegenTaperUpper;
-        saveConfiguration();
-    }
     //DeviceManager::getInstance()->sendMessage(DEVICE_WIFI, ICHIP2128, MSG_CONFIG_CHANGE, NULL);
-
     Logger::info("MaxTorque: %i MaxRPM: %i", config->torqueMax, config->speedMax);
 }
 
@@ -652,27 +620,25 @@ void MotorController::saveConfiguration() {
 
     Device::saveConfiguration(); // call parent
 
-    prefsHandler->write(EEMC_MAX_RPM, config->speedMax);
-    prefsHandler->write(EEMC_MAX_TORQUE, config->torqueMax);
-    prefsHandler->write(EEMC_RPM_SLEW_RATE, config->speedSlewRate);
-    prefsHandler->write(EEMC_TORQUE_SLEW_RATE, config->torqueSlewRate);
-    prefsHandler->write(EEMC_REVERSE_LIMIT, config->reversePercent);
-    prefsHandler->write(EEMC_KILOWATTHRS, config->kilowattHrs);
-    prefsHandler->write(EEMC_PRECHARGE_R, config->prechargeR);
-    prefsHandler->write(EEMC_NOMINAL_V, config->nominalVolt);
-    prefsHandler->write(EEMC_CONTACTOR_RELAY, config->mainContactorRelay);
-    prefsHandler->write(EEMC_PRECHARGE_RELAY, config->prechargeRelay);
-    prefsHandler->write(EEMC_COOL_FAN, config->coolFan);
-    prefsHandler->write(EEMC_COOL_ON, config->coolOn);
-    prefsHandler->write(EEMC_COOL_OFF, config->coolOff);
-    prefsHandler->write(EEMC_BRAKE_LIGHT, config->brakeLight);
-    prefsHandler->write(EEMC_REV_LIGHT, config->revLight);
-    prefsHandler->write(EEMC_ENABLE_IN, config->enableIn);
-    prefsHandler->write(EEMC_REVERSE_IN, config->reverseIn);
-    prefsHandler->write(EEMC_TAPER_LOWER, config->regenTaperLower);
-    prefsHandler->write(EEMC_TAPER_UPPER, config->regenTaperUpper);
-    //prefsHandler->write(EESYS_CAPACITY, config->capacity);
-
+    prefsHandler->write("MaxRPM", config->speedMax);
+    prefsHandler->write("MaxTorque", config->torqueMax);
+    prefsHandler->write("RPMSlew", config->speedSlewRate);
+    prefsHandler->write("TorqueSlew", config->torqueSlewRate);
+    prefsHandler->write("ReversePercentage", config->reversePercent);
+    prefsHandler->write("PrechargeDelay", config->prechargeR);
+    prefsHandler->write("NominalVoltage", config->nominalVolt);
+    prefsHandler->write("MainContactorOut", config->mainContactorRelay);
+    prefsHandler->write("PrechargeOutput", config->prechargeRelay);
+    prefsHandler->write("CoolFanOutput", config->coolFan);
+    prefsHandler->write("CoolOnTemp", config->coolOn);
+    prefsHandler->write("CoolOffTemp", config->coolOff);
+    prefsHandler->write("BrakeLightOutput", config->brakeLight);
+    prefsHandler->write("ReverseLightOutput", config->revLight);
+    prefsHandler->write("Enable_DIN", config->enableIn);
+    prefsHandler->write("Reverse_DIN", config->reverseIn);
+    prefsHandler->write("RegenTaperLower", config->regenTaperLower);
+    prefsHandler->write("RegenTaperUpper", config->regenTaperUpper);
+    
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
     loadConfiguration();

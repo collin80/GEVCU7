@@ -32,6 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 PrefHandler::PrefHandler() {
     lkg_address = EE_MAIN_OFFSET; //default to normal mode
     base_address = 0;
+    semKeyLookup = false;
 }
 
 bool PrefHandler::isEnabled()
@@ -130,6 +131,7 @@ PrefHandler::PrefHandler(DeviceId id_in) {
     uint16_t id;
 
     enabled = false;
+    semKeyLookup = false;
 
     checkTableValidity();
 
@@ -203,44 +205,191 @@ void PrefHandler::LKG_mode(bool mode) {
     else lkg_address = EE_MAIN_OFFSET;
 }
 
-bool PrefHandler::write(uint16_t address, uint8_t val) {
-    if (address >= EE_DEVICE_SIZE) return false;
+//given a hash value it looks for that in the table. If it finds
+//the hash it'll return 5 bytes higher which skips the hash and length
+//so the return location will be the start of the actual value itself.
+uint32_t PrefHandler::findSettingLocation(uint32_t hash)
+{
+    while (semKeyLookup);
+    semKeyLookup = true;
+    //Logger::debug("Key lookup for %x", hash);
+    uint32_t readHash;
+    uint8_t readLength;
+    for (uint32_t idx = SETTINGS_START; idx < EE_DEVICE_SIZE;)
+    {
+        memCache->Read((uint32_t)idx + base_address + lkg_address, &readHash);
+        if (readHash == hash) //matched! return the address + 5 which is the start of the actual value
+        {
+            semKeyLookup = false;
+            return (idx + 5);
+        }
+        //otherwise, read length then skip the 4 for hash, 1 for length, and length too.
+        idx += 4;
+        memCache->Read((uint32_t)idx + base_address + lkg_address, &readLength);
+        idx += 1 + readLength;
+    }
+    semKeyLookup = false;
+    return 0xFFFFFFFFul;
+}
+
+//Works similarly to above but finds a hash value that has not been initialized and
+//returns the address of the hash value (not 5 higher as with the above function)
+uint32_t PrefHandler::findEmptySettingLoc()
+{
+    uint32_t readHash;
+    uint8_t readLength;
+    for (uint32_t idx = SETTINGS_START; idx < EE_DEVICE_SIZE;)
+    {
+        memCache->Read((uint32_t)idx + base_address + lkg_address, &readHash);
+        //Logger::debug("Read Hash = %x", readHash);
+        if (readHash == 0xFFFFFFFFul) //it's empty! Return this exact address
+        {
+            return (idx);
+        }
+        //otherwise, read length then skip the 4 for hash, 1 for length, and length too.
+        idx += 4;
+        memCache->Read((uint32_t)idx + base_address + lkg_address, &readLength);
+        //Logger::debug("Read length: %u", readLength);
+        idx += 1 + readLength;
+    }
+    return 0xFFFFFFFFul;
+}
+
+uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
+{
+    Logger::debug("Key look up for %s", key);
+    uint32_t hash = fnvHash(key);
+    uint32_t address = findSettingLocation(hash);
+    if (address >= EE_DEVICE_SIZE) 
+    {
+        if (createIfNecessary)
+        {
+            //Logger::debug("Must create new entry for this setting");
+            address = findEmptySettingLoc();        
+            if (address >= EE_DEVICE_SIZE) return 0xFFFFFFFFul;
+            //write the hash value to this entry because it's new
+            //Logger::debug("Setting stored at %x", address);
+            memCache->Write((uint32_t)address + base_address + lkg_address, hash);
+            uint8_t len = 0; //don't know length yet. Set it to zero.
+            address += 4; //increment past hash location
+            memCache->Write((uint32_t)address + base_address + lkg_address, len);
+            address += 1; //increment past length too
+        }
+    }
+    //Logger::debug("Key: %s Returned Addr: %x", key, address);
+    return address;
+}
+
+bool PrefHandler::write(const char *key, uint8_t val) {
+    uint32_t address = keyToAddress(key, true);
+    uint8_t len;
+    memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
+    if (len == 0)
+    {
+        len = 1;
+        memCache->Write((uint32_t)address + base_address + lkg_address - 1, len);
+    }
+    else if (len != 1)
+    {
+        Logger::error("Attempt to write improper length to variable %s!", key);
+        return false;
+    }
+    //then return whether we could write the value into the memory cache
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
-bool PrefHandler::write(uint16_t address, uint16_t val) {
-    if (address >= EE_DEVICE_SIZE) return false;
+bool PrefHandler::write(const char *key, uint16_t val) {
+    uint32_t address = keyToAddress(key, true);
+    uint8_t len;
+    memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
+    if (len == 0)
+    {
+        len = 2;
+        memCache->Write((uint32_t)address + base_address + lkg_address - 1, len);
+    }
+    else if (len != 2)
+    {
+        Logger::error("Attempt to write improper length to variable %s!", key);
+        return false;
+    }
+    //then return whether we could write the value into the memory cache    
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
-bool PrefHandler::write(uint16_t address, uint32_t val) {
-    if (address >= EE_DEVICE_SIZE) return false;
+bool PrefHandler::write(const char *key, uint32_t val) {
+    uint32_t address = keyToAddress(key, true);
+    uint8_t len;
+    memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
+    if (len == 0)
+    {
+        len = 4;
+        memCache->Write((uint32_t)address + base_address + lkg_address - 1, len);
+    }
+    else if (len != 4)
+    {
+        Logger::error("Attempt to write improper length to variable %s!", key);
+        return false;
+    }
+    //then return whether we could write the value into the memory cache    
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
-bool PrefHandler::write(uint16_t address, float val) {
-    if (address >= EE_DEVICE_SIZE) return false;
+bool PrefHandler::write(const char *key, float val) {
+    uint32_t address = keyToAddress(key, true);    
+    uint8_t len;
+    memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
+    if (len == 0)
+    {
+        len = 4;
+        memCache->Write((uint32_t)address + base_address + lkg_address - 1, len);
+    }
+    else if (len != 4)
+    {
+        Logger::error("Attempt to write improper length to variable %s!", key);
+        return false;
+    }
+    //then return whether we could write the value into the memory cache    
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
-bool PrefHandler::read(uint16_t address, uint8_t *val) {
-    if (address >= EE_DEVICE_SIZE) return false;
-    return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+bool PrefHandler::read(const char *key, uint8_t *val, uint8_t defval) {
+    uint32_t address = keyToAddress(key, false);
+    if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+    else 
+    {
+        *val = defval;
+        return true;
+    }
 }
 
-bool PrefHandler::read(uint16_t address, uint16_t *val) {
-    if (address >= EE_DEVICE_SIZE) return false;
-    return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+bool PrefHandler::read(const char *key, uint16_t *val, uint16_t defval) {
+    uint32_t address = keyToAddress(key, false);
+    if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+    else 
+    {
+        *val = defval;
+        return true;
+    }
 }
 
-bool PrefHandler::read(uint16_t address, uint32_t *val) {
-    if (address >= EE_DEVICE_SIZE) return false;
-    return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+bool PrefHandler::read(const char *key, uint32_t *val, uint32_t defval) {
+    uint32_t address = keyToAddress(key, false);
+    if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+    else 
+    {
+        *val = defval;
+        return true;
+    }
 }
 
-bool PrefHandler::read(uint16_t address, float *val) {
-    if (address >= EE_DEVICE_SIZE) return false;
-    return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+bool PrefHandler::read(const char *key, float *val, float defval) {
+    uint32_t address = keyToAddress(key, false);
+    if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+    else 
+    {
+        *val = defval;
+        return true;
+    }
 }
 
 uint8_t PrefHandler::calcChecksum() {
@@ -299,5 +448,19 @@ void PrefHandler::forceCacheWrite()
     memCache->FlushAllPages();
 }
 
+//Use FNV-1a hash to turn an input string into a 32 bit hash value.
+uint32_t PrefHandler::fnvHash(const char *input)
+{
+    uint32_t hash = 2166136261ul;
+    char c;
+    while (*input)
+    {
+        c = *input++;
+        c = toupper(c); //force all names to uppercase just to make it consistent
+        hash = hash ^ c;
+        hash = hash * 16777619;
+    }
+    return hash;
+}
 
 

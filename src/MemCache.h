@@ -35,7 +35,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "i2c_driver_wire.h"
 
 //Total # of allowable pages to cache. Limits RAM usage
-#define NUM_CACHED_PAGES   16
+//note that a page is 256 bytes so 4 pages is a kilobyte. Don't go nuts here
+//but the processor used here has 1MB of RAM so you can probably afford a decent
+//number of cached pages here.
+#define NUM_CACHED_PAGES   128
 
 //maximum allowable age of a cache
 #define MAX_AGE  128
@@ -54,6 +57,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define CFG_TICK_INTERVAL_MEM_CACHE                 40000
 
 //Current parameters as of 26th of August 2021 = 128 * 40ms * 60 = 307.2 seconds to flush = about 10 years EEPROM life
+//Note that this is 10 years STRAIGHT. As in, you never turned it off for 10 years and every chance it got it wrote the page.
+//This should be plenty of EEPROM life.
 
 class MemCache: public TickObserver {
 public:

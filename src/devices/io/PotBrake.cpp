@@ -178,29 +178,14 @@ void PotBrake::loadConfiguration() {
 
     // we deliberately do not load config via parent class here !
 
-#ifdef USE_HARD_CODED
-    if (false) {
-#else
-    if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-#endif
-        prefsHandler->read(EETH_BRAKE_MIN, (uint16_t *)&config->minimumLevel1);
-        prefsHandler->read(EETH_BRAKE_MAX, (uint16_t *)&config->maximumLevel1);
-        prefsHandler->read(EETH_MAX_BRAKE_REGEN, &config->maximumRegen);
-        prefsHandler->read(EETH_MIN_BRAKE_REGEN, &config->minimumRegen);
-        prefsHandler->read(EETH_ADC_1, &config->AdcPin1);
+    //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
+        prefsHandler->read("BrakeMin", (uint16_t *)&config->minimumLevel1, 100);
+        prefsHandler->read("BrakeMax", (uint16_t *)&config->maximumLevel1, 3200);
+        prefsHandler->read("BrakeMaxRegen", &config->maximumRegen, 50);
+        prefsHandler->read("BrakeMinRegen", &config->minimumRegen, 0);
+        prefsHandler->read("BrakeADC", &config->AdcPin1, 2);
         Logger::debug(POTBRAKEPEDAL, "BRAKE MIN: %i MAX: %i", config->minimumLevel1, config->maximumLevel1);
         Logger::debug(POTBRAKEPEDAL, "Min: %i MaxRegen: %i", config->minimumRegen, config->maximumRegen);
-    } else { //checksum invalid. Reinitialize values and store to EEPROM
-
-        //these four values are ADC values
-        //The next three are tenths of a percent
-        config->maximumRegen = BrakeMaxRegenValue; //percentage of full power to use for regen at brake pedal transducer
-        config->minimumRegen = BrakeMinRegenValue;
-        config->minimumLevel1 = BrakeMinValue;
-        config->maximumLevel1 = BrakeMaxValue;
-        config->AdcPin1 = BrakeADC;
-        saveConfiguration();
-    }
 }
 
 /*
@@ -211,11 +196,11 @@ void PotBrake::saveConfiguration() {
 
     // we deliberately do not save config via parent class here !
 
-    prefsHandler->write(EETH_BRAKE_MIN, (uint16_t)config->minimumLevel1);
-    prefsHandler->write(EETH_BRAKE_MAX, (uint16_t)config->maximumLevel1);
-    prefsHandler->write(EETH_MAX_BRAKE_REGEN, config->maximumRegen);
-    prefsHandler->write(EETH_MIN_BRAKE_REGEN, config->minimumRegen);
-    prefsHandler->write(EETH_ADC_1, config->AdcPin1);
+    prefsHandler->write("BrakeMin", (uint16_t)config->minimumLevel1);
+    prefsHandler->write("BrakeMax", (uint16_t)config->maximumLevel1);
+    prefsHandler->write("BrakeMaxRegen", config->maximumRegen);
+    prefsHandler->write("BrakeMinRegen", config->minimumRegen);
+    prefsHandler->write("BrakeADC", config->AdcPin1);
     prefsHandler->saveChecksum();
 }
 

@@ -103,31 +103,15 @@ void BatteryManager::loadConfiguration() {
 
     Device::loadConfiguration(); // call parent
 
-#ifdef USE_HARD_CODED
-    if (false) {
-#else
-    if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-#endif
-        prefsHandler->read(EEBMS_CAPACITY, &config->packCapacity);
-        prefsHandler->read(EEBMS_AH, (uint32_t *)&config->packAHRemaining);
-        prefsHandler->read(EEBMS_HI_VOLT_LIM, &config->highVoltLimit);
-        prefsHandler->read(EEBMS_LO_VOLT_LIM, &config->lowVoltLimit);
-        prefsHandler->read(EEBMS_HI_CELL_LIM, &config->highCellLimit);
-        prefsHandler->read(EEBMS_LO_CELL_LIM, &config->lowCellLimit);
-        prefsHandler->read(EEBMS_HI_TEMP_LIM, &config->highTempLimit);
-        prefsHandler->read(EEBMS_LO_TEMP_LIM, (uint16_t *)&config->lowTempLimit);        
-    }
-    else { //checksum invalid. Reinitialize values and store to EEPROM
-        config->packCapacity = DefaultPackCapacity;
-        config->packAHRemaining = DefaultPackRemaining;
-        config->highVoltLimit = DefaultHighVLim;
-        config->lowVoltLimit = DefaultLowVLim;
-        config->highCellLimit = DefaultHighCellLim;
-        config->lowCellLimit = DefaultLowCellLim;
-        config->highTempLimit = DefaultHighTempLim;
-        config->lowTempLimit = DefaultLowTempLim;
-        saveConfiguration();
-    }
+    //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
+        prefsHandler->read("Capacity", &config->packCapacity, 1000);
+        prefsHandler->read("AHRemaining", (uint32_t *)&config->packAHRemaining, 5000000);
+        prefsHandler->read("HVHighLim", &config->highVoltLimit, 3850);
+        prefsHandler->read("HVLowLim", &config->lowVoltLimit, 2400);
+        prefsHandler->read("CellHiLim", &config->highCellLimit, 3900);
+        prefsHandler->read("CellLowLim", &config->lowCellLimit, 2400);
+        prefsHandler->read("TempHighLim", &config->highTempLimit, 600);
+        prefsHandler->read("TempLowLim", (uint16_t *)&config->lowTempLimit, -200);        
 }
 
 void BatteryManager::saveConfiguration() {
@@ -135,14 +119,14 @@ void BatteryManager::saveConfiguration() {
     
     Device::saveConfiguration(); // call parent
 
-    prefsHandler->write(EEBMS_AH, (uint32_t)config->packAHRemaining);
-    prefsHandler->write(EEBMS_CAPACITY, config->packCapacity);
-    prefsHandler->write(EEBMS_HI_VOLT_LIM, config->highVoltLimit);
-    prefsHandler->write(EEBMS_LO_VOLT_LIM, config->lowVoltLimit);
-    prefsHandler->write(EEBMS_HI_CELL_LIM, config->highCellLimit);
-    prefsHandler->write(EEBMS_LO_CELL_LIM, config->lowCellLimit);
-    prefsHandler->write(EEBMS_HI_TEMP_LIM, config->highTempLimit);
-    prefsHandler->write(EEBMS_LO_TEMP_LIM, (uint16_t)config->lowTempLimit);    
+    prefsHandler->write("AHRemaining", (uint32_t)config->packAHRemaining);
+    prefsHandler->write("Capacity", config->packCapacity);
+    prefsHandler->write("HVHighLim", config->highVoltLimit);
+    prefsHandler->write("HVLowLim", config->lowVoltLimit);
+    prefsHandler->write("CellHiLim", config->highCellLimit);
+    prefsHandler->write("CellLowLim", config->lowCellLimit);
+    prefsHandler->write("TempHighLim", config->highTempLimit);
+    prefsHandler->write("TempLowLim", (uint16_t)config->lowTempLimit);    
 
     prefsHandler->saveChecksum();
 }

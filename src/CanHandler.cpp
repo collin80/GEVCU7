@@ -111,7 +111,7 @@ void CanHandler::setup()
 
     if (canBusNode == CAN_BUS_EV) 
     {
-        sysPrefs->read(EESYS_CAN1_BAUD, &storedVal);
+        sysPrefs->read("CAN1Speed", &storedVal, 500);
         realSpeed = storedVal * 1000; //was stored in thousands, now in actual rate
         if (realSpeed < 33333ul) realSpeed = 33333u; 
         if (realSpeed > 1000000ul) realSpeed = 1000000ul;
@@ -131,7 +131,7 @@ void CanHandler::setup()
     }
     else if (canBusNode == CAN_BUS_CAR)
     {
-        sysPrefs->read(EESYS_CAN0_BAUD, &storedVal);
+        sysPrefs->read("CAN0Speed", &storedVal, 500);
         realSpeed = storedVal * 1000; //was stored in thousands, now in actual rate
         if (realSpeed < 33333ul) realSpeed = 33333u; 
         if (realSpeed > 1000000ul) realSpeed = 1000000ul;
@@ -154,7 +154,7 @@ void CanHandler::setup()
     }
     else if (canBusNode == CAN_BUS_CAR2)
     {
-        sysPrefs->read(EESYS_CAN2_BAUD, &storedVal);
+        sysPrefs->read("CAN2Speed", &storedVal, 500);
         realSpeed = storedVal * 1000; //was stored in thousands, now in actual rate
         if (realSpeed < 33333ul) realSpeed = 33333u; 
         if (realSpeed > 1000000ul) realSpeed = 1000000ul;
@@ -173,7 +173,7 @@ void CanHandler::setup()
     }
     else //swcan
     {
-        sysPrefs->read(EESYS_SWCAN_BAUD, &storedVal);
+        sysPrefs->read("SWCANSpeed", &storedVal, 11111);
         realSpeed = storedVal * 3; //stored in thirds
         if (realSpeed < 33333ul) realSpeed = 33333u; 
         if (realSpeed > 1000000ul) realSpeed = 1000000ul;

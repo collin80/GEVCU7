@@ -38,6 +38,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define CFG_BUILD_NUM	1070      //increment this every time a git commit is done. 
 #define CFG_VERSION "GEVCU 2021-07-25"
 
+#define portMEMORY_BARRIER()     __asm volatile ( "dmb" ::: "memory" )
+#define portDATA_SYNC_BARRIER()  __asm volatile ( "dsb" ::: "memory" )
+#define portINSTR_SYNC_BARRIER() __asm volatile ( "isb" )
+
 /*
  * SERIAL CONFIGURATION
  */
