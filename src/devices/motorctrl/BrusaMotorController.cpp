@@ -235,18 +235,18 @@ void BrusaMotorController::handleCanFrame( const CAN_message_t &frame) {
  * available and current torque and speed.
  */
 void BrusaMotorController::processStatus(uint8_t data[]) {
-    statusBitfield1 = (uint32_t)(data[1] | (data[0] << 8));
+    uint32_t brusaStatus = (uint32_t)(data[1] | (data[0] << 8));
     torqueAvailable = (int16_t)(data[3] | (data[2] << 8)) / 10;
     torqueActual = (int16_t)(data[5] | (data[4] << 8)) / 10;
     speedActual = (int16_t)(data[7] | (data[6] << 8));
 
     if(Logger::isDebug())
-        Logger::debug(BRUSA_DMC5, "status: %X, torque avail: %fNm, actual torque: %fNm, speed actual: %drpm", statusBitfield1, (float)torqueAvailable/100.0F, (float)torqueActual/100.0F, speedActual);
+        Logger::debug(BRUSA_DMC5, "status: %X, torque avail: %fNm, actual torque: %fNm, speed actual: %drpm", brusaStatus, (float)torqueAvailable/100.0F, (float)torqueActual/100.0F, speedActual);
 
-    ready = (statusBitfield1 & stateReady) != 0 ? true : false;
-    running = (statusBitfield1 & stateRunning) != 0 ? true : false;
-    faulted = (statusBitfield1 & errorFlag) != 0 ? true : false;
-    warning = (statusBitfield1 & warningFlag) != 0 ? true : false;
+    ready = (brusaStatus & stateReady) != 0 ? true : false;
+    running = (brusaStatus & stateRunning) != 0 ? true : false;
+    faulted = (brusaStatus & errorFlag) != 0 ? true : false;
+    warning = (brusaStatus & warningFlag) != 0 ? true : false;
 }
 
 /*
@@ -273,11 +273,11 @@ void BrusaMotorController::processActualValues(uint8_t data[]) {
  * (e.g. the webserver to display the various status flags)
  */
 void BrusaMotorController::processErrors(uint8_t data[]) {
-    statusBitfield3 = (uint32_t)(data[1] | (data[0] << 8) | (data[5] << 16) | (data[4] << 24));
-    statusBitfield2 = (uint32_t)(data[7] | (data[6] << 8));
+    //statusBitfield3 = (uint32_t)(data[1] | (data[0] << 8) | (data[5] << 16) | (data[4] << 24));
+    //statusBitfield2 = (uint32_t)(data[7] | (data[6] << 8));
 
-    if (Logger::isDebug())
-        Logger::debug(BRUSA_DMC5, "errors: %X, warning: %X", statusBitfield3, statusBitfield2);
+    //if (Logger::isDebug())
+    //    Logger::debug(BRUSA_DMC5, "errors: %X, warning: %X", statusBitfield3, statusBitfield2);
 }
 
 /*

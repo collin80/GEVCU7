@@ -197,7 +197,8 @@ void SerialConsole::printMenu() {
     Throttle *accelerator = deviceManager.getAccelerator();
     Throttle *brake = deviceManager.getBrake();
     BatteryManager *bms = static_cast<BatteryManager *>(deviceManager.getDeviceByType(DEVICE_BMS));
-   
+    Precharger *precharge = deviceManager.getDeviceByID(0x3100);
+
     //Show build # here as well in case people are using the native port and don't get to see the start up messages
     Logger::console("Build number: %u", CFG_BUILD_NUM);
     if (motorController) 
@@ -225,14 +226,15 @@ void SerialConsole::printMenu() {
     Logger::console("     NUKE=1 - Resets all device settings in EEPROM. You have been warned.");
 
     deviceManager.printDeviceList();
+
+    if (precharge && precharge->getConfiguration())
+    {
+        Logger::console("\nPRECHARGE CONTROLS\n");
+        getConfigEntriesForDevice(precharge);
+    }
     
     if (motorController && motorController->getConfiguration()) {
-        MotorControllerConfiguration *config = (MotorControllerConfiguration *) motorController->getConfiguration(); 
-        Logger::console("\nPRECHARGE CONTROLS\n");
-        Logger::console("   PREDELAY=%i - Precharge delay time in milliseconds ", config->prechargeR);
-        Logger::console("   PRELAY=%i - Which output to use for precharge contactor (255 to disable)", config->prechargeRelay);
-        Logger::console("   MRELAY=%i - Which output to use for main contactor (255 to disable)", config->mainContactorRelay);
-          
+        MotorControllerConfiguration *config = (MotorControllerConfiguration *) motorController->getConfiguration();           
         Logger::console("\nMOTOR CONTROLS\n");
         getConfigEntriesForDevice(motorController);
 
@@ -781,12 +783,12 @@ void SerialConsole::handleConfigCmd() {
         if(outie)
         {
             systemIO.setDigitalOutput(newValue,0);
-            motorController->statusBitfield1 &= ~(1 << newValue);//Clear
+            //motorController->statusBitfield1 &= ~(1 << newValue);//Clear
         }
         else
         {
             systemIO.setDigitalOutput(newValue,1);
-            motorController->statusBitfield1 |=1 << newValue;//setbit to Turn on annunciator
+            //motorController->statusBitfield1 |=1 << newValue;//setbit to Turn on annunciator
         }
 
 

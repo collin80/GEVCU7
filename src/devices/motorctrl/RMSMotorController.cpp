@@ -519,7 +519,8 @@ void RMSMotorController::sendCmdFrame()
 	output.buf[7] = 0;
 	
 	
-    if(operationState == ENABLE && !isLockedOut && selectedGear != NEUTRAL && donePrecharge)
+    //if(operationState == ENABLE && !isLockedOut && selectedGear != NEUTRAL && donePrecharge)
+    if(operationState == ENABLE && !isLockedOut && selectedGear != NEUTRAL)
     {
         output.buf[5] = 1;
     }

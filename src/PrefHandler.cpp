@@ -257,7 +257,7 @@ uint32_t PrefHandler::findEmptySettingLoc()
 
 uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
 {
-    Logger::debug("Key look up for %s", key);
+    //Logger::debug("Key look up for %s", key);
     uint32_t hash = fnvHash(key);
     uint32_t address = findSettingLocation(hash);
     if (address >= EE_DEVICE_SIZE) 

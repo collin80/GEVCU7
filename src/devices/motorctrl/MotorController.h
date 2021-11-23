@@ -48,10 +48,7 @@
 #define RPMSlewRateValue    10000 // rpm/sec the requested speed should change (speed mode)
 #define TorqueSlewRateValue 6000 // 0.1Nm/sec the requested torque output should change (torque mode)
 #define KilowattHrs         11000 //not currently used
-#define PrechargeR          6000 //millliseconds precharge
 #define NominalVolt         3300 //a reasonable figure for a lithium cell pack driving the DMOC (in tenths of a volt)
-#define PrechargeRelay      0
-#define MainContactorRelay  1
 #define ReversePercent      50
 #define CoolFan             6  //output to use for cooling fan
 #define CoolOn              40 //temperature (in C) to turn on cooling fan
@@ -85,11 +82,6 @@ public:
     uint16_t kilowattHrs;
     uint16_t nominalVolt; //nominal pack voltage in tenths of a volt - seems to actually be fully charged voltage. Misnamed?!
     uint8_t capacity;
-
-    //belongs in a power management class
-    uint16_t prechargeR; //resistance of precharge resistor in tenths of ohm
-    uint8_t prechargeRelay; //# of output to use for this relay or 255 if there is no relay
-    uint8_t mainContactorRelay; //# of output to use for this relay or 255 if there is no relay
     
     uint8_t coolFan;
     uint8_t coolOn;
@@ -128,6 +120,36 @@ public:
         POWERDOWN = 3
     };
 
+    union MotorStatus
+    {
+        uint32_t ready: 1;
+        uint32_t running: 1;
+        uint32_t warning: 1;
+        uint32_t faulted: 1;
+        uint32_t oscillationLimiter: 1;
+        uint32_t maxModulationLimiter: 1;
+        uint32_t overTempCtrl: 1;
+        uint32_t overTempMotor: 1;
+        uint32_t overSpeed: 1;
+        uint32_t hvUnderVoltage: 1;
+        uint32_t hvOverVoltage: 1;
+        uint32_t hvOverCurrent: 1;
+        uint32_t acOverCurrent: 1;
+        uint32_t limitTorque: 1;
+        uint32_t limitMaxTorque: 1;
+        uint32_t limitSpeed: 1;
+        uint32_t limitCtrlTemp: 1;
+        uint32_t limitMotorTemp: 1;
+        uint32_t limitSlewRate: 1;
+        uint32_t limitMotorModel: 1;
+        uint32_t limitMechPower: 1;
+        uint32_t limitACVoltage: 1;
+        uint32_t limitDCVoltage: 1;
+        uint32_t limitACCurrent: 1;
+        uint32_t limitDCCurrent: 1;
+        uint32_t bitfield;
+    };
+
     MotorController();
     DeviceType getType();
     void setup();
@@ -142,7 +164,6 @@ public:
     void checkReverseLight();
     void checkEnableInput();
     void checkReverseInput();
-    void checkPrecharge();
 
     void brakecheck();
     bool isReady();
@@ -150,19 +171,9 @@ public:
     bool isFaulted();
     bool isWarning();
 
-    uint32_t getStatusBitfield1();
-    uint32_t getStatusBitfield2();
-    uint32_t getStatusBitfield3();
-    uint32_t getStatusBitfield4();
+    uint32_t getStatusBitfield();
 
-    uint32_t statusBitfield1; // bitfield variable for use of the specific implementation
-    uint32_t statusBitfield2;
-    uint32_t statusBitfield3;
-    uint32_t statusBitfield4;
-    uint32_t kiloWattHours;
-
-
-
+    MotorStatus statusBitfield; // bitfield variable for use of the specific implementation
 
     void setPowerMode(PowerMode mode);
     PowerMode getPowerMode();
@@ -180,10 +191,7 @@ public:
     int8_t getEnableIn();
     int8_t getReverseIn();
     int16_t getselectedGear();
-    int16_t getprechargeR();
     int16_t getnominalVolt();
-    int8_t getprechargeRelay();
-    int8_t getmainContactorRelay();
     int16_t getSpeedRequested();
     int16_t getSpeedActual();
     int16_t getTorqueRequested();
@@ -194,14 +202,12 @@ public:
     uint16_t getDcVoltage();
     int16_t getDcCurrent();
     uint16_t getAcCurrent();
-    uint32_t getKiloWattHours();
     int16_t getMechanicalPower();
     int16_t getTemperatureMotor();
     int16_t getTemperatureInverter();
     int16_t getTemperatureSystem();
 
-
-    int milliseconds  ;
+    int milliseconds;
     int seconds;
     int minutes;
     int hours ;
@@ -218,7 +224,6 @@ protected:
     bool coolflag;
     bool testenableinput;
     bool testreverseinput;
-
 
     Gears selectedGear;
 
@@ -240,12 +245,6 @@ protected:
     int16_t temperatureInverter; // temperature of inverter power stage in 0.1 degree C
     int16_t temperatureSystem; // temperature of controller in 0.1 degree C
 
-
-
-    uint16_t prechargeTime; //time in ms that precharge should last
-    uint32_t milliStamp; //how long we have precharged so far
-    bool donePrecharge; //already completed the precharge cycle?
-    bool prelay;
     uint32_t skipcounter;
 };
 
