@@ -399,7 +399,7 @@ void setup() {
 
 	uint8_t loglevel;
 	sysPrefs->read("LogLevel", &loglevel, 1);
-	loglevel = 0; //force debugging log level
+	//loglevel = 0; //force debugging log level
     Logger::console("LogLevel: %i", loglevel);
 	Logger::setLoglevel((Logger::LogLevel)loglevel);
 	systemIO.setup();  

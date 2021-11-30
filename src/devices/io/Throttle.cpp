@@ -45,19 +45,19 @@ void Throttle::setup()
     ThrottleConfiguration *config = (ThrottleConfiguration *) getConfiguration();
     cfgEntries.reserve(20);
 
-    ConfigEntry entry = {"TRNGMAX", "Tenths of a percent of pedal where regen is at max", &config->positionRegenMaximum, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000};
+    ConfigEntry entry = {"TRNGMAX", "Tenths of a percent of pedal where regen is at max", &config->positionRegenMaximum, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TRNGMIN", "Tenths of a percent of pedal where regen is at min", &config->positionRegenMinimum, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000};
+    entry = {"TRNGMIN", "Tenths of a percent of pedal where regen is at min", &config->positionRegenMinimum, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TFWD", "Tenths of a percent of pedal where forward motion starts", &config->positionForwardMotionStart, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000};
+    entry = {"TFWD", "Tenths of a percent of pedal where forward motion starts", &config->positionForwardMotionStart, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TMAP", "Tenths of a percent of pedal where 50% throttle will be", &config->positionHalfPower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000};
+    entry = {"TMAP", "Tenths of a percent of pedal where 50% throttle will be", &config->positionHalfPower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TMINRN", "Percent of full torque to use for min throttle regen", &config->minimumRegen, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100};
+    entry = {"TMINRN", "Percent of full torque to use for min throttle regen", &config->minimumRegen, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TMAXRN", "Percent of full torque to use for max throttle regen", &config->maximumRegen, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100};
+    entry = {"TMAXRN", "Percent of full torque to use for max throttle regen", &config->maximumRegen, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TCREEP", "Percent of full torque to use for creep (0=disable)", &config->creep, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100};
+    entry = {"TCREEP", "Percent of full torque to use for creep (0=disable)", &config->creep, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr};
     cfgEntries.push_back(entry);
 }
 

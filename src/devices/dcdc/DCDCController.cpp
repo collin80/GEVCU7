@@ -116,6 +116,11 @@ DeviceId DCDCController::getId() {
     return (DCDC);
 }
 
+DeviceType DCDCController::getType()
+{
+    return (DeviceType::DEVICE_DCDC);
+}
+
 uint32_t DCDCController::getTickInterval()
 {
     return CFG_TICK_INTERVAL_DCDC;

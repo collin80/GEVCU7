@@ -74,8 +74,8 @@ void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
     case 0x301: //System Data 0
         //first two bytes = current, next two voltage, next two DOD, last two avg. temp
         //readings in tenths
-        packVoltage = (frame.buf[0] * 256 + frame.buf[1]);
-        packCurrent = (frame.buf[2] * 256 + frame.buf[3]);
+        packVoltage = (frame.buf[0] * 256 + frame.buf[1]) / 10.0f;
+        packCurrent = (frame.buf[2] * 256 + frame.buf[3]) / 10.0f;
         break;
     case 0x302: //System Data 1
         if ((frame.buf[0] & 1) == 1) //Byte 0 bit 0 = general error
@@ -116,8 +116,8 @@ void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
         //categories: 0 = no faults, 1 = Reserved, 2 = Warning, 3 = Delayed switch off, 4 = immediate switch off
         //bytes 4-5 = Pack max temperature (tenths of degree C) - Signed
         //byte 6-7 = Pack min temperature (tenths of a degree C) - Signed
-        lowestCellTemp = (int16_t)(frame.buf[4] * 256 + frame.buf[5]);
-        highestCellTemp = (int16_t)(frame.buf[6] * 256 + frame.buf[7]);
+        lowestCellTemp = ((int16_t)(frame.buf[4] * 256 + frame.buf[5])) / 10.0f;
+        highestCellTemp = ((int16_t)(frame.buf[6] * 256 + frame.buf[7])) / 10.0f;
         break;
     case 0x305: //System Data 4
         //byte 2 bits 0-3 = BMS state

@@ -33,36 +33,29 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../config.h"
 #include "../Device.h"
 
-#define DefaultPackCapacity   1000       //in tenths of AH
-#define DefaultPackRemaining  50000000l //in millionths of AH
-#define DefaultHighVLim       3850 //tenths of a V
-#define DefaultLowVLim        2400 //tenths of a V
-#define DefaultHighCellLim    3900 //Hundredths of a V
-#define DefaultLowCellLim     2400 //Hundedths of a V
-#define DefaultHighTempLim    600  //Tenths of a degree. Toasty!
-#define DefaultLowTempLim     -200 //Tenths of a degree. Chilly!
-
 class BatteryManagerConfiguration : public DeviceConfiguration {
 public:
-    uint16_t packCapacity;
-    int32_t packAHRemaining;
-    uint16_t highVoltLimit;
-    uint16_t lowVoltLimit;
-    uint16_t highCellLimit;
-    uint16_t lowCellLimit;
-    uint16_t highTempLimit;
-    int16_t lowTempLimit;
+    float packCapacity;
+    float packAHRemaining;
+    float highVoltLimit;
+    float lowVoltLimit;
+    float highCellLimit;
+    float lowCellLimit;
+    float highTempLimit;
+    float lowTempLimit;
 };
 
 class BatteryManager : public Device {
 public:
     BatteryManager();
     ~BatteryManager();
-    int getPackVoltage(); //in tenths of a volt
-    signed int getPackCurrent(); //in tenths of an amp
-    int getSOC();
+    float getPackVoltage();
+    float getPackCurrent();
+    float getSOC();
     //bool allowCharging();
     //bool allowDischarging();
+    float getHighestTemperature();
+    float getLowestTemperature();
     DeviceType getType();
     void setup();
     void handleTick();
@@ -78,11 +71,11 @@ public:
     virtual bool isChargeOK() = 0;
     virtual bool isDischargeOK() = 0;
 protected:
-    int packVoltage; //tenths of a volt
-    signed int packCurrent; //tenths of an amp
-    int SOC; //state of charge in percent
-    int lowestCellV, highestCellV; //in mv
-    int lowestCellTemp, highestCellTemp;
+    float packVoltage;
+    float packCurrent;
+    float SOC; //state of charge in percent
+    float lowestCellV, highestCellV;
+    float lowestCellTemp, highestCellTemp;
     //should be some form of discharge and charge limit. I don't know if it should be % or amps
     //some BMS systems will report one way and some the other.
     int dischargeLimit, chargeLimit;

@@ -143,7 +143,7 @@ PrefHandler::PrefHandler(DeviceId id_in) {
             if (id & 0x8000) enabled = true;
             position = x;
             deviceID = (uint16_t)id_in;
-            Logger::info("Device ID: %X was found in device table at entry: %i", (int)id_in, x);
+            Logger::debug("Device ID: %X was found in device table at entry: %i", (int)id_in, x);
             return;
         }
     }

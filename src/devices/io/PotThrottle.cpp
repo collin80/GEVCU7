@@ -54,21 +54,21 @@ void PotThrottle::setup() {
     Throttle::setup(); //call base class
 
     ConfigEntry entry;
-    entry = {"TPOT", "Number of pots to use (1 or 2)", &config->numberPotMeters, CFG_ENTRY_VAR_TYPE::BYTE, 1, 2};
+    entry = {"TPOT", "Number of pots to use (1 or 2)", &config->numberPotMeters, CFG_ENTRY_VAR_TYPE::BYTE, 1, 2, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TTYPE", "Set throttle subtype (1=std linear, 2=inverse)", &config->throttleSubType, CFG_ENTRY_VAR_TYPE::BYTE, 1, 2};
+    entry = {"TTYPE", "Set throttle subtype (1=std linear, 2=inverse)", &config->throttleSubType, CFG_ENTRY_VAR_TYPE::BYTE, 1, 2, 0, DEV_PTR(&PotThrottle::describeThrottleType)};
     cfgEntries.push_back(entry);
-    entry = {"T1ADC", "Set throttle 1 ADC pin", &config->AdcPin1, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255};
+    entry = {"T1ADC", "Set throttle 1 ADC pin", &config->AdcPin1, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"T1MN", "Set throttle 1 min value", &config->minimumLevel1, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096};
+    entry = {"T1MN", "Set throttle 1 min value", &config->minimumLevel1, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"T1MX", "Set throttle 1 max value", &config->maximumLevel1, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096};
+    entry = {"T1MX", "Set throttle 1 max value", &config->maximumLevel1, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"T2ADC", "Set throttle 2 ADC pin", &config->AdcPin2, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255};
+    entry = {"T2ADC", "Set throttle 2 ADC pin", &config->AdcPin2, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"T2MN", "Set throttle 2 min value", &config->minimumLevel2, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096};
+    entry = {"T2MN", "Set throttle 2 min value", &config->minimumLevel2, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"T2MX", "Set throttle 2 max value", &config->maximumLevel2, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096};
+    entry = {"T2MX", "Set throttle 2 max value", &config->maximumLevel2, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr};
     cfgEntries.push_back(entry);
 
     //set digital ports to inputs and pull them up all inputs currently active low
@@ -293,6 +293,14 @@ void PotThrottle::saveConfiguration() {
     prefsHandler->write("ADC2", config->AdcPin2);
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
+}
+
+String PotThrottle::describeThrottleType()
+{
+    PotThrottleConfiguration *config = (PotThrottleConfiguration *) getConfiguration();
+    if (config->throttleSubType == 1) return String("Std Linear");
+    if (config->throttleSubType == 2) return String("Inverse Linear");
+    return String("Invalid Value!");
 }
 
 //creation of a global variable here causes the driver to automatically register itself without external help

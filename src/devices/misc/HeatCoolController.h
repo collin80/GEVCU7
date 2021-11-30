@@ -1,7 +1,8 @@
 /*
- * PotThrottle.h
+ * HeatCoolController.h - implements a simple unified way to control fans, coolant pumps, heaters, etc that
+ might be used in a car. 
  *
- Copyright (c) 2013 Collin Kidder, Michael Neuweiler, Charles Galpin
+ Copyright (c) 2021 Collin Kidder, Michael Neuweiler, Charles Galpin
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -24,12 +25,14 @@
 
  */
 
-#ifndef PEDAL_POT_H_
-#define PEDAL_POT_H_
+#ifndef HEATCOOL_H_
+#define HEATCOOL_H_
 
 #include <Arduino.h>
 #include "../../config.h"
-#include "Throttle.h"
+#include "../motorctrl/MotorController.h"
+#include "../bms/BatteryManager.h"
+#include "../dcdc/DCDCController.h"
 #include "../../sys_io.h"
 #include "../../TickHandler.h"
 #include "../../Logger.h"
@@ -37,48 +40,52 @@
 #include "../../FaultHandler.h"
 #include "../../FaultCodes.h"
 
-#define POTACCELPEDAL 0x1031
-#define THROTTLE_INPUT_BRAKELIGHT  2
-#define CFG_TICK_INTERVAL_POT_THROTTLE              40000
+#define HEATCOOL 0x3200
+#define CFG_TICK_INTERVAL_HEATCOOL     200000
+#define COOL_ZONES  3
 
-/*
- * The extended configuration class with additional parameters for PotThrottle
- */
-class PotThrottleConfiguration: public ThrottleConfiguration {
-public:
-    /*
-     * Allows subclasses to have sub types for their pedal type
-     * 0 - unknown type (prefs will return 0 if never set)
-     * 1 - standard linear potentiometer (low-high). If 2 pots, both are low-high and the 2nd mirrors the 1st.
-     * 2 - inverse potentiometer (high-low). If 2 pots, then 1st is low-high and 2nd is high-low)
-     */
-    uint8_t throttleSubType;
-    int16_t minimumLevel1, maximumLevel1, minimumLevel2, maximumLevel2; // values for when the pedal is at its min and max for each input
-    uint8_t numberPotMeters; // the number of potentiometers to be used. Should support three as well since some pedals really do have that many
-    uint8_t AdcPin1, AdcPin2; //which ADC pins to use for the throttle
+//defines where a given zone gets its temperature readings from.
+enum COOLZONE
+{
+    CZ_MOTORCTRL,
+    CZ_BMS,
+    CZ_DCDC
 };
 
-class PotThrottle: public Throttle {
+
+class HeatCoolConfiguration: public DeviceConfiguration {
 public:
-    PotThrottle();
+    float heatOnTemperature;
+    float heatOffTemperature;
+    float coolOnTemperature[COOL_ZONES];
+    float coolOffTemperature[COOL_ZONES];
+    COOLZONE coolZoneType[COOL_ZONES];
+    uint8_t runPumpWithHeat;
+    uint8_t runPumpAtSysReady;
+    //I/O pins
+    uint8_t heatEnablePin;
+    uint8_t waterPumpPin;
+    uint8_t coolPins[COOL_ZONES];
+};
+
+class HeatCoolController: public Device {
+public:
+    HeatCoolController();
     void setup();
     void earlyInit();
     void handleTick();
     DeviceId getId();
-    RawSignalData *acquireRawSignal();
+    DeviceType getType();
 
     void loadConfiguration();
     void saveConfiguration();
 
 protected:
-    bool validateSignal(RawSignalData *);
-    int16_t calculatePedalPosition(RawSignalData *);
-    String describeThrottleType();
 
 private:
-    RawSignalData rawSignal;
+    bool isHeatOn;
+    bool isCoolOn[COOL_ZONES];
+    bool isPumpOn;
 };
 
-#endif /* POT_THROTTLE_H_ */
-
-
+#endif

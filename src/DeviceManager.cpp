@@ -38,11 +38,11 @@
 #include "DeviceManager.h"
 
 DeviceManager::DeviceManager() {
-    throttle = NULL;
-    brake = NULL;
-    motorController = NULL;
+    throttle = nullptr;
+    brake = nullptr;
+    motorController = nullptr;
     for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++)
-        devices[i] = NULL;
+        devices[i] = nullptr;
 }
 
 /*
@@ -223,6 +223,12 @@ Device *DeviceManager::getDeviceByID(DeviceId id)
     }
     //Logger::debug("getDeviceByID - No device with ID: %X", (int)id);
     return 0; //NULL!
+}
+
+Device *DeviceManager::getDeviceByIdx(int idx)
+{
+    if (idx < 0 || idx > CFG_DEV_MGR_MAX_DEVICES) return nullptr;
+    return devices[idx];
 }
 
 /*

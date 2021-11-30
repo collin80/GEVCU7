@@ -31,7 +31,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "config.h"
 #include "Heartbeat.h"
 #include "MemCache.h"
-#include "config.h"
 #include "eeprom_layout.h"
 #include "sys_io.h"
 #include "devices/io/PotThrottle.h"
@@ -73,7 +72,7 @@ private:
     void handleConfigCmd();
     void resetWiReachMini();
     void getResponse();
-    void printConfigEntry(const ConfigEntry &entry);
+    void printConfigEntry(const Device *dev, const ConfigEntry &entry);
     void getConfigEntriesForDevice(Device *dev);
     void updateSetting(char *settingName, char *valu);
 };

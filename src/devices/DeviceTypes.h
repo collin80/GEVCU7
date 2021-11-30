@@ -29,6 +29,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <Arduino.h>
 
+class Device;
+typedef String (Device::*DescribeValue)();
+#define DEV_PTR(p) static_cast<DescribeValue>(p)
+
 enum DeviceType {
     DEVICE_ANY,
     DEVICE_MOTORCTRL,
@@ -40,6 +44,7 @@ enum DeviceType {
     DEVICE_MISC,
     DEVICE_WIFI,
     DEVICE_IO,
+    DEVICE_DCDC,
     DEVICE_NONE
 };
 
@@ -69,6 +74,8 @@ struct ConfigEntry
     CFG_ENTRY_VAR_TYPE varType; //what sort of variable were we pointing to?
     float minValue; //minimum acceptable value
     float maxValue; //maximum acceptable value
+    uint8_t precision; //number of decimal places to display. Obv. 0 for integers
+    DescribeValue descFunc; //if this function pointer is non-null it'll be used to turn values into strings.
 };
 
 /*

@@ -62,18 +62,26 @@ void SerialConsole::loop() {
     }
 }
 
-void SerialConsole::printConfigEntry(const ConfigEntry &entry)
+void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry)
 {
     String str = "   ";
     str += entry.cfgName + "=";
     switch (entry.varType)
     {
     case CFG_ENTRY_VAR_TYPE::BYTE:
-        str += "%u - " + entry.helpText;
-        Logger::console(str.c_str(), *(uint8_t *)entry.varPtr);
+        if (entry.descFunc)
+        {
+            str += "%u [%s] - " + entry.helpText;
+            Logger::console(str.c_str(), *(uint8_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+        }
+        else 
+        {
+            str += "%u - " + entry.helpText;
+            Logger::console(str.c_str(), *(uint8_t *)entry.varPtr);
+        }
         break;
     case CFG_ENTRY_VAR_TYPE::FLOAT:
-        str += "%f - " + entry.helpText;
+        str += "%.4f - " + entry.helpText;
         Logger::console(str.c_str(), *(float *)entry.varPtr);
         break;
     case CFG_ENTRY_VAR_TYPE::INT16:
@@ -101,10 +109,11 @@ void SerialConsole::printConfigEntry(const ConfigEntry &entry)
 
 void SerialConsole::getConfigEntriesForDevice(Device *dev)
 {
+    Logger::console("\n\n%s Configuration", dev->getCommonName());
     const std::vector<ConfigEntry> *entries = dev->getConfigEntries();
     for (const ConfigEntry ent : *entries)
     {
-        printConfigEntry(ent);
+        printConfigEntry(dev, ent);
     }
 }
 
@@ -196,8 +205,6 @@ void SerialConsole::printMenu() {
     MotorController* motorController = (MotorController*) deviceManager.getMotorController();
     Throttle *accelerator = deviceManager.getAccelerator();
     Throttle *brake = deviceManager.getBrake();
-    BatteryManager *bms = static_cast<BatteryManager *>(deviceManager.getDeviceByType(DEVICE_BMS));
-    Precharger *precharge = deviceManager.getDeviceByID(0x3100);
 
     //Show build # here as well in case people are using the native port and don't get to see the start up messages
     Logger::console("Build number: %u", CFG_BUILD_NUM);
@@ -227,46 +234,25 @@ void SerialConsole::printMenu() {
 
     deviceManager.printDeviceList();
 
-    if (precharge && precharge->getConfiguration())
+    for (int j = 0; j < CFG_DEV_MGR_MAX_DEVICES; j++)
     {
-        Logger::console("\nPRECHARGE CONTROLS\n");
-        getConfigEntriesForDevice(precharge);
+        Device *dev = deviceManager.getDeviceByIdx(j);
+        if (dev)
+        {
+            if (dev->isEnabled()) getConfigEntriesForDevice(dev);
+            if (dev == accelerator)
+            {
+                Logger::console("   z = detect throttle min/max, num throttles and subtype");
+                Logger::console("   Z = save throttle values");
+            }
+            if (dev == brake)
+            {
+                Logger::console("   b = detect brake min/max");
+                Logger::console("   B = save brake values");
+            }
+        }
     }
-    
-    if (motorController && motorController->getConfiguration()) {
-        MotorControllerConfiguration *config = (MotorControllerConfiguration *) motorController->getConfiguration();           
-        Logger::console("\nMOTOR CONTROLS\n");
-        getConfigEntriesForDevice(motorController);
-
-        Logger::console("\nOTHER VEHICLE CONTROLS\n");
-        Logger::console("   COOLFAN=%i - Digital output to turn on cooling fan(0-7, 255 for none)", config->coolFan);
-        Logger::console("   COOLON=%i - Inverter temperature C to turn cooling on", config->coolOn);
-        Logger::console("   COOLOFF=%i - Inverter temperature C to turn cooling off", config->coolOff);
-        Logger::console("   BRAKELT = %i - Digital output to turn on brakelight (0-7, 255 for none)", config->brakeLight);
-        Logger::console("   REVLT=%i - Digital output to turn on reverse light (0-7, 255 for none)", config->revLight);  
-        Logger::console("   NOMV=%i - Fully charged pack voltage that automatically resets kWh counter", config->nominalVolt/10);        
-    }
-
-    if (accelerator && accelerator->getConfiguration()) {
-        Logger::console("\nTHROTTLE CONTROLS\n");
-        Logger::console("   z = detect throttle min/max, num throttles and subtype");
-        Logger::console("   Z = save throttle values");
-        getConfigEntriesForDevice(accelerator);
-    }
-
-    if (brake && brake->getConfiguration()) {
-        Logger::console("\nBRAKE CONTROLS\n");
-        Logger::console("   b = detect brake min/max");
-        Logger::console("   B = save brake values");
-        getConfigEntriesForDevice(brake);
-    }
-    
-    if (bms && bms->getConfiguration()) {
-        BatteryManagerConfiguration *config = static_cast<BatteryManagerConfiguration *>(bms->getConfiguration());
-        Logger::console("\nBATTERY MANAGEMENT CONTROLS\n");
-        getConfigEntriesForDevice(bms);        
-    }
-  
+      
     Logger::console("\nANALOG AND DIGITAL IO\n");
     Logger::console("   A = Autocompensate ADC inputs");
     Logger::console("   J = set all digital outputs low");

@@ -35,6 +35,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Sys_Messages.h"
 #include "devices/DeviceTypes.h"
 
+#define CALL_MEMBER_FN(object,ptrToMember)  ((object)->*(ptrToMember))
+
 class MotorController; // cyclic reference between MotorController and DeviceManager
 
 class DeviceManager {
@@ -57,6 +59,7 @@ public:
     MotorController *getMotorController();
     Device *getDeviceByID(DeviceId);
     Device *getDeviceByType(DeviceType);
+    Device *getDeviceByIdx(int idx);
     void printDeviceList();
     void updateWifi();
     Device *updateWifiByID(DeviceId);

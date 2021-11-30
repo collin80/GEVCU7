@@ -58,17 +58,27 @@ void Precharger::setup() {
     cfgEntries.reserve(6);
 
     ConfigEntry entry;
-    entry = {"PRECHARGETYPE", "Set precharge type (1 = Time Based, 2 = Voltage Based)", &config->prechargeType, CFG_ENTRY_VAR_TYPE::BYTE, 1, 2};
+    entry = {"PRECHARGETYPE", "Set precharge type (1 = Time Based, 2 = Voltage Based)", &config->prechargeType, CFG_ENTRY_VAR_TYPE::BYTE, 1, 2, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PRECHARGETIME", "Set precharge time in milliseconds", &config->prechargeTime, CFG_ENTRY_VAR_TYPE::UINT16, 0, 65000};
+    entry = {"PRECHARGETIME", "Set precharge time in milliseconds", &config->prechargeTime, CFG_ENTRY_VAR_TYPE::UINT16, 0, 65000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PRECHARGERELAY", "Set output to use for precharge relay", &config->prechargeRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255};
+    entry = {"PRECHARGERELAY", "Set output to use for precharge relay", &config->prechargeRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"MAINCONTACTOR", "Set output to use for main contactor", &config->mainRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255};
+    entry = {"MAINCONTACTOR", "Set output to use for main contactor", &config->mainRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_PRECHARGE);
 }
+
+/*
+old status bitfield stuff from motorcontroller class. Should find a way to integrate it
+            statusBitfield2 &= ~(1 << 17); //clear bitTurn off MAIN CONTACTOR annunciator
+            statusBitfield1 &= ~(1 << contactor);//clear bitTurn off main contactor output annunciator
+
+            statusBitfield2 |=1 << 19; //set bit to turn on  PRECHARGE RELAY annunciator
+            statusBitfield1 |=1 << relay; //set bit to turn ON precharge OUTPUT annunciator
+*/
+
 
 /*
  * Process a timer event. This is where you should be doing checks and updates. 

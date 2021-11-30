@@ -52,21 +52,21 @@ void BatteryManager::setup() {
     BatteryManagerConfiguration *config = (BatteryManagerConfiguration *) getConfiguration();
 
     ConfigEntry entry;
-    entry = {"CAPACITY", "Capacity of battery pack in tenths ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000000};
+    entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 1000000, 2, nullptr};
     cfgEntries.push_back(entry);
-    //entry = {"AHLEFT", "Number of amp hours remaining in pack in tenths ampere-hours", &config->packAHRemaining / 100000, CFG_ENTRY_VAR_TYPE::INT32, 0, 1000000};
+    //entry = {"AHLEFT", "Number of amp hours remaining in pack in tenths ampere-hours", &config->packAHRemaining / 100000, CFG_ENTRY_VAR_TYPE::INT32, 0, 1000000, 0, nullptr};
     //cfgEntries.push_back(entry);
-    entry = {"VOLTLIMHI", "High limit for pack voltage in tenths of a volt", &config->highVoltLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 8000};
+    entry = {"VOLTLIMHI", "High limit for pack voltage in volts", &config->highVoltLimit, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 800, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"VOLTLIMLO", "Low limit for pack voltage in tenths of a volt", &config->lowVoltLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 8000};
+    entry = {"VOLTLIMLO", "Low limit for pack voltage in volts", &config->lowVoltLimit, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 800, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"CELLLIMHI", "High limit for cell voltage in hundredths of a volt", &config->highCellLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 500};
+    entry = {"CELLLIMHI", "High limit for cell voltage in volts", &config->highCellLimit, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 5.0f, 3, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"CELLLIMLO", "Low limit for cell voltage in hundredths of a volt", &config->lowCellLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 500};
+    entry = {"CELLLIMLO", "Low limit for cell voltage in hundredths of a volt", &config->lowCellLimit, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 5.0f, 3, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TEMPLIMHI", "High limit for pack and cell temperature in tenths of a degree C", &config->highTempLimit, CFG_ENTRY_VAR_TYPE::UINT16, 0, 2550};
+    entry = {"TEMPLIMHI", "High limit for pack and cell temperature in degrees C", &config->highTempLimit, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 255.0f, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TEMPLIMLO", "Low limit for pack and cell temperature in tenths of a degree C", &config->lowTempLimit, CFG_ENTRY_VAR_TYPE::INT16, -2550, 2550};
+    entry = {"TEMPLIMLO", "Low limit for pack and cell temperature in degrees C", &config->lowTempLimit, CFG_ENTRY_VAR_TYPE::FLOAT, -255.0f, 255.0f, 1, nullptr};
     cfgEntries.push_back(entry);
 
 #ifndef USE_HARD_CODED
@@ -83,19 +83,29 @@ void BatteryManager::setup() {
 
 }
 
-int BatteryManager::getPackVoltage()
+float BatteryManager::getPackVoltage()
 {
     return packVoltage;
 }
 
-signed int BatteryManager::getPackCurrent()
+float BatteryManager::getPackCurrent()
 {
     return packCurrent;
 }
 
-int BatteryManager::getSOC()
+float BatteryManager::getSOC()
 {
     return SOC;
+}
+
+float BatteryManager::getHighestTemperature()
+{
+    return highestCellTemp;
+}
+
+float BatteryManager::getLowestTemperature()
+{
+    return lowestCellTemp;
 }
 
 void BatteryManager::loadConfiguration() {
@@ -104,14 +114,14 @@ void BatteryManager::loadConfiguration() {
     Device::loadConfiguration(); // call parent
 
     //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-        prefsHandler->read("Capacity", &config->packCapacity, 1000);
-        prefsHandler->read("AHRemaining", (uint32_t *)&config->packAHRemaining, 5000000);
-        prefsHandler->read("HVHighLim", &config->highVoltLimit, 3850);
-        prefsHandler->read("HVLowLim", &config->lowVoltLimit, 2400);
-        prefsHandler->read("CellHiLim", &config->highCellLimit, 3900);
-        prefsHandler->read("CellLowLim", &config->lowCellLimit, 2400);
-        prefsHandler->read("TempHighLim", &config->highTempLimit, 600);
-        prefsHandler->read("TempLowLim", (uint16_t *)&config->lowTempLimit, -200);        
+        prefsHandler->read("Capacity", &config->packCapacity, 100.0f);
+        prefsHandler->read("AHRemaining", &config->packAHRemaining, 50.0f);
+        prefsHandler->read("HVHighLim", &config->highVoltLimit, 385.0f);
+        prefsHandler->read("HVLowLim", &config->lowVoltLimit, 240.0f);
+        prefsHandler->read("CellHiLim", &config->highCellLimit, 3.900f);
+        prefsHandler->read("CellLowLim", &config->lowCellLimit, 2.400f);
+        prefsHandler->read("TempHighLim", &config->highTempLimit, 60.0f);
+        prefsHandler->read("TempLowLim", &config->lowTempLimit, -20.0f);        
 }
 
 void BatteryManager::saveConfiguration() {
@@ -119,14 +129,14 @@ void BatteryManager::saveConfiguration() {
     
     Device::saveConfiguration(); // call parent
 
-    prefsHandler->write("AHRemaining", (uint32_t)config->packAHRemaining);
+    prefsHandler->write("AHRemaining", config->packAHRemaining);
     prefsHandler->write("Capacity", config->packCapacity);
     prefsHandler->write("HVHighLim", config->highVoltLimit);
     prefsHandler->write("HVLowLim", config->lowVoltLimit);
     prefsHandler->write("CellHiLim", config->highCellLimit);
     prefsHandler->write("CellLowLim", config->lowCellLimit);
     prefsHandler->write("TempHighLim", config->highTempLimit);
-    prefsHandler->write("TempLowLim", (uint16_t)config->lowTempLimit);    
+    prefsHandler->write("TempLowLim", config->lowTempLimit);    
 
     prefsHandler->saveChecksum();
 }

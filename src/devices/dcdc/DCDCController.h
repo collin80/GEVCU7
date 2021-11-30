@@ -56,6 +56,7 @@ public:
     DCDCController();
     void timestamp();
     DeviceId getId();
+    DeviceType getType();
     uint32_t getTickInterval();
 
     virtual void loadConfiguration();

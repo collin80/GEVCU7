@@ -71,23 +71,23 @@ void MotorController::setup() {
     cfgEntries.reserve(20);
 
     ConfigEntry entry;
-    entry = {"TORQ", "Set torque upper limit (tenths of a Nm)", &config->torqueMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000};
+    entry = {"TORQ", "Set torque upper limit (tenths of a Nm)", &config->torqueMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TORQSLEW", "Torque slew rate (per second, tenths of a Nm)", &config->torqueSlewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000};
+    entry = {"TORQSLEW", "Torque slew rate (per second, tenths of a Nm)", &config->torqueSlewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"RPM", "Set maximum RPM", &config->speedMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 30000};
+    entry = {"RPM", "Set maximum RPM", &config->speedMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 30000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"RPMSLEW", "RPM Slew rate (per second)", &config->speedSlewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000};
+    entry = {"RPMSLEW", "RPM Slew rate (per second)", &config->speedSlewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"REVLIM", "How much torque to allow in reverse (Tenths of a percent)", &config->reversePercent, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000};
+    entry = {"REVLIM", "How much torque to allow in reverse (Tenths of a percent)", &config->reversePercent, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"ENABLEIN", "Digital input to enable motor controller (0-3, 255 for none)", &config->enableIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255};
+    entry = {"ENABLEIN", "Digital input to enable motor controller (0-3, 255 for none)", &config->enableIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"REVIN", "Digital input to reverse motor rotation (0-3, 255 for none)", &config->reverseIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255};
+    entry = {"REVIN", "Digital input to reverse motor rotation (0-3, 255 for none)", &config->reverseIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TAPERHI", "Regen taper upper RPM (0 - 20000)", &config->regenTaperUpper, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000};
+    entry = {"TAPERHI", "Regen taper upper RPM (0 - 20000)", &config->regenTaperUpper, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TAPERLO", "Regen taper lower RPM (0 - 20000)", &config->regenTaperLower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000};
+    entry = {"TAPERLO", "Regen taper lower RPM (0 - 20000)", &config->regenTaperLower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr};
     cfgEntries.push_back(entry);
 
     statusBitfield.bitfield = 0;
@@ -133,33 +133,6 @@ void MotorController::handleTick() {
         checkReverseLight();
     }
 }
-
-/*
-void MotorController::checkPrecharge()
-{
-    if ((millis()-premillis)< prechargetime) //Check milliseconds since startup against our entered delay in milliseconds
-    {
-        if(!prelay)
-        {
-            systemIO.setDigitalOutput(contactor, 0); //Make sure main contactor off
-            statusBitfield2 &= ~(1 << 17); //clear bitTurn off MAIN CONTACTOR annunciator
-            statusBitfield1 &= ~(1 << contactor);//clear bitTurn off main contactor output annunciator
-            systemIO.setDigitalOutput(relay, 1); //ok.  Turn on precharge relay
-            statusBitfield2 |=1 << 19; //set bit to turn on  PRECHARGE RELAY annunciator
-            statusBitfield1 |=1 << relay; //set bit to turn ON precharge OUTPUT annunciator
-            throttleRequested = 0; //Keep throttle at zero during precharge
-            Logger::info("Starting precharge sequence - wait %i milliseconds", prechargetime);
-        }
-    }
-    else
-    {
-        systemIO.setDigitalOutput(contactor, 1); //Main contactor on
-        statusBitfield2 |=1 << 17; //set bit to turn on MAIN CONTACTOR annunciator
-        statusBitfield1 |=1 << contactor;//setbit to Turn on main contactor output annunciator
-        Logger::info("Precharge sequence complete after %i milliseconds", prechargetime);
-    }
-}
-*/
 
 //This routine is used to set an optional cooling fan output to on if the current temperature
 //exceeds a specified value.  Annunciators are set on website to indicate status.
