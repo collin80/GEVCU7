@@ -100,7 +100,7 @@ void HeatCoolController::setup() {
 void HeatCoolController::handleTick() {
     Device::handleTick(); // Call parent which controls the workflow
     Logger::debug("HeatCool Tick Handler");
-    return;
+
     HeatCoolConfiguration *config = (HeatCoolConfiguration *) getConfiguration();
 
     if (!isPumpOn)
@@ -115,7 +115,7 @@ void HeatCoolController::handleTick() {
     BatteryManager *bms = static_cast<BatteryManager *>(deviceManager.getDeviceByType(DeviceType::DEVICE_BMS));
     MotorController *mctl = static_cast<MotorController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_MOTORCTRL));
     DCDCController *dcdc = static_cast<DCDCController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_DCDC));    
-    if (bms->hasTemperatures())
+    if (bms && bms->hasTemperatures())
     {
         if (bms->getLowestTemperature() < config->heatOnTemperature)
         {
@@ -147,13 +147,16 @@ void HeatCoolController::handleTick() {
         switch (config->coolZoneType[i])
         {
         case CZ_BMS:
-            temperature = bms->getHighestTemperature();
+            if (bms && bms->hasTemperatures()) temperature = bms->getHighestTemperature();
             break;
         case CZ_MOTORCTRL:
-            temperature = mctl->getTemperatureInverter();
-            if (mctl->getTemperatureSystem() > temperature) temperature = mctl->getTemperatureSystem();
-            if (mctl->getTemperatureMotor() > temperature) temperature = mctl->getTemperatureMotor();
-            temperature /= 10.0f; //all returned temperatures above were in 10th of a degree
+            if (mctl) 
+            {
+                temperature = mctl->getTemperatureInverter();
+                if (mctl->getTemperatureSystem() > temperature) temperature = mctl->getTemperatureSystem();
+                if (mctl->getTemperatureMotor() > temperature) temperature = mctl->getTemperatureMotor();
+                temperature /= 10.0f; //all returned temperatures above were in 10th of a degree
+            }
             break;
         case CZ_DCDC:
             //doesn't actually report temperature at the moment.
