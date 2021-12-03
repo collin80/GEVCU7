@@ -75,8 +75,8 @@ void EVIC::setup() {
     canHandlerEv.attach(this, CAN_SWITCH, 0x7ff, false);
 
     MotorController* motorController = deviceManager.getMotorController();
-    nominalVolt=(motorController->nominalVolts); //Get default nominal volts and capacity from motorcontroller
-    capacity=(motorController->capacity);//If we do NOT have a JLD505, we will use these.
+    //nominalVolt=(motorController->nominalVolts); //Get default nominal volts and capacity from motorcontroller
+    //capacity=(motorController->capacity);//If we do NOT have a JLD505, we will use these.
 
     tickCounter = 0;
     testMode=0;
@@ -416,12 +416,12 @@ void EVIC::loadConfiguration() {
     {   //checksum is good, read in the values stored in EEPROM
         //prefsHandler->read(EESYS_CAPACITY, &capacity);
         //prefsHandler->read(EESYS_AH, &AH);
-        capacity = BatteryCapacity;
+        //capacity = BatteryCapacity;
         AH = 0;
     }
     else
     {
-        capacity = BatteryCapacity;  //Get capacity value from config.h
+        //capacity = BatteryCapacity;  //Get capacity value from config.h
         //prefsHandler->write(EESYS_CAPACITY, capacity); //and write it to EEPROM
         // prefsHandler->write(EESYS_AH,AH);
         //prefsHandler->saveChecksum();

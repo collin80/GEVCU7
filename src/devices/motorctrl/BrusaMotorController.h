@@ -66,10 +66,10 @@ public:
     uint16_t maxMechanicalPowerRegen; // maximal mechanical power of regen in 4W steps
 
     // DMC_LIM
-    uint16_t dcVoltLimitMotor; // minimum DC voltage limit for motoring in 0.1V
-    uint16_t dcVoltLimitRegen; //  maximum DC voltage limit for regen in 0.1V
-    uint16_t dcCurrentLimitMotor; // current limit for motoring in 0.1A
-    uint16_t dcCurrentLimitRegen; // current limit for regen in 0.1A
+    float dcVoltLimitMotor; // minimum DC voltage limit for motoring in V
+    float dcVoltLimitRegen; //  maximum DC voltage limit for regen in V
+    float dcCurrentLimitMotor; // current limit for motoring in A
+    float dcCurrentLimitRegen; // current limit for regen in A
 
     bool enableOscillationLimiter; // this will enable the DMC5 oscillation limiter (if also enabled by parameter)
 };
@@ -167,8 +167,8 @@ public:
 
 private:
     // DMC_TRQS2
-    int16_t maxPositiveTorque; // max positive available torque in 0.01Nm -> divide by 100 to get Nm
-    int16_t minNegativeTorque; // minimum negative available torque in 0.01Nm
+    float maxPositiveTorque; // max positive available torque in Nm
+    float minNegativeTorque; // minimum negative available torque in Nm
     uint8_t limiterStateNumber; // state number of active limiter
 
     int tickCounter; // count how many times handleTick() was called

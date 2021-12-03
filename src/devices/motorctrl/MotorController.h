@@ -43,51 +43,15 @@
 
 #define CFG_TICK_INTERVAL_MOTOR_CONTROLLER          40000
 
-#define MaxTorqueValue      3000 //in tenths of a Nm
-#define	MaxRPMValue         6000 //DMOC will ignore this but we can use it ourselves for limiting
-#define RPMSlewRateValue    10000 // rpm/sec the requested speed should change (speed mode)
-#define TorqueSlewRateValue 6000 // 0.1Nm/sec the requested torque output should change (torque mode)
-#define KilowattHrs         11000 //not currently used
-#define NominalVolt         3300 //a reasonable figure for a lithium cell pack driving the DMOC (in tenths of a volt)
-#define ReversePercent      50
-#define CoolFan             6  //output to use for cooling fan
-#define CoolOn              40 //temperature (in C) to turn on cooling fan
-#define BrakeLight          255 //temperature to turn it off
-#define CoolOff             35 //temperature to turn it off
-#define RevLight            255 //temperature to turn it off
-#define EnableIn            0//temperature to turn it off
-#define ReverseIn           1 //temperature to turn it off
-#define MaxRegenWatts       40000 //in actual watts, there is no scale here
-#define MaxAccelWatts       150000
-#define BatteryCapacity     100
-#define RegenTaperUpper     500
-#define RegenTaperLower     75
-
 class MotorControllerConfiguration : public DeviceConfiguration {
 public:
     uint16_t speedMax; // in rpm
-    uint16_t torqueMax;	// maximum torque in 0.1 Nm
-    uint16_t torqueSlewRate; // for torque mode only: slew rate of torque value, 0=disabled, in 0.1Nm/sec
+    float torqueMax;	// maximum torque in 1 Nm
+    float torqueSlewRate; // for torque mode only: slew rate of torque value, 0=disabled, in 1Nm/sec
     uint16_t speedSlewRate; //  for speed mode only: slew rate of speed value, 0=disabled, in rpm/sec
     uint8_t reversePercent;
     uint16_t regenTaperUpper; //upper limit where regen tapering starts
     uint16_t regenTaperLower; //lower RPM limit below which no regen will happen
-
-    //what the hell are these things doing in the motor controller class?! What where we smoking?!
-    //These don't really have anything to do with the motor controller. They should be moved to
-    //a separate class that is used for general car I/O stuff.
-
-    //these seem to all be BMS related stuff. Probably got stuck here when we weren't using a BMS
-    //so there wasn't really any better place. We know better now.
-    uint16_t kilowattHrs;
-    uint16_t nominalVolt; //nominal pack voltage in tenths of a volt - seems to actually be fully charged voltage. Misnamed?!
-    uint8_t capacity;
-    
-    uint8_t coolFan;
-    uint8_t coolOn;
-    uint8_t coolOff;
-    uint8_t brakeLight;
-    uint8_t revLight;
 
     //well, these might be able to be in the motor controller class. But, really people
     //could have many ways to select a gear - discrete inputs like this, or via a CAN gearbox
@@ -95,7 +59,6 @@ public:
     //elsewhere too.
     uint8_t enableIn;
     uint8_t reverseIn;
-
 };
 
 class MotorController: public Device {
@@ -103,9 +66,9 @@ class MotorController: public Device {
 public:
     enum Gears {
         NEUTRAL = 0,
-        DRIVE = 1,
+        DRIVE =   1,
         REVERSE = 2,
-        ERROR = 3,
+        ERROR =   3,
     };
 
     enum PowerMode {
@@ -114,9 +77,9 @@ public:
     };
 
     enum OperationState {
-        DISABLED = 0,
-        STANDBY = 1,
-        ENABLE = 2,
+        DISABLED =  0,
+        STANDBY =   1,
+        ENABLE =    2,
         POWERDOWN = 3
     };
 
@@ -183,45 +146,34 @@ public:
     Gears getSelectedGear();
 
     int16_t getThrottle();
-    int8_t getCoolFan();
-    int8_t getCoolOn();
-    int8_t getCoolOff();
-    int8_t getBrakeLight();
-    int8_t getRevLight();
     int8_t getEnableIn();
     int8_t getReverseIn();
     int16_t getselectedGear();
-    int16_t getnominalVolt();
     int16_t getSpeedRequested();
     int16_t getSpeedActual();
-    int16_t getTorqueRequested();
-    int16_t getTorqueActual();
-    int16_t getTorqueAvailable();
+    float getTorqueRequested();
+    float getTorqueActual();
+    float getTorqueAvailable();
     int preMillis();
 
-    uint16_t getDcVoltage();
-    int16_t getDcCurrent();
-    uint16_t getAcCurrent();
-    int16_t getMechanicalPower();
-    int16_t getTemperatureMotor();
-    int16_t getTemperatureInverter();
-    int16_t getTemperatureSystem();
+    float getDcVoltage();
+    float getDcCurrent();
+    float getAcCurrent();
+    float getMechanicalPower();
+    float getTemperatureMotor();
+    float getTemperatureInverter();
+    float getTemperatureSystem();
 
     int milliseconds;
     int seconds;
     int minutes;
     int hours ;
-    int premillis;
-    uint16_t nominalVolts; //nominal pack voltage in 1/10 of a volt
-    uint8_t capacity;
-
 
 protected:
     bool ready; // indicates if the controller is ready to enable the power stage
     bool running; // indicates if the power stage of the inverter is operative
     bool faulted; // indicates a error condition is present in the controller
     bool warning; // indicates a warning condition is present in the controller
-    bool coolflag;
     bool testenableinput;
     bool testreverseinput;
 
@@ -233,17 +185,17 @@ protected:
     int16_t throttleRequested; // -1000 to 1000 (per mille of throttle level)
     int16_t speedRequested; // in rpm
     int16_t speedActual; // in rpm
-    int16_t torqueRequested; // in 0.1 Nm
-    int16_t torqueActual; // in 0.1 Nm
-    int16_t torqueAvailable; // the maximum available torque in 0.1Nm
+    float torqueRequested; // in Nm
+    float torqueActual; // in Nm
+    float torqueAvailable; // the maximum available torque in Nm
 
-    uint16_t dcVoltage; // DC voltage in 0.1 Volts
-    int16_t dcCurrent; // DC current in 0.1 Amps
-    uint16_t acCurrent; // AC current in 0.1 Amps
-    int16_t mechanicalPower; // mechanical power of the motor 0.1 kW
-    int16_t temperatureMotor; // temperature of motor in 0.1 degree C
-    int16_t temperatureInverter; // temperature of inverter power stage in 0.1 degree C
-    int16_t temperatureSystem; // temperature of controller in 0.1 degree C
+    float dcVoltage; // DC voltage in 0.1 Volts
+    float dcCurrent; // DC current in 0.1 Amps
+    float acCurrent; // AC current in 0.1 Amps
+    float mechanicalPower; // mechanical power of the motor kW
+    float temperatureMotor; // temperature of motor in degree C
+    float temperatureInverter; // temperature of inverter power stage in degree C
+    float temperatureSystem; // temperature of controller in degree C
 
     uint32_t skipcounter;
 };

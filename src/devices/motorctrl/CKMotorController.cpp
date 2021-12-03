@@ -153,14 +153,14 @@ void CKMotorController::sendPowerCmd() {
 			torqueRequested = 0;
 			if (throttleRequested > 0)
 			{
-		        speedRequested = (((long) throttleRequested * (long) config->speedMax) / 1000);			
+		        speedRequested = (( throttleRequested * config->speedMax) / 1000.0f);
 			}
 			else speedRequested = 0;
 		}	
 		else if (powerMode == modeTorque)
 		{
 			speedRequested = 0;
-			torqueRequested = (long)throttleRequested * (long)config->torqueMax / 1000l;	
+			torqueRequested = throttleRequested * config->torqueMax / 100.0f; //Send in 0.1Nm increments
 		}
 	}
 	else
@@ -171,8 +171,9 @@ void CKMotorController::sendPowerCmd() {
 
 	output.buf[0] = (speedRequested & 0x00FF);
     output.buf[1] = (speedRequested >> 8) & 0xFF;
-	output.buf[2] = (torqueRequested & 0x00FF);
-	output.buf[3] = (torqueRequested >> 8) & 0xFF;    
+    int16_t torq = torqueRequested * 10;
+	output.buf[2] = (torq & 0x00FF);
+	output.buf[3] = (torq >> 8) & 0xFF;    
    
     if (actualState == ENABLE) {
 		output.buf[4] = 1;

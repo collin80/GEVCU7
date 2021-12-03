@@ -74,7 +74,6 @@ private:
     void sendCmd1();
     void sendCmd2();
     uint8_t genCodaCRC(uint8_t cmd, uint8_t torq_lsb, uint8_t torq_msb);
-
 };
 
 #endif /* CODA_H_ */

@@ -35,6 +35,13 @@
  */
 
 /*
+Additional warning:
+GEVCU7 has transitioned to using floating point for most things as the processor handles it natively.
+This code has been roughly ported over but probably not properly. I have no inverter to test with.
+So, this probably needs work.
+*/
+
+/*
  * Constructor
  */
 BrusaMotorController::BrusaMotorController() : MotorController() {    
@@ -127,14 +134,15 @@ void BrusaMotorController::sendControl() {
             outputFrame.buf[2] = (speedRequested & 0xFF00) >> 8;
             outputFrame.buf[3] = (speedRequested & 0x00FF);
 
-            // set the torque in 0.01Nm (GEVCU uses 0.1Nm -> multiply by 10)
-            outputFrame.buf[4] = ((torqueRequested * 10) & 0xFF00) >> 8;
-            outputFrame.buf[5] = ((torqueRequested * 10) & 0x00FF);
+            // set the torque in 0.01Nm (GEVCU uses Nm -> multiply by 100)
+            int16_t torq = torqueRequested * 100;
+            outputFrame.buf[4] = (torq & 0xFF00) >> 8;
+            outputFrame.buf[5] = (torq & 0x00FF);
         }
     }
 
     if (Logger::isDebug())
-        Logger::debug(BRUSA_DMC5, "requested Speed: %i rpm, requested Torque: %f Nm", speedRequested, (float)torqueRequested/10.0F);
+        Logger::debug(BRUSA_DMC5, "requested Speed: %i rpm, requested Torque: %.2f Nm", speedRequested, (float)torqueRequested);
 
     canHandlerEv.sendFrame(outputFrame);
 }
@@ -148,8 +156,9 @@ void BrusaMotorController::sendControl2() {
     BrusaMotorControllerConfiguration *config = (BrusaMotorControllerConfiguration *)getConfiguration();
 
     prepareOutputFrame(CAN_ID_CONTROL_2);
-    outputFrame.buf[0] = ((config->torqueSlewRate * 10) & 0xFF00) >> 8;
-    outputFrame.buf[1] = ((config->torqueSlewRate * 10) & 0x00FF);
+    uint16_t torqSlew = (config->torqueSlewRate * 100);
+    outputFrame.buf[0] = (torqSlew & 0xFF00) >> 8;
+    outputFrame.buf[1] = (torqSlew & 0x00FF);
     outputFrame.buf[2] = (config->speedSlewRate & 0xFF00) >> 8;
     outputFrame.buf[3] = (config->speedSlewRate & 0x00FF);
     outputFrame.buf[4] = (config->maxMechanicalPowerMotor & 0xFF00) >> 8;
@@ -169,14 +178,19 @@ void BrusaMotorController::sendLimits() {
     BrusaMotorControllerConfiguration *config = (BrusaMotorControllerConfiguration *)getConfiguration();
 
     prepareOutputFrame(CAN_ID_LIMIT);
-    outputFrame.buf[0] = (config->dcVoltLimitMotor & 0xFF00) >> 8;
-    outputFrame.buf[1] = (config->dcVoltLimitMotor & 0x00FF);
-    outputFrame.buf[2] = (config->dcVoltLimitRegen & 0xFF00) >> 8;
-    outputFrame.buf[3] = (config->dcVoltLimitRegen & 0x00FF);
-    outputFrame.buf[4] = (config->dcCurrentLimitMotor & 0xFF00) >> 8;
-    outputFrame.buf[5] = (config->dcCurrentLimitMotor & 0x00FF);
-    outputFrame.buf[6] = (config->dcCurrentLimitRegen & 0xFF00) >> 8;
-    outputFrame.buf[7] = (config->dcCurrentLimitRegen & 0x00FF);
+    uint16_t dcVoltLim = config->dcVoltLimitMotor;
+    outputFrame.buf[0] = (dcVoltLim & 0xFF00) >> 8;
+    outputFrame.buf[1] = (dcVoltLim & 0x00FF);
+
+    uint16_t dcVoltLimR = config->dcVoltLimitRegen;
+    outputFrame.buf[2] = (dcVoltLimR & 0xFF00) >> 8;
+    outputFrame.buf[3] = (dcVoltLimR & 0x00FF);
+    uint16_t dcCurrLimM = config->dcCurrentLimitMotor;
+    uint16_t dcCurrLimR = config->dcCurrentLimitRegen;
+    outputFrame.buf[4] = (dcCurrLimM & 0xFF00) >> 8;
+    outputFrame.buf[5] = (dcCurrLimM & 0x00FF);
+    outputFrame.buf[6] = (dcCurrLimR & 0xFF00) >> 8;
+    outputFrame.buf[7] = (dcCurrLimR & 0x00FF);
 
     canHandlerEv.sendFrame(outputFrame);
 }
@@ -236,12 +250,12 @@ void BrusaMotorController::handleCanFrame( const CAN_message_t &frame) {
  */
 void BrusaMotorController::processStatus(uint8_t data[]) {
     uint32_t brusaStatus = (uint32_t)(data[1] | (data[0] << 8));
-    torqueAvailable = (int16_t)(data[3] | (data[2] << 8)) / 10;
-    torqueActual = (int16_t)(data[5] | (data[4] << 8)) / 10;
+    torqueAvailable = (int16_t)(data[3] | (data[2] << 8)) / 100.0f;
+    torqueActual = (int16_t)(data[5] | (data[4] << 8)) / 100.0f;
     speedActual = (int16_t)(data[7] | (data[6] << 8));
 
     if(Logger::isDebug())
-        Logger::debug(BRUSA_DMC5, "status: %X, torque avail: %fNm, actual torque: %fNm, speed actual: %drpm", brusaStatus, (float)torqueAvailable/100.0F, (float)torqueActual/100.0F, speedActual);
+        Logger::debug(BRUSA_DMC5, "status: %X, torque avail: %.2fNm, actual torque: %.2fNm, speed actual: %urpm", brusaStatus, (float)torqueAvailable/100.0F, (float)torqueActual/100.0F, speedActual);
 
     ready = (brusaStatus & stateReady) != 0 ? true : false;
     running = (brusaStatus & stateRunning) != 0 ? true : false;
@@ -256,13 +270,13 @@ void BrusaMotorController::processStatus(uint8_t data[]) {
  * applied mechanical power.
  */
 void BrusaMotorController::processActualValues(uint8_t data[]) {
-    dcVoltage = (uint16_t)(data[1] | (data[0] << 8));
-    dcCurrent = (int16_t)(data[3] | (data[2] << 8));
-    acCurrent = (uint16_t)(data[5] | (data[4] << 8)) / 2.5;
-    mechanicalPower = (int16_t)(data[7] | (data[6] << 8)) / 6.25;
+    dcVoltage = (data[1] | (data[0] << 8));
+    dcCurrent = (int16_t)(data[3] | (data[2] << 8)) / 1.0f;
+    acCurrent = (data[5] | (data[4] << 8)) / 2.5f;
+    mechanicalPower = (int16_t)(data[7] | (data[6] << 8)) / 6.25f;
 
     if (Logger::isDebug())
-        Logger::debug(BRUSA_DMC5, "actual values: DC Volts: %fV, DC current: %fA, AC current: %fA, mechPower: %fkW", (float)dcVoltage / 10.0F, (float)dcCurrent / 10.0F, (float)acCurrent / 10.0F, (float)mechanicalPower / 10.0F);
+        Logger::debug(BRUSA_DMC5, "actual values: DC Volts: %.1fV, DC current: %.1fA, AC current: %fA, mechPower: %fkW", (float)dcVoltage, (float)dcCurrent, (float)acCurrent, (float)mechanicalPower);
 }
 
 /*
@@ -286,12 +300,12 @@ void BrusaMotorController::processErrors(uint8_t data[]) {
  * This message provides information about available torque.
  */
 void BrusaMotorController::processTorqueLimit(uint8_t data[]) {
-    maxPositiveTorque = (int16_t)(data[1] | (data[0] << 8)) / 10;
-    minNegativeTorque = (int16_t)(data[3] | (data[2] << 8)) / 10;
+    maxPositiveTorque = (int16_t)(data[1] | (data[0] << 8)) / 100.0f;
+    minNegativeTorque = (int16_t)(data[3] | (data[2] << 8)) / 100.0f;
     limiterStateNumber = (uint8_t)data[4];
 
     if (Logger::isDebug())
-        Logger::debug(BRUSA_DMC5, "torque limit: max positive: %fNm, min negative: %fNm", (float) maxPositiveTorque / 10.0F, (float) minNegativeTorque / 10.0F, limiterStateNumber);
+        Logger::debug(BRUSA_DMC5, "torque limit: max positive: %fNm, min negative: %fNm", (float) maxPositiveTorque, (float) minNegativeTorque, limiterStateNumber);
 }
 
 /*
@@ -300,12 +314,12 @@ void BrusaMotorController::processTorqueLimit(uint8_t data[]) {
  * This message provides information about motor and inverter temperatures.
  */
 void BrusaMotorController::processTemperature(uint8_t data[]) {
-    temperatureInverter = (int16_t)(data[1] | (data[0] << 8)) * 5;
-    temperatureMotor = (int16_t)(data[3] | (data[2] << 8)) * 5;
-    temperatureSystem = (int16_t)(data[4] - 50) * 10;
+    temperatureInverter = (int16_t)(data[1] | (data[0] << 8)) * 0.5f;
+    temperatureMotor = (int16_t)(data[3] | (data[2] << 8)) * 0.5f;
+    temperatureSystem = (int16_t)(data[4] - 50) * 1.0f;
 
     if (Logger::isDebug())
-        Logger::debug(BRUSA_DMC5, "temperature: inverter: %fC, motor: %fC, system: %fC", (float)temperatureInverter / 10.0F, (float)temperatureMotor / 10.0F, (float)temperatureSystem / 10.0F);
+        Logger::debug(BRUSA_DMC5, "temperature: inverter: %fC, motor: %fC, system: %fC", (float)temperatureInverter, (float)temperatureMotor, (float)temperatureSystem);
 }
 
 /*
@@ -351,9 +365,9 @@ void BrusaMotorController::loadConfiguration() {
         prefsHandler->read("dcCurrLimRegen", &config->dcCurrentLimitRegen, 0);
         prefsHandler->read("enableOscLim", (uint8_t)&config->enableOscillationLimiter, (uint8_t)0);
     //}
-    Logger::debug(BRUSA_DMC5, "Max mech power motor: %d kW, max mech power regen: %d ", config->maxMechanicalPowerMotor, config->maxMechanicalPowerRegen);
-    Logger::debug(BRUSA_DMC5, "DC limit motor: %d Volt, DC limit regen: %d Volt", config->dcVoltLimitMotor, config->dcVoltLimitRegen);
-    Logger::debug(BRUSA_DMC5, "DC limit motor: %d Amps, DC limit regen: %d Amps", config->dcCurrentLimitMotor, config->dcCurrentLimitRegen);
+    Logger::debug(BRUSA_DMC5, "Max mech power motor: %f kW, max mech power regen: %f ", config->maxMechanicalPowerMotor, config->maxMechanicalPowerRegen);
+    Logger::debug(BRUSA_DMC5, "DC limit motor: %f Volt, DC limit regen: %f Volt", config->dcVoltLimitMotor, config->dcVoltLimitRegen);
+    Logger::debug(BRUSA_DMC5, "DC limit motor: %f Amps, DC limit regen: %f Amps", config->dcCurrentLimitMotor, config->dcCurrentLimitRegen);
 }
 
 /*

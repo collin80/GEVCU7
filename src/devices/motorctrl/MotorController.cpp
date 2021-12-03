@@ -55,13 +55,10 @@ MotorController::MotorController() : Device() {
     dcVoltage = 0;
     dcCurrent = 0;
     acCurrent = 0;
-    nominalVolts = 0;
 
-    coolflag = false;
     skipcounter = 0;
     testenableinput = 0;
     testreverseinput = 0;
-    premillis = 0;
 }
 
 void MotorController::setup() {
@@ -71,9 +68,9 @@ void MotorController::setup() {
     cfgEntries.reserve(20);
 
     ConfigEntry entry;
-    entry = {"TORQ", "Set torque upper limit (tenths of a Nm)", &config->torqueMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000, 0, nullptr};
+    entry = {"TORQ", "Set torque upper limit (tenths of a Nm)", &config->torqueMax, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 5000.0f, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TORQSLEW", "Torque slew rate (per second, tenths of a Nm)", &config->torqueSlewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 50000, 0, nullptr};
+    entry = {"TORQSLEW", "Torque slew rate (per second, tenths of a Nm)", &config->torqueSlewRate, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 50000.0f, 1, nullptr};
     cfgEntries.push_back(entry);
     entry = {"RPM", "Set maximum RPM", &config->speedMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 30000, 0, nullptr};
     cfgEntries.push_back(entry);
@@ -92,12 +89,6 @@ void MotorController::setup() {
 
     statusBitfield.bitfield = 0;
 
-    nominalVolts = config->nominalVolt;
-    capacity = config->capacity;
-    premillis = millis();
-
-    coolflag = false;
-
     Device::setup();
 }
 
@@ -111,7 +102,7 @@ void MotorController::handleTick() {
     statusBitfield.faulted = faulted;
 
     //Calculate killowatts and kilowatt hours
-    mechanicalPower = dcVoltage * dcCurrent / 10000; //In kilowatts. DC voltage is x10
+    mechanicalPower = dcVoltage * dcCurrent / 1000.0f; //In kilowatts.
 
     //Throttle check
     Throttle *accelerator = deviceManager.getAccelerator();
@@ -125,47 +116,12 @@ void MotorController::handleTick() {
     if(skipcounter++ > 30)    //A very low priority loop for checks that only need to be done once per second.
     {
         skipcounter=0; //Reset our laptimer
-
-        coolingcheck();
-        checkBrakeLight();
         checkEnableInput();
         checkReverseInput();
-        checkReverseLight();
     }
 }
 
-//This routine is used to set an optional cooling fan output to on if the current temperature
-//exceeds a specified value.  Annunciators are set on website to indicate status.
-void MotorController::coolingcheck()
-{
-    int coolfan=getCoolFan();
-
-    if(coolfan>=0 and coolfan<8)    //We have 8 outputs 0-7 If they entered something else, there is no point in doing this check.
-    {
-        if(temperatureInverter/10>getCoolOn())  //If inverter temperature greater than COOLON, we want to turn on the coolingoutput
-        {
-            if(!coolflag)
-            {
-                coolflag=1;
-                systemIO.setDigitalOutput(coolfan, 1); //Turn on cooling fan output
-                //statusBitfield1 |=1 << coolfan; //set bit to turn on cooling fan output annunciator
-                //statusBitfield3 |=1 << 9; //Set bit to turn on OVERTEMP annunciator
-            }
-        }
-
-        if(temperatureInverter/10<getCoolOff()) //If inverter temperature falls below COOLOFF, we want to turn cooling off.
-        {
-            if(coolflag)
-            {
-                coolflag=0;
-                systemIO.setDigitalOutput(coolfan, 0); //Set cooling fan output off
-                //statusBitfield1 &= ~(1 << coolfan); //clear bit to turn off cooling fan output annunciator
-                //statusBitfield3 &= ~(1 << 9); //clear bit to turn off OVERTEMP annunciator
-            }
-        }
-    }
-}
-
+/*
 //If we have a brakelight output configured, this will set it anytime regen greater than 10 Newton meters
 void MotorController::checkBrakeLight()
 {
@@ -206,6 +162,7 @@ void MotorController::checkReverseLight()
         }
     }
 }
+*/
 
 //If we have an ENABLE input configured, this will set opstation to ENABLE anytime it is true (12v), DISABLED if not.
 void MotorController:: checkEnableInput()
@@ -263,10 +220,10 @@ bool MotorController::isWarning() {
     return warning;
 }
 
-
 DeviceType MotorController::getType() {
     return (DEVICE_MOTORCTRL);
 }
+
 void MotorController::setOpState(OperationState op) {
     operationState = op;
 }
@@ -286,27 +243,6 @@ uint32_t MotorController::getStatusBitfield() {
     return statusBitfield.bitfield;
 }
 
-int8_t MotorController::getCoolFan() {
-    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
-    return config->coolFan;
-}
-int8_t MotorController::getCoolOn() {
-    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
-    return config->coolOn;
-}
-
-int8_t MotorController::getCoolOff() {
-    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
-    return config->coolOff;
-}
-int8_t MotorController::getBrakeLight() {
-    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
-    return config->brakeLight;
-}
-int8_t MotorController::getRevLight() {
-    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
-    return config->revLight;
-}
 int8_t MotorController::getEnableIn() {
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
     return config->enableIn;
@@ -328,11 +264,11 @@ int16_t MotorController::getSpeedActual() {
     return speedActual;
 }
 
-int16_t MotorController::getTorqueRequested() {
+float MotorController::getTorqueRequested() {
     return torqueRequested;
 }
 
-int16_t MotorController::getTorqueActual() {
+float MotorController::getTorqueActual() {
     return torqueActual;
 }
 
@@ -343,40 +279,35 @@ void MotorController::setSelectedGear(Gears gear) {
     selectedGear=gear;
 }
 
-
-int16_t MotorController::getTorqueAvailable() {
+float MotorController::getTorqueAvailable() {
     return torqueAvailable;
 }
 
-uint16_t MotorController::getDcVoltage() {
+float MotorController::getDcVoltage() {
     return dcVoltage;
 }
 
-int16_t MotorController::getDcCurrent() {
+float MotorController::getDcCurrent() {
     return dcCurrent;
 }
 
-uint16_t MotorController::getAcCurrent() {
+float MotorController::getAcCurrent() {
     return acCurrent;
 }
 
-int16_t MotorController::getnominalVolt() {
-    return nominalVolts;
-}
-
-int16_t MotorController::getMechanicalPower() {
+float MotorController::getMechanicalPower() {
     return mechanicalPower;
 }
 
-int16_t MotorController::getTemperatureMotor() {
+float MotorController::getTemperatureMotor() {
     return temperatureMotor;
 }
 
-int16_t MotorController::getTemperatureInverter() {
+float MotorController::getTemperatureInverter() {
     return temperatureInverter;
 }
 
-int16_t MotorController::getTemperatureSystem() {
+float MotorController::getTemperatureSystem() {
     return temperatureSystem;
 }
 
@@ -396,16 +327,10 @@ void MotorController::loadConfiguration() {
     //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
         Logger::info((char *)Constants::validChecksum);
         prefsHandler->read("MaxRPM", &config->speedMax, 6000);
-        prefsHandler->read("MaxTorque", &config->torqueMax, 3000);
+        prefsHandler->read("MaxTorque", &config->torqueMax, 300.0f);
         prefsHandler->read("RPMSlew", &config->speedSlewRate, 10000);
-        prefsHandler->read("TorqueSlew", &config->torqueSlewRate, 6000);
+        prefsHandler->read("TorqueSlew", &config->torqueSlewRate, 600.0f);
         prefsHandler->read("ReversePercentage", &config->reversePercent, 50);
-        prefsHandler->read("NominalVoltage", &config->nominalVolt, 3300);
-        prefsHandler->read("CoolFanOutput", &config->coolFan, 6);
-        prefsHandler->read("CoolOnTemp", &config->coolOn, 40);
-        prefsHandler->read("CoolOffTemp", &config->coolOff, 35);
-        prefsHandler->read("BrakeLightOutput", &config->brakeLight, 255);
-        prefsHandler->read("ReverseLightOutput", &config->revLight, 255);
         prefsHandler->read("Enable_DIN", &config->enableIn, 0);
         prefsHandler->read("Reverse_DIN", &config->reverseIn, 1);
         prefsHandler->read("RegenTaperUpper", &config->regenTaperUpper, 500);
@@ -416,7 +341,7 @@ void MotorController::loadConfiguration() {
             config->regenTaperUpper = 500;
         }
     //DeviceManager::getInstance()->sendMessage(DEVICE_WIFI, ICHIP2128, MSG_CONFIG_CHANGE, NULL);
-    Logger::info("MaxTorque: %i MaxRPM: %i", config->torqueMax, config->speedMax);
+    Logger::info("MaxTorque: %.1f MaxRPM: %i", config->torqueMax, config->speedMax);
 }
 
 void MotorController::saveConfiguration() {
@@ -429,12 +354,6 @@ void MotorController::saveConfiguration() {
     prefsHandler->write("RPMSlew", config->speedSlewRate);
     prefsHandler->write("TorqueSlew", config->torqueSlewRate);
     prefsHandler->write("ReversePercentage", config->reversePercent);
-    prefsHandler->write("NominalVoltage", config->nominalVolt);
-    prefsHandler->write("CoolFanOutput", config->coolFan);
-    prefsHandler->write("CoolOnTemp", config->coolOn);
-    prefsHandler->write("CoolOffTemp", config->coolOff);
-    prefsHandler->write("BrakeLightOutput", config->brakeLight);
-    prefsHandler->write("ReverseLightOutput", config->revLight);
     prefsHandler->write("Enable_DIN", config->enableIn);
     prefsHandler->write("Reverse_DIN", config->reverseIn);
     prefsHandler->write("RegenTaperLower", config->regenTaperLower);

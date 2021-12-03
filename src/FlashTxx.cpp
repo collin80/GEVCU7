@@ -1,5 +1,5 @@
 //******************************************************************************
-// Flash write/erase functions for TLC/T3x/T4x and LMEM cache functions for T3.6
+// Flash write/erase functions (TLC/T3x/T4x/TMM), LMEM cache functions for T3.6
 //******************************************************************************
 // WARNING:  you can destroy your MCU with flash erase or write!
 // This code may or may not protect you from that.
@@ -312,10 +312,6 @@ RAMFUNC void flash_move( uint32_t dst, uint32_t src, uint32_t size )
     }   
   }
 
-  #ifdef ARDUINO_TEENSY_MICROMOD
-  return;
-  #endif
-
   // for T3.x, at least, must REBOOT here (via macro) because original code has
   // been erased and overwritten, so return address is no longer valid
   REBOOT;
@@ -373,8 +369,8 @@ int flash_write_block( uint32_t addr, char *data, uint32_t count )
   addr -= buf_count;					//   address of data[0]
 
   while (data_i < count) {				// while more data
+    ((char*)&buf)[buf_count++] = data[data_i++];	//   copy a byte to buf
     if (buf_count < FLASH_WRITE_SIZE) {			//   if buf not complete
-      ((char*)&buf)[buf_count++] = data[data_i++];	//     copy a byte
       continue;						//     continue while()
     }							//   
     #if defined(__IMXRT1062__)				//   #if T4.x 4-byte

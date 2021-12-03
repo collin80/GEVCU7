@@ -81,28 +81,71 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
         }
         break;
     case CFG_ENTRY_VAR_TYPE::FLOAT:
-        str += "%.4f - " + entry.helpText;
-        Logger::console(str.c_str(), *(float *)entry.varPtr);
+        char formatString[20];
+        if (entry.descFunc)
+        {
+            snprintf(formatString, 20, "%%.%uf [%s] - ", entry.precision);
+            str += formatString + entry.helpText;
+            Logger::console(str.c_str(), *(float *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+        }
+        else 
+        {
+            snprintf(formatString, 20, "%%.%uf - ", entry.precision);
+            str += formatString + entry.helpText;
+            Logger::console(str.c_str(), *(float *)entry.varPtr);
+        }
         break;
     case CFG_ENTRY_VAR_TYPE::INT16:
-        str += "%i - " + entry.helpText;
-        Logger::console(str.c_str(), *(int16_t *)entry.varPtr);
+        if (entry.descFunc)
+        {
+            str += "%i [%s] - " + entry.helpText;
+            Logger::console(str.c_str(), *(int16_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+        }
+        else 
+        {
+            str += "%i - " + entry.helpText;
+            Logger::console(str.c_str(), *(int16_t *)entry.varPtr);
+        }
         break;
     case CFG_ENTRY_VAR_TYPE::INT32:
-        str += "%i - " + entry.helpText;
-        Logger::console(str.c_str(), *(int32_t *)entry.varPtr);
+        if (entry.descFunc)
+        {
+            str += "%i [%s] - " + entry.helpText;
+            Logger::console(str.c_str(), *(int32_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+        }
+        else 
+        {
+            str += "%i - " + entry.helpText;
+            Logger::console(str.c_str(), *(int32_t *)entry.varPtr);
+        }
         break;
     case CFG_ENTRY_VAR_TYPE::STRING:
         str += "%s - " + entry.helpText;
         Logger::console(str.c_str(), *(char *)entry.varPtr);
         break;
     case CFG_ENTRY_VAR_TYPE::UINT16:
-        str += "%u - " + entry.helpText;
-        Logger::console(str.c_str(), *(uint16_t *)entry.varPtr);
+        if (entry.descFunc)
+        {
+            str += "%u [%s] - " + entry.helpText;
+            Logger::console(str.c_str(), *(uint16_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+        }
+        else 
+        {
+            str += "%u - " + entry.helpText;
+            Logger::console(str.c_str(), *(uint16_t *)entry.varPtr);
+        }
         break;
     case CFG_ENTRY_VAR_TYPE::UINT32:
-        str += "%u - " + entry.helpText;
-        Logger::console(str.c_str(), *(uint32_t *)entry.varPtr);
+        if (entry.descFunc)
+        {
+            str += "%u [%s] - " + entry.helpText;
+            Logger::console(str.c_str(), *(uint32_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+        }
+        else 
+        {
+            str += "%u - " + entry.helpText;
+            Logger::console(str.c_str(), *(uint32_t *)entry.varPtr);
+        }
         break;    
     }
 }
@@ -743,26 +786,7 @@ void SerialConsole::handleConfigCmd() {
         if (!sysPrefs->write("LogLevel", (uint8_t)newValue))
             Logger::error("Couldn't write log level!");
         sysPrefs->saveChecksum();
-
    
-    } else if (cmdString == String("COOLFAN") && motorConfig) {
-        Logger::console("Cooling fan output updated to: %i", newValue);
-        motorConfig->coolFan = newValue;
-        motorController->saveConfiguration();
-    } else if (cmdString == String("COOLON")&& motorConfig) {
-        if (newValue <= 200 && newValue >= 0) {
-            Logger::console("Cooling fan ON temperature updated to: %i degrees", newValue);
-            motorConfig->coolOn = newValue;
-            motorController->saveConfiguration();
-        }
-        else Logger::console("Invalid cooling ON temperature. Please enter a value 0 - 200F");
-    } else if (cmdString == String("COOLOFF")&& motorConfig) {
-        if (newValue <= 200 && newValue >= 0) {
-            Logger::console("Cooling fan OFF temperature updated to: %i degrees", newValue);
-            motorConfig->coolOff = newValue;
-            motorController->saveConfiguration();
-        }
-        else Logger::console("Invalid cooling OFF temperature. Please enter a value 0 - 200F");
     } else if (cmdString == String("OUTPUT") && newValue<8) {
         int outie = systemIO.getDigitalOutput(newValue);
         Logger::console("DOUT%d,  STATE: %d",newValue, outie);

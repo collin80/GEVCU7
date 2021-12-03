@@ -98,7 +98,7 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
     int temp;
     online = true; //if a frame got to here then it passed the filter and must have been from the DMOC
 
-    Logger::debug(DMOC645, "CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[70]);
+    Logger::debug(DMOC645, "CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
 
 
     switch (frame.id) {
@@ -106,18 +106,18 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
         RotorTemp = frame.buf[0];
         invTemp = frame.buf[1];
         StatorTemp = frame.buf[2];
-        temperatureInverter = (invTemp-40) *10;
+        temperatureInverter = (invTemp-40);
         //now pick highest of motor temps and report it
         if (RotorTemp > StatorTemp) {
-            temperatureMotor = (RotorTemp - 40) * 10;
+            temperatureMotor = (RotorTemp - 40);
         }
         else {
-            temperatureMotor = (StatorTemp - 40) * 10;
+            temperatureMotor = (StatorTemp - 40);
         }
         activityCount++;
         break;
     case 0x23A: //torque report
-        torqueActual = ((frame.buf[0] * 256) + frame.buf[1]) - 30000;
+        torqueActual = (((frame.buf[0] * 256) + frame.buf[1]) - 30000) / 10.0f;
         activityCount++;
         break;
 
@@ -178,8 +178,8 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
         //break;
 
     case 0x650: //HV bus status
-        dcVoltage = ((frame.buf[0] * 256) + frame.buf[1]);
-        dcCurrent = ((frame.buf[2] * 256) + frame.buf[3]) - 5000; //offset is 500A, unit = .1A
+        dcVoltage = ((frame.buf[0] * 256) + frame.buf[1]) / 10.0f;
+        dcCurrent = (((frame.buf[2] * 256) + frame.buf[3]) - 5000) / 10.0f; //offset is 500A, unit = .1A
         activityCount++;
         break;
     }
@@ -306,11 +306,11 @@ void DmocMotorController::sendCmd2() {
     torqueRequested=0;
     if (actualState == ENABLE) { //don't even try sending torque commands until the DMOC reports it is ready
         if (selectedGear == DRIVE) {
-            torqueRequested = (((long) throttleRequested * (long) config->torqueMax) / 1000L);
+            torqueRequested = (((long) throttleRequested * (long) config->torqueMax) / 100.0f);
             //if (speedActual < config->regenTaperUpper && torqueRequested < 0) taperRegen();
         }
         if (selectedGear == REVERSE) {
-            torqueRequested = (((long) throttleRequested * -1 *(long) config->torqueMax) / 1000L);//If reversed, regen becomes positive torque and positive pedal becomes regen.  Let's reverse this by reversing the sign.  In this way, we'll have gradually diminishing positive torque (in reverse, regen) followed by gradually increasing regen (positive torque in reverse.)
+            torqueRequested = (((long) throttleRequested * -1 *(long) config->torqueMax) / 100.0f);//If reversed, regen becomes positive torque and positive pedal becomes regen.  Let's reverse this by reversing the sign.  In this way, we'll have gradually diminishing positive torque (in reverse, regen) followed by gradually increasing regen (positive torque in reverse.)
             //if (speedActual < config->regenTaperUpper && torqueRequested > 0) taperRegen();
         }
     }
@@ -362,8 +362,8 @@ void DmocMotorController::sendCmd3() {
     output.id = 0x234;
     output.flags.extended = 0; //standard frame
 
-    int regenCalc = 65000 - (MaxRegenWatts / 4);
-    int accelCalc = (MaxAccelWatts / 4);
+    int regenCalc = 65000 - 10000; //(MaxRegenWatts / 4); 
+    int accelCalc = 25000; //(MaxAccelWatts / 4);
     output.buf[0] = ((regenCalc & 0xFF00) >> 8); //msb of regen watt limit
     output.buf[1] = (regenCalc & 0xFF); //lsb
     output.buf[2] = ((accelCalc & 0xFF00) >> 8); //msb of acceleration limit

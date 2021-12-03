@@ -143,12 +143,12 @@ void RMSMotorController::handleCanFrame(const CAN_message_t &frame)
 
 void RMSMotorController::handleCANMsgTemperature1(uint8_t *data)
 {
-	int igbtTemp1, igbtTemp2, igbtTemp3, gateTemp;
-    igbtTemp1 = data[0] + (data[1] * 256);
-	igbtTemp2 = data[2] + (data[3] * 256);
-    igbtTemp3 = data[4] + (data[5] * 256);
-    gateTemp = data[6] + (data[7] * 256);
-    Logger::debug("IGBT Temps - 1: %d  2: %d  3: %d     Gate Driver: %d    (0.1C)", igbtTemp1, igbtTemp2, igbtTemp3, gateTemp);
+	float igbtTemp1, igbtTemp2, igbtTemp3, gateTemp;
+    igbtTemp1 = data[0] + (data[1] * 256) / 10.0f;
+	igbtTemp2 = data[2] + (data[3] * 256) / 10.0f;
+    igbtTemp3 = data[4] + (data[5] * 256) / 10.0f;
+    gateTemp = data[6] + (data[7] * 256) / 10.0f;
+    Logger::debug("IGBT Temps - 1: %f  2: %f  3: %f     Gate Driver: %f    (C)", igbtTemp1, igbtTemp2, igbtTemp3, gateTemp);
     temperatureInverter = igbtTemp1;
     if (igbtTemp2 > temperatureInverter) temperatureInverter = igbtTemp2;
     if (igbtTemp3 > temperatureInverter) temperatureInverter = igbtTemp3;
@@ -157,23 +157,23 @@ void RMSMotorController::handleCANMsgTemperature1(uint8_t *data)
 
 void RMSMotorController::handleCANMsgTemperature2(uint8_t *data)
 {
-    int ctrlTemp, rtdTemp1, rtdTemp2, rtdTemp3;
-    ctrlTemp = data[0] + (data[1] * 256);
-	rtdTemp1 = data[2] + (data[3] * 256);
-    rtdTemp2 = data[4] + (data[5] * 256);
-    rtdTemp3 = data[6] + (data[7] * 256);
-    Logger::debug("Ctrl Temp: %d  RTD1: %d   RTD2: %d   RTD3: %d    (0.1C)", ctrlTemp, rtdTemp1, rtdTemp2, rtdTemp3);
+    float ctrlTemp, rtdTemp1, rtdTemp2, rtdTemp3;
+    ctrlTemp = data[0] + (data[1] * 256) / 10.0f;
+	rtdTemp1 = data[2] + (data[3] * 256) / 10.0f;
+    rtdTemp2 = data[4] + (data[5] * 256) / 10.0f;
+    rtdTemp3 = data[6] + (data[7] * 256) / 10.0f;
+    Logger::debug("Ctrl Temp: %f  RTD1: %f   RTD2: %f   RTD3: %f    (C)", ctrlTemp, rtdTemp1, rtdTemp2, rtdTemp3);
 	temperatureSystem = ctrlTemp;
 }
 
 void RMSMotorController::handleCANMsgTemperature3(uint8_t *data)
 {
-    int rtdTemp4, rtdTemp5, motorTemp, torqueShudder;
-    rtdTemp4 = data[0] + (data[1] * 256);
-	rtdTemp5 = data[2] + (data[3] * 256);
-    motorTemp = data[4] + (data[5] * 256);
+    float rtdTemp4, rtdTemp5, motorTemp, torqueShudder;
+    rtdTemp4 = data[0] + (data[1] * 256) / 10.0f;
+	rtdTemp5 = data[2] + (data[3] * 256) / 10.0f;
+    motorTemp = data[4] + (data[5] * 256) / 10.0f;
     torqueShudder = data[6] + (data[7] * 256);
-    Logger::debug("RTD4: %d   RTD5: %d   Motor Temp: %d    Torque Shudder: %d", rtdTemp4, rtdTemp5, motorTemp, torqueShudder);
+    Logger::debug("RTD4: %f   RTD5: %f   Motor Temp: %f    Torque Shudder: %f", rtdTemp4, rtdTemp5, motorTemp, torqueShudder);
 	temperatureMotor = motorTemp;
 }
 
@@ -184,7 +184,7 @@ void RMSMotorController::handleCANMsgAnalogInputs(uint8_t *data)
 	analog2 = data[2] + (data[3] * 256);
     analog3 = data[4] + (data[5] * 256);
     analog4 = data[6] + (data[7] * 256);
-	Logger::debug("RMS  A1: %d   A2: %d   A3: %d   A4: %d", analog1, analog2, analog3, analog4);
+	Logger::debug("RMS  A1: %i   A2: %i   A3: %i   A4: %i", analog1, analog2, analog3, analog4);
 }
 
 void RMSMotorController::handleCANMsgDigitalInputs(uint8_t *data)
@@ -196,7 +196,7 @@ void RMSMotorController::handleCANMsgDigitalInputs(uint8_t *data)
 	{
 		if (data[i] == 1) digInputs |= 1 << i;
 	}
-	Logger::debug("Digital Inputs: %b", digInputs);
+	Logger::debug("Digital Inputs: %x", digInputs);
 }
 
 void RMSMotorController::handleCANMsgMotorPos(uint8_t *data)
@@ -207,51 +207,51 @@ void RMSMotorController::handleCANMsgMotorPos(uint8_t *data)
     elecFreq = data[4] + (data[5] * 256);
     deltaResolver = data[6] + (data[7] * 256);
 	speedActual = motorSpeed;
-	Logger::debug("Angle: %d   Speed: %d   Freq: %d    Delta: %d", motorAngle, motorSpeed, elecFreq, deltaResolver);
+	Logger::debug("Angle: %i   Speed: %i   Freq: %i    Delta: %i", motorAngle, motorSpeed, elecFreq, deltaResolver);
 }
 
 void RMSMotorController::handleCANMsgCurrent(uint8_t *data)
 {
-	int phaseCurrentA, phaseCurrentB, phaseCurrentC, busCurrent;
-    phaseCurrentA = data[0] + (data[1] * 256);
-	phaseCurrentB = data[2] + (data[3] * 256);
-    phaseCurrentC = data[4] + (data[5] * 256);
-    busCurrent = data[6] + (data[7] * 256);
+	float phaseCurrentA, phaseCurrentB, phaseCurrentC, busCurrent;
+    phaseCurrentA = data[0] + (data[1] * 256)  / 10.0f;
+	phaseCurrentB = data[2] + (data[3] * 256) / 10.0f;
+    phaseCurrentC = data[4] + (data[5] * 256) / 10.0f;
+    busCurrent = data[6] + (data[7] * 256) / 10.0f;
 	dcCurrent = busCurrent;
 	acCurrent = phaseCurrentA;
 	if (phaseCurrentB > acCurrent) acCurrent = phaseCurrentB;
 	if (phaseCurrentC > acCurrent) acCurrent = phaseCurrentC;
-	Logger::debug("Phase A: %d    B: %d   C: %d    Bus Current: %d", phaseCurrentA, phaseCurrentB, phaseCurrentC, busCurrent);
+	Logger::debug("Phase A: %f    B: %f   C: %f    Bus Current: %f", phaseCurrentA, phaseCurrentB, phaseCurrentC, busCurrent);
 }
 
 void RMSMotorController::handleCANMsgVoltage(uint8_t *data)
 {
-	int dcVoltage, outVoltage, Vd, Vq;
-    dcVoltage = data[0] + (data[1] * 256);
-	outVoltage = data[2] + (data[3] * 256);
-    Vd = data[4] + (data[5] * 256);
-    Vq = data[6] + (data[7] * 256);
-	Logger::debug("Bus Voltage: %d    OutVoltage: %d   Vd: %d    Vq: %d", dcVoltage, outVoltage, Vd, Vq);
+	float dcVoltage, outVoltage, Vd, Vq;
+    dcVoltage = data[0] + (data[1] * 256) / 10.0f;
+	outVoltage = data[2] + (data[3] * 256) / 10.0f;
+    Vd = data[4] + (data[5] * 256) / 10.0f;
+    Vq = data[6] + (data[7] * 256) / 10.0f;
+	Logger::debug("Bus Voltage: %f    OutVoltage: %f   Vd: %f    Vq: %f", dcVoltage, outVoltage, Vd, Vq);
 }
 
 void RMSMotorController::handleCANMsgFlux(uint8_t *data)
 {
-	int fluxCmd, fluxEst, Id, Iq;
-    fluxCmd = data[0] + (data[1] * 256);
-	fluxEst = data[2] + (data[3] * 256);
-    Id = data[4] + (data[5] * 256);
-    Iq = data[6] + (data[7] * 256);
-	Logger::debug("Flux Cmd: %d  Flux Est: %d   Id: %d    Iq: %d", fluxCmd, fluxEst, Id, Iq);
+	float fluxCmd, fluxEst, Id, Iq;
+    fluxCmd = data[0] + (data[1] * 256) / 10.0f;
+	fluxEst = data[2] + (data[3] * 256) / 10.0f;
+    Id = data[4] + (data[5] * 256) / 10.0f;
+    Iq = data[6] + (data[7] * 256) / 10.0f;
+	Logger::debug("Flux Cmd: %f  Flux Est: %f   Id: %f    Iq: %f", fluxCmd, fluxEst, Id, Iq);
 }
 
 void RMSMotorController::handleCANMsgIntVolt(uint8_t *data)
 {
 	int volts15, volts25, volts50, volts120;
-    volts15 = data[0] + (data[1] * 256);
-	volts25 = data[2] + (data[3] * 256);
-    volts50 = data[4] + (data[5] * 256);
-    volts120 = data[6] + (data[7] * 256);
-	Logger::debug("1.5V: %d   2.5V: %d   5.0V: %d    12V: %d", volts15, volts25, volts50, volts120);
+    volts15 = data[0] + (data[1] * 256) / 10.0f;
+	volts25 = data[2] + (data[3] * 256) / 10.0f;
+    volts50 = data[4] + (data[5] * 256) / 10.0f;
+    volts120 = data[6] + (data[7] * 256) / 10.0f;
+	Logger::debug("1.5V: %f   2.5V: %f   5.0V: %f    12V: %f", volts15, volts25, volts50, volts120);
 }
 
 void RMSMotorController::handleCANMsgIntState(uint8_t *data)
@@ -333,7 +333,7 @@ void RMSMotorController::handleCANMsgIntState(uint8_t *data)
 		break;				
 	}
 	
-	Logger::debug ("Relay States: %b", relayState);
+	Logger::debug ("Relay States: %x", relayState);
 	
 	if (invRunMode) powerMode = modeSpeed;
 	else powerMode = modeTorque;
@@ -442,13 +442,13 @@ void RMSMotorController::handleCANMsgFaults(uint8_t *data)
 
 void RMSMotorController::handleCANMsgTorqueTimer(uint8_t *data)
 {
-	int cmdTorque, actTorque;
+	float cmdTorque, actTorque;
 	uint32_t uptime;
 	
-	cmdTorque = data[0] + (data[1] * 256);
-	actTorque = data[2] + (data[3] * 256);
+	cmdTorque = data[0] + (data[1] * 256) / 10.0f;
+	actTorque = data[2] + (data[3] * 256) / 10.0f;
 	uptime = data[4] + (data[5] * 256) + (data[6] * 65536ul) + (data[7] * 16777216ul);
-	Logger::debug("Torque Cmd: %d   Actual: %d     Uptime: %d", cmdTorque, actTorque, uptime);
+	Logger::debug("Torque Cmd: %f   Actual: %f     Uptime: %lu", cmdTorque, actTorque, uptime);
 	torqueActual = actTorque;
 	//torqueCommand = cmdTorque; //should this be here? We set commanded torque and probably shouldn't overwrite here.
 }
@@ -460,7 +460,7 @@ void RMSMotorController::handleCANMsgModFluxWeaken(uint8_t *data)
 	fieldWeak = data[2] + (data[3] * 256);
     IdCmd = data[4] + (data[5] * 256);
     IqCmd = data[6] + (data[7] * 256);
-	Logger::debug("Mod: %d  Weaken: %d   Id: %d   Iq: %d", modIdx, fieldWeak, IdCmd, IqCmd);
+	Logger::debug("Mod: %i  Weaken: %i   Id: %i   Iq: %i", modIdx, fieldWeak, IdCmd, IqCmd);
 }
 
 void RMSMotorController::handleCANMsgFirmwareInfo(uint8_t *data)
@@ -470,7 +470,7 @@ void RMSMotorController::handleCANMsgFirmwareInfo(uint8_t *data)
 	firmVersion = data[2] + (data[3] * 256);
     dateMMDD = data[4] + (data[5] * 256);
     dateYYYY = data[6] + (data[7] * 256);
-	Logger::debug("EEVer: %d  Firmware: %d   Date: %d %d", EEVersion, firmVersion, dateMMDD, dateYYYY);
+	Logger::debug("EEVer: %u  Firmware: %u   Date: %u %u", EEVersion, firmVersion, dateMMDD, dateYYYY);
 }
 
 void RMSMotorController::handleCANMsgDiagnostic(uint8_t *data)
@@ -538,17 +538,17 @@ void RMSMotorController::sendCmdFrame()
         output.buf[4] = 1;
     }
     
-    torqueRequested = ((throttleRequested * config->torqueMax) / 1000); //Calculate torque request from throttle position x maximum torque
+    torqueRequested = ((throttleRequested * config->torqueMax) / 100.0f); //Calculate torque request from throttle position x maximum torque
     if(speedActual<config->speedMax) {
         torqueCommand = torqueRequested;   //If actual rpm less than max rpm, add torque command to offset
     }
     else {
-        torqueCommand = torqueRequested / 2;   //If at RPM limit, cut torque command in half.
+        torqueCommand = torqueRequested / 2.0f;   //If at RPM limit, cut torque command in half.
     }
     
     if (torqueRequested < 0) torqueRequested = 0;
     
-    Logger::debug("ThrottleRequested: %d     TorqueRequested: %d", throttleRequested, torqueRequested);
+    Logger::debug("ThrottleRequested: %i     TorqueRequested: %i", throttleRequested, torqueRequested);
 	
     output.buf[1] = (torqueCommand & 0xFF00) >> 8;  //Stow torque command in bytes 0 and 1.
     output.buf[0] = (torqueCommand & 0x00FF);

@@ -69,7 +69,7 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
     int temp;
     online = true; //if a frame got to here then it passed the filter and must have been from the DMOC
 
-    Logger::debug("C300 CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[70]);
+    Logger::debug("C300 CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
 
     switch (frame.id) 
     {
@@ -86,7 +86,7 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         ready = ((frame.buf[1] & 3) == 2)?true:false;
         prechargeComplete = ((frame.buf[1] & 8) == 8) ? true : false;
         speedActual = ((frame.buf[4] * 256) + frame.buf[5]) - 12000;
-        torqueActual = (((frame.buf[2] * 256) + frame.buf[3]) / 4) - 5000;
+        torqueActual = (((frame.buf[2] * 256) + frame.buf[3]) / 4.0f) - 5000;
         activityCount++;
         break;
     case 0x0CFF7B02: //torque limits and temperatures
@@ -106,8 +106,8 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         //byte 0 upper nibble = counter
         //byte 1-2 = controller input DC voltage (1 scale, no offset)
         //byte 3-4 = controller input DC amperage (1 scale 1000 offset)
-        dcVoltage = ((frame.buf[1] * 256) + frame.buf[2]) * 10;
-        dcCurrent = (((frame.buf[3] * 256) + frame.buf[4]) * 10) - 10000;
+        dcVoltage = ((frame.buf[1] * 256) + frame.buf[2]);
+        dcCurrent = (((frame.buf[3] * 256) + frame.buf[4])) - 1000;
         activityCount++;
         break;
     case 0x0CFF7C02: //fault reporting
@@ -189,9 +189,9 @@ void C300MotorController::sendCmd()
     torqueRequested = 0;
     if (actualState == ENABLE) { //don't even try sending torque commands until the DMOC reports it is ready
         //if (selectedGear == DRIVE) {
-            //torqueMax is in 1/10 of a Nm, throttle is -1000 to +1000 but we want the output to be
-            //in 1/4 of a Nm. 10 * 1000 / 25 = 2500 as the divisor
-            torqueRequested = (((long) throttleRequested * (long) config->torqueMax) / 2500);
+            //torqueMax is in Nm, throttle is -1000 to +1000 but we want the output to be
+            //in 1/4 of a Nm. Divide by 1000 to get scale then multiply by 4 so really divide by 250
+            torqueRequested = (((long) throttleRequested * (long) config->torqueMax) / 250);
             //if (speedActual < config->regenTaperUpper && torqueRequested < 0) taperRegen();
         //}
         //if (selectedGear == REVERSE) {

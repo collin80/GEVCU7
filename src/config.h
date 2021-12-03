@@ -35,8 +35,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <FlexCAN_T4.h>
 
-#define CFG_BUILD_NUM	1071      //increment this every time a git commit is done. 
-#define CFG_VERSION "GEVCU 2021-11-18"
+#define CFG_BUILD_NUM	1072      //increment this every time a git commit is done. 
+#define CFG_VERSION "GEVCU 2021-12-02"
 
 #define portMEMORY_BARRIER()     __asm volatile ( "dmb" ::: "memory" )
 #define portDATA_SYNC_BARRIER()  __asm volatile ( "dsb" ::: "memory" )

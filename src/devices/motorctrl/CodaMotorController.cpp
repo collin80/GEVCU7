@@ -101,20 +101,23 @@ void CodaMotorController::handleCanFrame(const CAN_message_t &frame)
 
     case 0x209:  //Accurate Feedback Message
 
-        torqueActual =  ((((frame.buf[1] * 256) + frame.buf[0])-32128)) ;
-        dcVoltage = (((frame.buf[3] * 256) + frame.buf[2])-32128);
-        if(dcVoltage<1000) {
-            dcVoltage=1000;   //Lowest value we can display on dashboard
+        torqueActual =  ((((frame.buf[1] * 256) + frame.buf[0])-32128)) / 10.0f;
+        dcVoltage = (((frame.buf[3] * 256) + frame.buf[2])-32128) / 10.0f;
+        
+        if(dcVoltage< 100.0f)
+        {
+            dcVoltage=100.0f;   //Lowest value we can display on dashboard
         }
-        dcCurrent = (((frame.buf[5] * 256) + frame.buf[4])-32128);
-        speedActual = abs((((frame.buf[7] * 256) + frame.buf[6])-32128)/2);
-        Logger::debug("UQM Actual Torque: %d DC Voltage: %d Amps: %d RPM: %d", torqueActual/10,dcVoltage/10,dcCurrent/10,speedActual);
+
+        dcCurrent = (((frame.buf[5] * 256) + frame.buf[4])-32128) / 10.0f;
+        speedActual = abs((((frame.buf[7] * 256) + frame.buf[6])-32128) / 2.0f);
+
+        Logger::debug("UQM Actual Torque: %f DC Voltage: %f Amps: %f RPM: %u", torqueActual, dcVoltage, dcCurrent, speedActual);
         break;
 
     case 0x20A:    //System Status Message
         Logger::debug("UQM inverter 20A System Status Message Received");
         break;
-
 
     case 0x20B:    //Emergency Fuel Cutback Message
         Logger::debug("UQM inverter 20B Emergency Fuel Cutback Message Received");
@@ -133,14 +136,14 @@ void CodaMotorController::handleCanFrame(const CAN_message_t &frame)
         invTemp = frame.buf[2];
         RotorTemp = frame.buf[3];
         StatorTemp = frame.buf[4];
-        temperatureInverter = (invTemp-40)*10;
+        temperatureInverter = (invTemp-40);
         if (RotorTemp > StatorTemp) {
-            temperatureMotor = (RotorTemp-40)*10;
+            temperatureMotor = (RotorTemp-40);
         }
         else {
-            temperatureMotor = (StatorTemp-40)*10;
+            temperatureMotor = (StatorTemp-40);
         }
-        Logger::debug("UQM 20E Inverter temp: %d Motor temp: %d", temperatureInverter,temperatureMotor);
+        Logger::debug("UQM 20E Inverter temp: %i Motor temp: %i", temperatureInverter,temperatureMotor);
         break;
 
     case 0x20F:    //CAN Watchdog Status Message
@@ -236,7 +239,7 @@ void CodaMotorController::sendCmd1()
     //Requested throttle is [-1000, 1000]
     //Two byte torque request in 0.1NM Can be positive or negative
 
-     torqueRequested = ((throttleRequested * config->torqueMax) / 1000); //Calculate torque request from throttle position x maximum torque
+    torqueRequested = ((throttleRequested * config->torqueMax) / 100.0f); //Calculate torque request from throttle position x maximum torque
  
     //If our requested torque is a negative number, we are in regen.  Let's use taper values to taper it below threshold rpm
     if(torqueRequested < 0 && speedActual < config->regenTaperUpper)  //We are in regen and below regenTaperUpper value
@@ -254,11 +257,10 @@ void CodaMotorController::sendCmd1()
 
     //If overspeed, let's cut torque in half.  If not, add requested torque to torqueCommand
       
-    if(speedActual>config->speedMax) {torqueRequested /=2;}   //If actual rpm greater than max rpm, add torque command to offset
+    if(speedActual>config->speedMax) {torqueRequested /= 2.0f;}   //If actual rpm greater than max rpm, add torque command to offset
     
-     torqueCommand = 32128+torqueRequested; //Torque command 32128 is zero torque.  Values below are regen.  Above are torque.
+     torqueCommand = 32128 + torqueRequested; //Torque command 32128 is zero torque.  Values below are regen.  Above are torque.
   
-      
     
    /* if (speedActual < 1700 && torqueCommand < 32128) {
         Logger::debug(CODAUQM, "Canceling regen at low speed");

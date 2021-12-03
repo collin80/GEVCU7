@@ -54,6 +54,7 @@ D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card i
 #include "Watchdog_t4.h"
 #include "src/devices/esp32/esp_loader.h"
 #include "src/devices/esp32/gevcu_port.h"
+#include "src/FlasherX.h"
 
 // Use Teensy SDIO
 #define SD_CONFIG  SdioConfig(FIFO_SDIO)
@@ -368,8 +369,10 @@ void setup() {
         }
         else
         {
-            file.close();
             Logger::debug("Found teensy firmware. Flashing it");
+            setup_flasherx();
+            start_upgrade(&file);
+            file.close();
         }
 
         //for ESP32 the first thing to do is to upgrade the bootloader if it's there on the sdcard
