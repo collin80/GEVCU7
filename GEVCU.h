@@ -33,17 +33,16 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "src/devices/io/Throttle.h"
 #include "src/devices/bms/BatteryManager.h"
 #include "src/devices/motorctrl/MotorController.h"
+#include "src/devices/dcdc/DCDCController.h"
+#include "src/devices/io/ThrottleDetector.h"
 #include "src/Heartbeat.h"
 #include "src/sys_io.h"
 #include "src/CanHandler.h"
 #include "src/MemCache.h"
-#include "src/devices/io/ThrottleDetector.h"
 #include "src/DeviceManager.h"
 #include "src/SerialConsole.h"
-#include "src/devices/display/ELM327_Emu.h"
 #include "src/Sys_Messages.h"
 #include "src/FaultHandler.h"
-#include "src/devices/dcdc/DCDCController.h"
 
 #ifdef __cplusplus
 extern "C" {

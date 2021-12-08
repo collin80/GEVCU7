@@ -69,14 +69,16 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
     switch (entry.varType)
     {
     case CFG_ENTRY_VAR_TYPE::BYTE:
+        if (entry.precision == 16) str += "0x%X";
+        else str += "%u";
         if (entry.descFunc)
         {
-            str += "%u [%s] - " + entry.helpText;
+            str += " [%s] - " + entry.helpText;
             Logger::console(str.c_str(), *(uint8_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
         }
         else 
         {
-            str += "%u - " + entry.helpText;
+            str += " - " + entry.helpText;
             Logger::console(str.c_str(), *(uint8_t *)entry.varPtr);
         }
         break;
@@ -124,26 +126,30 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
         Logger::console(str.c_str(), *(char *)entry.varPtr);
         break;
     case CFG_ENTRY_VAR_TYPE::UINT16:
+        if (entry.precision == 16) str += "0x%X";
+        else str += "%u";
         if (entry.descFunc)
         {
-            str += "%u [%s] - " + entry.helpText;
+            str += " [%s] - " + entry.helpText;
             Logger::console(str.c_str(), *(uint16_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
         }
         else 
         {
-            str += "%u - " + entry.helpText;
+            str += " - " + entry.helpText;
             Logger::console(str.c_str(), *(uint16_t *)entry.varPtr);
         }
         break;
     case CFG_ENTRY_VAR_TYPE::UINT32:
+        if (entry.precision == 16) str += "0x%X";
+        else str += "%u";
         if (entry.descFunc)
         {
-            str += "%u [%s] - " + entry.helpText;
+            str += " [%s] - " + entry.helpText;
             Logger::console(str.c_str(), *(uint32_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
         }
         else 
         {
-            str += "%u - " + entry.helpText;
+            str += " - " + entry.helpText;
             Logger::console(str.c_str(), *(uint32_t *)entry.varPtr);
         }
         break;    

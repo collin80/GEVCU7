@@ -376,6 +376,10 @@ void setup() {
         }
 
         //for ESP32 the first thing to do is to upgrade the bootloader if it's there on the sdcard
+        //note: the given hex addresses are hardcoded here and correspond to the default 
+        //1.2MB program / 1.5MB SPIFFS partitioning
+        //also note, wdt probably can't be active when all these flashing routines are running
+        //unless wdt.feed() is added to those routines.
         flashESP32("esp32_bootloader.bin", 0x1000);
         flashESP32("esp32_otadata.bin", 0xE000);
         flashESP32("esp32_partitions.bin", 0x8000);
