@@ -32,6 +32,7 @@ by stimmer
 
 #include "sys_io.h"
 #include "devices/io/CANIODevice.h"
+#include "devices/misc/SystemDevice.h"
 #include "i2c_driver_wire.h"
 
 #undef HID_ENABLED
@@ -57,33 +58,18 @@ SystemIO::SystemIO()
 void SystemIO::setup_ADC_params()
 {
     int i;
-    
-    sysPrefs->read("Adc0Gain", &adc_comp[0].gain, 1024);
-    sysPrefs->read("Adc0Offset", &adc_comp[0].offset, 0);
-    sysPrefs->read("Adc1Gain", &adc_comp[1].gain, 1024);
-    sysPrefs->read("Adc1Offset", &adc_comp[1].offset, 0);
-    sysPrefs->read("Adc2Gain", &adc_comp[2].gain, 1024);
-    sysPrefs->read("Adc2Offset", &adc_comp[2].offset, 0);
-    sysPrefs->read("Adc3Gain", &adc_comp[3].gain, 1024);
-    sysPrefs->read("Adc3Offset", &adc_comp[3].offset, 0);
-    sysPrefs->read("Adc4Gain", &adc_comp[4].gain, 1024);
-    sysPrefs->read("Adc4Offset", &adc_comp[4].offset, 0);
-    sysPrefs->read("Adc5Gain", &adc_comp[5].gain, 1024);
-    sysPrefs->read("Adc5Offset", &adc_comp[5].offset, 0);
-    sysPrefs->read("Adc6Gain", &adc_comp[6].gain, 1024);
-    sysPrefs->read("Adc6Offset", &adc_comp[6].offset, 0);
-    sysPrefs->read("Adc7Gain", &adc_comp[7].gain, 1024);
-    sysPrefs->read("Adc7Offset", &adc_comp[7].offset, 0);
 
     for (int i = 0; i < 8; i++) 
-        Logger::debug("ADC:%d GAIN: %d Offset: %d", i, adc_comp[i].gain, adc_comp[i].offset);
+        Logger::debug( "ADC:%d GAIN: %d Offset: %d", i, sysConfig->adcGain[i], sysConfig->adcOffset[i] );
 }
 
 void SystemIO::setSystemType(SystemType systemType) {
-    if (systemType >= GEVCU1 && systemType <= GEVCU6)
+    if (systemType >= GEVCU7A && systemType <= GEVCU7C)
     {
-        sysType = systemType;
-        sysPrefs->write("SysType", (uint8_t)sysType);
+        sysConfig->systemType = systemType;
+        Device *sysDev;
+        sysDev = deviceManager.getDeviceByID(SYSTEM);
+        sysDev->saveConfiguration();
     }
 }
 
@@ -94,8 +80,6 @@ SystemType SystemIO::getSystemType() {
 void SystemIO::setup() {
     int i;
 
-    sysPrefs->read("SysType", (uint8_t *) &sysType, 7);
-
     analogReadRes(12);
 
     setup_ADC_params();
@@ -105,10 +89,20 @@ void SystemIO::setup() {
     pinMode(41, INPUT);
     pinMode(42, INPUT);
 
-    pinMode(2, OUTPUT); //PWM1 = ADC Select B
     pinMode(3, OUTPUT); //PWM0 = ADC Select A
-    digitalWrite(2, LOW); //both off by default to select mux 0
     digitalWrite(3, LOW); 
+    if (sysConfig->systemType != GEVCU7B)
+    {
+        pinMode(2, OUTPUT); //PWM1 = ADC Select B
+        digitalWrite(2, LOW); //both off by default to select mux 0
+    }
+    else
+    {
+        Logger::debug("GEVCU7B detected. Using work around analog IO");
+        pinMode(2, INPUT); //input won't mess up the CAN line this got crossed with
+        pinMode(6, OUTPUT); //PWM1 = ADC Select B
+        digitalWrite(6, LOW); //both off by default to select mux 0
+    }
 
     initDigitalMultiplexor(); //set I/O direction for all pins, polarity, etc.
 }
@@ -258,8 +252,11 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
     int neededMux = which % 4;
     if (neededMux != adcMuxSelect) //must change mux to read this
     {
-        digitalWrite(2, (neededMux & 2) ? HIGH : LOW);
+        if (sysConfig->systemType != GEVCU7B) digitalWrite(2, (neededMux & 2) ? HIGH : LOW);
+        else digitalWrite(6, (neededMux & 2) ? HIGH : LOW);
+
         digitalWrite(3, (neededMux & 1) ? HIGH : LOW);
+        //Logger::debug("ADC for %u mux1 %u mux2 %u", which, (neededMux & 1), (neededMux & 2));
         adcMuxSelect = neededMux;
         //the analog multiplexor input switch pins are on direct outputs from the teensy
         //and so will change very rapidly. The multiplexor also switches inputs in less than
@@ -272,8 +269,16 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
         delayMicroseconds(5);
     }
     //Analog inputs 0-3 are always on ADC0, 4-7 are on ADC1
-    if (which < 4) valu = analogRead(0);
-    else valu = analogRead(1);
+    if (which < 4) 
+    {
+        valu = analogRead(0);
+        //Logger::debug("AREAD0: %u", valu);
+    }
+    else 
+    {
+        valu = analogRead(1);
+        //Logger::debug("AREAD1: %u", valu);
+    }
     return valu;
 }
 
@@ -293,8 +298,8 @@ int16_t SystemIO::getAnalogIn(uint8_t which) {
     if (which < NUM_ANALOG)
     {
         valu = _pGetAnalogRaw(which);
-        valu -= adc_comp[which].offset;
-        valu = (valu * adc_comp[which].gain) / 1024;
+        valu -= sysConfig->adcOffset[which];
+        valu = (valu * sysConfig->adcGain[which]) / 1024;
         return valu;
     }
     else //the return makes this superfluous...
@@ -413,9 +418,7 @@ bool SystemIO::calibrateADCOffset(int adc, bool update)
         delay(2);
     }
     accum /= 500;
-    char paramName[20];
-    snprintf(paramName, 20, "Adc%uOffset", adc);
-    if (update) sysPrefs->write((const char *)paramName, (uint16_t)(accum));    
+    sysConfig->adcOffset[adc] = accum;
     Logger::console("ADC %i offset is now %i", adc, accum);
     return true;
 }
@@ -442,15 +445,12 @@ bool SystemIO::calibrateADCGain(int adc, int32_t target, bool update)
     Logger::console("Unprocessed accum: %i", accum);
     
     //now apply the proper offset we've got set.
-    if (adc < 4) {
+    if (adc < 8) 
+    {
         accum /= 2048;
-        accum -= adc_comp[adc].offset;
+        accum -= sysConfig->adcOffset[adc];
     }
-    else {
-        accum -= adc_comp[adc].offset * 32;
-        accum >>= 3;
-    }
-    
+
     if ((target / accum) > 20) {
         Logger::console("Calibration not possible. Check your target value.");
         return false;
@@ -462,13 +462,10 @@ bool SystemIO::calibrateADCGain(int adc, int32_t target, bool update)
     }
     
     //1024 is one to one so all gains are multiplied by that much to bring them into fixed point math.
-    //we've got a reading accum and a target. The rational gain is target/accum    
-    adc_comp[adc].gain = (int16_t)((16384ull * target) / accum);
-    char paramName[20];
-    snprintf(paramName, 20, "Adc%uGain", adc);
-    if (update) sysPrefs->write((const char *)paramName, adc_comp[adc].gain);
+    //we've got a reading accum and a target. The rational gain is target/accum
+    sysConfig->adcGain[adc] = (int16_t)((16384ull * target) / accum);    
     Logger::console("Accum: %i    Target: %i", accum, target);
-    Logger::console("ADC %i gain is now %i", adc, adc_comp[adc].gain);
+    Logger::console("ADC %i gain is now %i", adc, sysConfig->adcGain[adc]);
     return true;
 }
 
@@ -477,12 +474,17 @@ void SystemIO::initDigitalMultiplexor()
     //all of port 0 are outputs, all of port 1 are inputs
     //1 in a config bit means input, 0 = output
     Wire.begin();
+
+    Wire.beginTransmission(PCA_ADDR);  // setup to write to PCA chip
+    Wire.write(PCA_WRITE_OUT0);
+    Wire.write(0); //all outputs should start out OFF!
+    Wire.endTransmission();
+
     Wire.beginTransmission(PCA_ADDR);  // setup to write to PCA chip
     Wire.write(PCA_CFG_0);
     Wire.write(0); //all zeros means all outputs
     Wire.endTransmission();
 
-    Wire.begin();
     Wire.beginTransmission(PCA_ADDR);  // setup to write to PCA chip
     Wire.write(PCA_CFG_1);
     Wire.write(0xFF); //all 1's means all inputs

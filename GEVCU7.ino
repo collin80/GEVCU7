@@ -48,6 +48,7 @@ D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card i
 // The following includes are required in the .ino file by the Arduino IDE in order to properly
 // identify the required libraries for the build.
 #include <FlexCAN_T4.h>
+#include <TeensyTimerTool.h>
 #include "src/i2c_driver_wire.h"
 #include <SPI.h>
 #include "SdFat.h"
@@ -55,6 +56,7 @@ D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card i
 #include "src/devices/esp32/esp_loader.h"
 #include "src/devices/esp32/gevcu_port.h"
 #include "src/FlasherX.h"
+#include "src/devices/misc/SystemDevice.h"
 
 // Use Teensy SDIO
 #define SD_CONFIG  SdioConfig(FIFO_SDIO)
@@ -62,10 +64,9 @@ D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card i
 //if this is defined there is a large start up delay so you can see the start up messages. NOT for production!
 #define DEBUG_STARTUP_DELAY
 //If this is defined then we will ignore the hardware sd inserted signal and just claim it's inserted. Required for first prototype.
-#define ASSUME_SDCARD_INSERTED
+//#define ASSUME_SDCARD_INSERTED
 
 //Evil, global variables
-PrefHandler *sysPrefs;
 MemCache *memCache;
 Heartbeat *heartbeat;
 SerialConsole *serialConsole;
@@ -78,55 +79,6 @@ SdFs sdCard;
 bool sdCardPresent;
 
 WDT_T4<WDT3> wdt; //use the RTWDT which should be the safest one
-
-//initializes all the system EEPROM values. Chances are this should be broken out a bit but
-//there is only one checksum check for all of them so it's simple to do it all here.
-
-void initSysEEPROM() {
-	//three temporary storage places to make saving to EEPROM easy
-	uint8_t eight;
-	uint16_t sixteen;
-	uint32_t thirtytwo;
-
-	eight = 7; //GEVCU 7.0 board
-	sysPrefs->write("SysType", eight);
-
-	sixteen = 1024; //no gain
-	sysPrefs->write("Adc0Gain", sixteen);
-	sysPrefs->write("Adc1Gain", sixteen);
-	sysPrefs->write("Adc2Gain", sixteen);
-	sysPrefs->write("Adc3Gain", sixteen);
-	sysPrefs->write("Adc4Gain", sixteen);
-	sysPrefs->write("Adc5Gain", sixteen);
-	sysPrefs->write("Adc6Gain", sixteen);
-	sysPrefs->write("Adc7Gain", sixteen);
-
-	sixteen = 0; //no offset
-	sysPrefs->write("Adc0Offset", sixteen);
-	sysPrefs->write("Adc1Offset", sixteen);
-	sysPrefs->write("Adc2Offset", sixteen);
-	sysPrefs->write("Adc3Offset", sixteen);
-	sysPrefs->write("Adc4Offset", sixteen);
-	sysPrefs->write("Adc5Offset", sixteen);
-	sysPrefs->write("Adc6Offset", sixteen);
-	sysPrefs->write("Adc7Offset", sixteen);
-
-
-	sixteen = CFG_CAN0_SPEED;
-	sysPrefs->write("CAN0Speed", sixteen);
-    sixteen = CFG_CAN1_SPEED;
-	sysPrefs->write("CAN1Speed", sixteen);
-	sixteen = CFG_CAN2_SPEED;
-	sysPrefs->write("CAN2Speed", sixteen);
-    sixteen = 11111; //tripled so 33.333k speed
-	sysPrefs->write("SWCANSpeed", sixteen);
-
-	eight = 2;  //0=debug, 1=info,2=warn,3=error,4=off
-	sysPrefs->write("LogLevel", eight);
-
-	sysPrefs->saveChecksum();
-    sysPrefs->forceCacheWrite();
-}
 
 /*
 Here lies where the old "createObjects" function was. There is no need for that.
@@ -158,8 +110,6 @@ void initializeDevices() {
     //asynchronous or threaded messages at some point but that opens up many other cans of worms.
     deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_STARTUP, NULL); //allows each device to register it's preference handler
     deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_SETUP, NULL); //then use the preference handler to initialize only enabled devices
-
-    //sysPrefs->forceCacheWrite(); //if anything updated configuration during init then save that updated info immediately
 }
 
 void wdtCallback() 
@@ -181,13 +131,11 @@ void sendTestCANFrames()
     output.buf[5] = 59;
     output.buf[6] = 4;
     output.buf[7] = 0xAB;
-    canHandlerEv.sendFrame(output);
+    canHandlerBus0.sendFrame(output);
     output.id = 0x345;
-	canHandlerCar.sendFrame(output);
+	canHandlerBus1.sendFrame(output);
     output.id = 0x678;
-    canHandlerCar2.sendFrame(output);
-    output.id = 0x789;
-    canHandlerSingleWire.sendFrame(output);
+    canHandlerBus2.sendFrame(output);
 }
 
 void testGEVCUHardware()
@@ -215,12 +163,13 @@ void testGEVCUHardware()
         systemIO.setDigitalOutput(i, true);
     }
 
-    delay(500);
+    delay(1500);
     for (int i = 0; i < 8; i++)
     {
         systemIO.setDigitalOutput(i, false);
     }
     delay(500);
+    /*
     digitalWrite(45, HIGH);
     uint32_t thisTime = millis();
     while ((millis() - thisTime) < 5000)
@@ -230,7 +179,7 @@ void testGEVCUHardware()
             Serial.write(Serial2.read());
         }   
     }
-    digitalWrite(45, LOW);
+    digitalWrite(45, LOW); */
 }
 
 esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
@@ -333,7 +282,7 @@ void setup() {
 	Serial.println(CFG_BUILD_NUM);
 
 #ifndef ASSUME_SDCARD_INSERTED
-    if (!digitalRead(SD_DETECT))
+    if (digitalRead(SD_DETECT) == 0)
     {
 #endif
         Serial.print("Attempting to mount sdCard ");
@@ -350,7 +299,7 @@ void setup() {
             Serial.println(" OK!");
             Logger::initializeFile();
         }
-# ifndef ASSUME_SDCARD_INSERTED
+#ifndef ASSUME_SDCARD_INSERTED
     }
     else
     {
@@ -396,27 +345,23 @@ void setup() {
 	memCache = new MemCache();
 	Logger::info("add MemCache (id: %X, %X)", MEMCACHE, memCache);
 	memCache->setup();
-	sysPrefs = new PrefHandler(SYSTEM);
-	if (!sysPrefs->checksumValid()) 
-        {
-	      Logger::info("Initializing system EEPROM settings");
-	      initSysEEPROM();
-	    } 
-        else {Logger::info("Using existing EEPROM system values");}//checksum is good, read in the values stored in EEPROM
-
-	uint8_t loglevel;
-	sysPrefs->read("LogLevel", &loglevel, 1);
-	//loglevel = 0; //force debugging log level
-    Logger::console("LogLevel: %i", loglevel);
-	Logger::setLoglevel((Logger::LogLevel)loglevel);
-	systemIO.setup();  
-	canHandlerEv.setup();
-	canHandlerCar.setup();
-    canHandlerCar2.setup();
-    //canHandlerSingleWire.setup();
+    //force the system device to be set enabled. ALWAYS. It would not be good if it weren't enabled!
+	PrefHandler::setDeviceStatus(SYSTEM, true);
+    //Also, the system device has to be initialized a bit early.
+    Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
+    sysDev->earlyInit();
+    sysDev->setup();
+    Logger::console("LogLevel: %i", sysConfig->logLevel);
+	//Logger::setLoglevel((Logger::LogLevel)sysConfig->logLevel);
+	systemIO.setup();
+	canHandlerBus0.setup();
+	canHandlerBus1.setup(); //shared with SWCAN. Both cannot be active at once.
+    canHandlerBus2.setup();
+    //canHandlerBus0.setSWMode(SW_NORMAL);
 	Logger::info("SYSIO init ok");	
 
 	initializeDevices();
+    Logger::debug("Initialized all devices successfully!");
     serialConsole = new SerialConsole(memCache, heartbeat);
 	serialConsole->printMenu();
 	//btDevice = static_cast<ADAFRUITBLE *>(deviceManager.getDeviceByID(ADABLUE));
@@ -443,6 +388,6 @@ void loop() {
     //if (btDevice) btDevice->loop();
     
     wdt.feed();
-
+    sendTestCANFrames();
     //testGEVCUHardware();
 }

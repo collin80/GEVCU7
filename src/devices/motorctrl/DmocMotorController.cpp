@@ -73,8 +73,8 @@ void DmocMotorController::setup() {
     MotorController::setup(); // run the parent class version of this function
 
     // register ourselves as observer of 0x23x and 0x65x can frames
-    canHandlerEv.attach(this, 0x230, 0x7f0, false);
-    canHandlerEv.attach(this, 0x650, 0x7f0, false);
+    canHandlerBus0.attach(this, 0x230, 0x7f0, false);
+    canHandlerBus0.attach(this, 0x650, 0x7f0, false);
 
     running = false;
     setPowerMode(modeTorque);
@@ -271,7 +271,7 @@ void DmocMotorController::sendCmd1() {
     Logger::debug(DMOC645, "0x232 tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
                   output.buf[4], output.buf[5], output.buf[6], output.buf[7]);
 
-    canHandlerEv.sendFrame(output);
+    canHandlerBus0.sendFrame(output);
 }
 
 void DmocMotorController::taperRegen()
@@ -348,7 +348,7 @@ void DmocMotorController::sendCmd2() {
 
     //Logger::debug("requested torque: %i",(((long) throttleRequested * (long) maxTorque) / 1000L));
 
-    canHandlerEv.sendFrame(output);
+    canHandlerBus0.sendFrame(output);
     timestamp();
     Logger::debug(DMOC645, "Torque command: %X  %X  %X  %X  %X  %X  %X  CRC: %X",output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7]);
@@ -373,7 +373,7 @@ void DmocMotorController::sendCmd3() {
     output.buf[6] = alive;
     output.buf[7] = calcChecksum(output);
 
-    canHandlerEv.sendFrame(output);
+    canHandlerBus0.sendFrame(output);
 }
 
 //challenge/response frame 1 - Really doesn't contain anything we need I dont think
@@ -391,7 +391,7 @@ void DmocMotorController::sendCmd4() {
     output.buf[6] = alive;
     output.buf[7] = calcChecksum(output);
 
-    canHandlerEv.sendFrame(output);
+    canHandlerBus0.sendFrame(output);
 }
 
 //Another C/R frame but this one also specifies which shifter position we're in
@@ -417,7 +417,7 @@ void DmocMotorController::sendCmd5() {
     output.buf[6] = alive;
     output.buf[7] = calcChecksum(output);
 
-    canHandlerEv.sendFrame(output);
+    canHandlerBus0.sendFrame(output);
 }
 
 

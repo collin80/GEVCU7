@@ -63,7 +63,7 @@ void DCDCController::setup()
     loadConfiguration();
     Device::setup(); // run the parent class version of this function
 
-    canHandlerCar.attach(this, 0x1D5, 0x7ff, false);
+    canHandlerBus1.attach(this, 0x1D5, 0x7ff, false);
     //Watch for 0x1D5 messages from Delphi converter
     tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
 }
@@ -106,7 +106,7 @@ void DCDCController::sendCmd()
     output.buf[6] = 0;
     output.buf[7] = 0x00;
 
-    canHandlerCar.sendFrame(output);
+    canHandlerBus1.sendFrame(output);
     timestamp();
     Logger::debug("Delphi DC-DC cmd: %X %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);

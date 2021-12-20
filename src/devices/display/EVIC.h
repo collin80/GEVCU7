@@ -42,7 +42,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../../Sys_Messages.h"
 #include "../DeviceTypes.h"
 
-extern PrefHandler *sysPrefs;
 #define EVICTUS 0x4400
 #define CFG_TICK_INTERVAL_EVIC                      100000
 

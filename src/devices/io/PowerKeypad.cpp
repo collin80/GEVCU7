@@ -35,14 +35,14 @@ void PowerkeyPad::setup()
 
     loadConfiguration();
 
-    canHandlerCar.attach(this, deviceID, 0x7F, false); //for canopen devices the ID and mask passed don't actually mean a thing
+    canHandlerBus1.attach(this, deviceID, 0x7F, false); //for canopen devices the ID and mask passed don't actually mean a thing
 	
 	//we inherited these methods from CanObserver - they allow this class to receive messages automatically routed and interpreted as canopen
 	setNodeID(deviceID);
 	setCANOpenMode(true);
 
 	//delay(125);
-	//canHandlerCar.sendNodeStart(deviceID); //tell the keypad to enable itself
+	//canHandlerBus1.sendNodeStart(deviceID); //tell the keypad to enable itself
 	//delay(100);
 	//sendAutoStart();
 	
@@ -123,7 +123,7 @@ void PowerkeyPad::sendAutoStart()
 	autoStartOut.buf[5] = 1;
 	autoStartOut.buf[6] = 0;
 	autoStartOut.buf[7] = 0;
-	canHandlerCar.sendFrame(autoStartOut);
+	canHandlerBus1.sendFrame(autoStartOut);
 }
 
 /*
@@ -212,7 +212,7 @@ void PowerkeyPad::setLEDState(int which, LED::LEDTYPE state)
 	frame.data[2] = (int)state;
 	frame.data[3] = 0; 
 
-	canHandlerCar.sendSDORequest(&frame); */
+	canHandlerBus1.sendSDORequest(&frame); */
 	LEDState[which] = state;
 }
 
@@ -234,7 +234,7 @@ void PowerkeyPad::sendLEDBatch()
 		}
 	}
 	Logger::debug("LED Batch: %x %x %x", data[0], data[1], data[2]);
-	canHandlerCar.sendPDOMessage(0x200 + deviceID, 8, data);
+	canHandlerBus1.sendPDOMessage(0x200 + deviceID, 8, data);
 }
 
 LED::LEDTYPE PowerkeyPad::getLEDState(int which)

@@ -23,13 +23,6 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Using Tony's CAN library since it is much improved and debugged for the Teensy processor. That presents an issue
-as this code was always somewhat hard coded around the SAM3X due_can library. So, the due_can struct must be copied
-into this file so that the external libraries still use that format. This code will then translate back and forth
-between the flexcan struct and the due_can struct so that the existing device modules all still work the same between
-GEVCU6 and GEVCU7.
-*/
-
 #ifndef CAN_HANDLER_H_
 #define CAN_HANDLER_H_
 
@@ -38,20 +31,15 @@ GEVCU6 and GEVCU7.
 #include <FlexCAN_T4.h>
 #include "Logger.h"
 
-/*
- * CAN BUS CONFIGURATION
- */
-#define CFG_CAN0_SPEED                              500 // specify the speed of the CAN0 bus (EV) in thousands. 
-#define CFG_CAN1_SPEED                              500 // specify the speed of the CAN1 bus (Car) in thousands
-#define CFG_CAN2_SPEED                              500 // speed of third CAN channel. 
-#define CFG_SWCAN_SPEED                             33  //shares with another CAN channel but when active this is the default speed
-
 //CAN message ID ASSIGNMENTS FOR I/0 MANAGEMENT
 //should make these configurable.
 #define CAN_SWITCH 0x606
 #define CAN_OUTPUTS 0x607
 #define CAN_ANALOG_INPUTS 0x608
 #define CAN_DIGITAL_INPUTS 0x609
+
+#define MODE0_PIN   26
+#define MODE1_PIN   32
 
 enum SDO_COMMAND
 {
@@ -96,14 +84,21 @@ private:
     unsigned int nodeID;
 };
 
+enum SWMode
+{
+    SW_SLEEP,
+    SW_HVWAKE,
+    SW_HISPEED,
+    SW_NORMAL
+};
+
 class CanHandler
 {
 public:
     enum CanBusNode {
-        CAN_BUS_EV, // CAN0 is intended to be connected to the EV bus (controller, charger, etc.)
-        CAN_BUS_CAR, // CAN2 is intended to be connected to the car's high speed bus (the one with the ECU)
-        CAN_BUS_CAR2, // CAN1 is an extra bus that is shared with SWCAN. use one or the other. 
-        CAN_BUS_SW    //Single wire CAN. Shares CAN hardware with CAN1 so you can only use one or the other
+        CAN_BUS_0,
+        CAN_BUS_1,
+        CAN_BUS_2
     };
 
     CanHandler(CanBusNode busNumber);
@@ -117,6 +112,8 @@ public:
     void CANIO(const CAN_message_t& frame);
     void sendFrame(const CAN_message_t& frame);
     void sendISOTP(int id, int length, uint8_t *data);
+    void setSWMode(SWMode newMode);
+    SWMode getSWMode();
 
     //canopen support functions
     void sendNodeStart(int id = 0);
@@ -143,6 +140,7 @@ private:
     CanBusNode canBusNode;  // indicator to which can bus this instance is assigned to
     CanObserverData observerData[CFG_CAN_NUM_OBSERVERS];    // Can observers
     uint32_t busSpeed;
+    SWMode swmode;
 
     void logFrame(const CAN_message_t &msg);
     int8_t findFreeObserverData();
@@ -153,9 +151,9 @@ private:
     int masterID; //what is our ID as the master node?      
 };
 
-extern CanHandler canHandlerEv;
-extern CanHandler canHandlerCar;
-extern CanHandler canHandlerCar2;
+extern CanHandler canHandlerBus0;
+extern CanHandler canHandlerBus1;
+extern CanHandler canHandlerBus2;
 extern CanHandler canHandlerSingleWire;
 
 #endif /* CAN_HANDLER_H_ */

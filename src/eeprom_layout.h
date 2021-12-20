@@ -79,36 +79,11 @@ the end of the stardard data. The below numbers are offsets from the device's ee
 #define EE_CHECKSUM              0 //1 byte - checksum for this section of EEPROM to makesure it is valid
 #define EE_DEVICE_ID             1 //2 bytes - the value of the ENUM DEVID of this device.
 
-//System Data
-#define EESYS_LOG_LEVEL          5   //1 byte - the log level
-#define EESYS_SYSTEM_TYPE        10  //1 byte - 1 = Old school protoboards 2 = GEVCU2/DUED 3 = GEVCU3, 4 = GEVCU4 or 5, 6 = GEVCU6 - Defaults to 2 if invalid or not set up
-#define EESYS_ADC0_GAIN          30  //2 bytes - ADC gain centered at 1024 being 1 to 1 gain, thus 512 is 0.5 gain, 2048 is double, etc
-#define EESYS_ADC0_OFFSET        32  //2 bytes - ADC offset from zero - ADC reads 12 bit so the offset will be [0,4095] - Offset is subtracted from read ADC value
-#define EESYS_ADC1_GAIN          34  //2 bytes - ADC gain centered at 1024 being 1 to 1 gain, thus 512 is 0.5 gain, 2048 is double, etc
-#define EESYS_ADC1_OFFSET        36  //2 bytes - ADC offset from zero - ADC reads 12 bit so the offset will be [0,4095] - Offset is subtracted from read ADC value
-#define EESYS_ADC2_GAIN          38  //2 bytes - ADC gain centered at 1024 being 1 to 1 gain, thus 512 is 0.5 gain, 2048 is double, etc
-#define EESYS_ADC2_OFFSET        40  //2 bytes - ADC offset from zero - ADC reads 12 bit so the offset will be [0,4095] - Offset is subtracted from read ADC value
-#define EESYS_ADC3_GAIN          42  //2 bytes - ADC gain centered at 1024 being 1 to 1 gain, thus 512 is 0.5 gain, 2048 is double, etc
-#define EESYS_ADC3_OFFSET        44  //2 bytes - ADC offset from zero - ADC reads 12 bit so the offset will be [0,4095] - Offset is subtracted from read ADC value
-#define EESYS_ADC4_GAIN          46  //2 bytes - ADC gain centered at 1024 being 1 to 1 gain, thus 512 is 0.5 gain, 2048 is double, etc
-#define EESYS_ADC4_OFFSET        48  //2 bytes - ADC offset from zero - ADC reads 12 bit so the offset will be [0,4095] - Offset is subtracted from read ADC value
-#define EESYS_ADC5_GAIN          50  //2 bytes - ADC gain centered at 1024 being 1 to 1 gain, thus 512 is 0.5 gain, 2048 is double, etc
-#define EESYS_ADC5_OFFSET        52  //2 bytes - ADC offset from zero - ADC reads 12 bit so the offset will be [0,4095] - Offset is subtracted from read ADC value
-#define EESYS_ADC6_GAIN          54  //2 bytes - ADC gain centered at 1024 being 1 to 1 gain, thus 512 is 0.5 gain, 2048 is double, etc
-#define EESYS_ADC6_OFFSET        56  //2 bytes - ADC offset from zero - ADC reads 12 bit so the offset will be [0,4095] - Offset is subtracted from read ADC value
-#define EESYS_ADC7_GAIN          58  //2 bytes - ADC gain centered at 1024 being 1 to 1 gain, thus 512 is 0.5 gain, 2048 is double, etc
-#define EESYS_ADC7_OFFSET        60  //2 bytes - ADC offset from zero - ADC reads 12 bit so the offset will be [0,4095] - Offset is subtracted from read ADC value
-#define EESYS_CAN0_BAUD          80  //2 bytes - Baud rate of CAN0 in 1000's of baud. So a value of 500 = 500k baud. Set to 0 to disable CAN0
-#define EESYS_CAN1_BAUD          82  //2 bytes - Baud rate of CAN1 in 1000's of baud. So a value of 500 = 500k baud. Set to 0 to disable CAN1
-#define EESYS_CAN2_BAUD          84  //2 bytes - baud rate of CAN2 in 1k baud. 500=500,000. Set to 0 to disable
-#define EESYS_SWCAN_BAUD         86  //2 bytes - baud rate of SWCAN in 3 baud increments. 33.333k is thus 11,111 and 100k is 33333. Set to 0 to disable
-
 #define EEFAULT_VALID            0 //1 byte - Set to value of 0xB2 if fault data has been initialized
 #define EEFAULT_READPTR          1 //2 bytes - index where reading should start (first unacknowledged fault)
 #define EEFAULT_WRITEPTR         3 //2 bytes - index where writing should occur for new faults
 #define EEFAULT_RUNTIME          5 //4 bytes - stores the number of seconds (in tenths) that the system has been turned on for - total time ever
 #define EEFAULT_FAULTS_START     10 //a bunch of faults stored one after the other start at this location
-
 
 #endif
 

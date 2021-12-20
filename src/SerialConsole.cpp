@@ -27,7 +27,7 @@
 #include "SerialConsole.h"
 template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Lets us stream SerialUSB
 
-extern PrefHandler *sysPrefs;
+extern std::vector<ConfigEntry> sysCfgEntries;
 
 uint8_t systype;
 
@@ -49,8 +49,6 @@ void SerialConsole::init() {
     state = STATE_ROOT_MENU;
     loopcount=0;
     cancel=false;
-
-    sysPrefs->read("SysType", &systype, 7);
 }
 
 void SerialConsole::loop() {
@@ -269,12 +267,6 @@ void SerialConsole::printMenu() {
     Logger::console("   E = dump system EEPROM values");
     Logger::console("   h = help (displays this message)");
   
-    Logger::console("   LOGLEVEL=%i - set log level (0=debug, 1=info, 2=warn, 3=error, 4=off)", Logger::getLogLevel());
-    Logger::console("   CAN0SPEED=%i - set first CAN bus speed (in thousands)", canHandlerEv.getBusSpeed() / 1000);
-    Logger::console("   CAN1SPEED=%i - set second CAN bus speed (in thousands)", canHandlerCar.getBusSpeed() / 1000);
-    Logger::console("   CAN2SPEED=%i - set third CAN bus speed (in thousands)", canHandlerCar2.getBusSpeed() / 1000);
-    Logger::console("   SWCANSPEED=%i - set SingleWire CAN bus speed (in thousands)", canHandlerSingleWire.getBusSpeed() / 1000);
-
     Logger::console("\nDEVICE SELECTION AND ACTIVATION\n");
     Logger::console("     q = Dump Device Table");
     Logger::console("     Q = Reinitialize device table");
@@ -312,39 +304,6 @@ void SerialConsole::printMenu() {
     }
     Logger::console("   OUTPUT=<0-7> - toggles state of specified digital output");
    
-    uint16_t val;
-    sysPrefs->read("Adc0Offset", &val, 0);
-    Logger::console("   ADC0OFF=%i - set ADC0 offset", val);
-    sysPrefs->read("Adc0Gain", &val, 1024);
-    Logger::console("   ADC0GAIN=%i - set ADC0 gain (1024 is 1 gain)", val);
-    sysPrefs->read("Adc1Offset", &val, 0);
-    Logger::console("   ADC1OFF=%i - set ADC1 offset", val);
-    sysPrefs->read("Adc1Gain", &val, 1024);
-    Logger::console("   ADC1GAIN=%i - set ADC1 gain (1024 is 1 gain)", val);
-    sysPrefs->read("Adc2Offset", &val, 0);
-    Logger::console("   ADC2OFF=%i - set ADC2 offset", val);
-    sysPrefs->read("Adc2Gain", &val, 1024);
-    Logger::console("   ADC2GAIN=%i - set ADC2 gain (1024 is 1 gain)", val);
-    sysPrefs->read("Adc3Offset", &val, 0);
-    Logger::console("   ADC3OFF=%i - set ADC3 offset", val);
-    sysPrefs->read("Adc3Gain", &val, 1024);
-    Logger::console("   ADC3GAIN=%i - set ADC3 gain (1024 is 1 gain)", val);
-    sysPrefs->read("Adc4Offset", &val, 0);
-    Logger::console("   ADC4OFF=%i - set ADC4 offset", val);
-    sysPrefs->read("Adc4Gain", &val, 1024);
-    Logger::console("   ADC4GAIN=%i - set ADC4 gain (1024 is 1 gain)", val);
-    sysPrefs->read("Adc5Offset", &val, 0);
-    Logger::console("   ADC5OFF=%i - set ADC5 offset", val);
-    sysPrefs->read("Adc5Gain", &val, 1024);
-    Logger::console("   ADC5GAIN=%i - set ADC5 gain (1024 is 1 gain)", val);
-    sysPrefs->read("Adc6Offset", &val, 0);
-    Logger::console("   ADC6OFF=%i - set ADC6 offset", val);
-    sysPrefs->read("Adc6Gain", &val, 1024);
-    Logger::console("   ADC6GAIN=%i - set ADC6 gain (1024 is 1 gain)", val);
-    sysPrefs->read("Adc7Offset", &val, 0);
-    Logger::console("   ADC7OFF=%i - set ADC7 offset", val);
-    sysPrefs->read("Adc7Gain", &val, 1024);
-    Logger::console("   ADC7GAIN=%i - set ADC7 gain (1024 is 1 gain)", val);
 }
 
 /*	There is a help menu (press H or h or ?)
@@ -435,155 +394,9 @@ void SerialConsole::handleConfigCmd() {
     //most all config stuff is done via a generic interface now. So for device settings there is 
     //nothing here any longer. The call to updateSetting handles all that now.
 
-
-/*    if (cmdString == String("TORQ") && motorConfig) {
-        Logger::console("Setting Torque Limit to %i", newValue);
-        motorConfig->torqueMax = newValue;
-        motorController->saveConfiguration();
-    } else if (cmdString == String("RPM") && motorConfig) {
-        Logger::console("Setting RPM Limit to %i", newValue);
-        motorConfig->speedMax = newValue;
-        motorController->saveConfiguration();
-    } else if (cmdString == String("REVLIM") && motorConfig) {
-        Logger::console("Setting Reverse Limit to %i", newValue);
-        motorConfig->reversePercent = newValue;
-        motorController->saveConfiguration();
-    } else if (cmdString == String("TPOT") && acceleratorConfig) {
-        Logger::console("Setting # of Throttle Pots to %i", newValue);
-        acceleratorConfig->numberPotMeters = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("TTYPE") && acceleratorConfig) {
-        Logger::console("Setting Throttle Subtype to %i", newValue);
-        acceleratorConfig->throttleSubType = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("T1ADC") && acceleratorConfig) {
-        Logger::console("Setting Throttle1 ADC pin to %i", newValue);
-        acceleratorConfig->AdcPin1 = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("T1MN") && acceleratorConfig) {
-        Logger::console("Setting Throttle1 Min to %i", newValue);
-        acceleratorConfig->minimumLevel1 = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("T1MX") && acceleratorConfig) {
-        Logger::console("Setting Throttle1 Max to %i", newValue);
-        acceleratorConfig->maximumLevel1 = newValue;
-        accelerator->saveConfiguration();
-    }
-    else if (cmdString == String("T2ADC") && acceleratorConfig) {
-        Logger::console("Setting Throttle2 ADC pin to %i", newValue);
-        acceleratorConfig->AdcPin2 = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("T2MN") && acceleratorConfig) {
-        Logger::console("Setting Throttle2 Min to %i", newValue);
-        acceleratorConfig->minimumLevel2 = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("T2MX") && acceleratorConfig) {
-        Logger::console("Setting Throttle2 Max to %i", newValue);
-        acceleratorConfig->maximumLevel2 = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("TRGNMAX") && acceleratorConfig) {
-        Logger::console("Setting Throttle Regen maximum to %i", newValue);
-        acceleratorConfig->positionRegenMaximum = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("TRGNMIN") && acceleratorConfig) {
-        Logger::console("Setting Throttle Regen minimum to %i", newValue);
-        acceleratorConfig->positionRegenMinimum = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("TFWD") && acceleratorConfig) {
-        Logger::console("Setting Throttle Forward Start to %i", newValue);
-        acceleratorConfig->positionForwardMotionStart = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("TMAP") && acceleratorConfig) {
-        Logger::console("Setting Throttle MAP Point to %i", newValue);
-        acceleratorConfig->positionHalfPower = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("TMINRN") && acceleratorConfig) {
-        Logger::console("Setting Throttle Regen Minimum Strength to %i", newValue);
-        acceleratorConfig->minimumRegen = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("TMAXRN") && acceleratorConfig) {
-        Logger::console("Setting Throttle Regen Maximum Strength to %i", newValue);
-        acceleratorConfig->maximumRegen = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("TCREEP") && acceleratorConfig) {
-        Logger::console("Setting Throttle Creep Strength to %i", newValue);
-        acceleratorConfig->creep = newValue;
-        accelerator->saveConfiguration();
-    } else if (cmdString == String("BMAXR") && brakeConfig) {
-        Logger::console("Setting Max Brake Regen to %i", newValue);
-        brakeConfig->maximumRegen = newValue;
-        brake->saveConfiguration();
-    } else if (cmdString == String("BMINR") && brakeConfig) {
-        Logger::console("Setting Min Brake Regen to %i", newValue);
-        brakeConfig->minimumRegen = newValue;
-        brake->saveConfiguration();
-    }
-    else if (cmdString == String("B1ADC") && brakeConfig) {
-        Logger::console("Setting Brake ADC pin to %i", newValue);
-        brakeConfig->AdcPin1 = newValue;
-        brake->saveConfiguration();
-    } else if (cmdString == String("B1MX") && brakeConfig) {
-        Logger::console("Setting Brake Max to %i", newValue);
-        brakeConfig->maximumLevel1 = newValue;
-        brake->saveConfiguration();
-    } else if (cmdString == String("B1MN") && brakeConfig) {
-        Logger::console("Setting Brake Min to %i", newValue);
-        brakeConfig->minimumLevel1 = newValue;
-        brake->saveConfiguration();
-    } else if (cmdString == String("PREC") && motorConfig) {
-        Logger::console("Setting Precharge Capacitance to %i", newValue);
-        motorConfig->kilowattHrs = newValue;
-        motorController->saveConfiguration();
-    } else if (cmdString == String("PREDELAY") && motorConfig) {
-        Logger::console("Setting Precharge Time Delay to %i milliseconds", newValue);
-        motorConfig->prechargeR = newValue;
-        motorController->saveConfiguration();
-    } else if (cmdString == String("NOMV") && motorConfig) {
-        Logger::console("Setting fully charged voltage to %d vdc", newValue);
-        motorConfig->nominalVolt = newValue * 10;
-        motorController->saveConfiguration();
-    } else if (cmdString == String("BRAKELT") && motorConfig) {
-        motorConfig->brakeLight = newValue;
-        motorController->saveConfiguration();
-        Logger::console("Brake light output set to DOUT%i.",newValue);
-    } else if (cmdString == String("REVLT") && motorConfig) {
-        motorConfig->revLight = newValue;
-        motorController->saveConfiguration();
-        Logger::console("Reverse light output set to DOUT%i.",newValue);
-    } else if (cmdString == String("ENABLEIN") && motorConfig) {
-        motorConfig->enableIn = newValue;
-        motorController->saveConfiguration();
-        Logger::console("Motor Enable input set to DIN%i.",newValue);
-    } else if (cmdString == String("REVIN") && motorConfig) {
-        motorConfig->reverseIn = newValue;
-        motorController->saveConfiguration();
-        Logger::console("Motor Reverse input set to DIN%i.",newValue);
-    } else if (cmdString == String("MRELAY") && motorConfig) {
-        Logger::console("Setting Main Contactor relay output to DOUT%i", newValue);
-        motorConfig->mainContactorRelay = newValue;
-        motorController->saveConfiguration();
-    } else if (cmdString == String("PRELAY") && motorConfig) {
-        Logger::console("Setting Precharge Relay output to DOUT%i", newValue);
-        motorConfig->prechargeRelay = newValue;
-        motorController->saveConfiguration();
-    } else if (cmdString == String("TAPERLO") && motorConfig) {
-        if (newValue > -1 && newValue < 10001) {
-            Logger::console("Setting taper lower limit to %i", newValue);
-            motorConfig->regenTaperLower = newValue;
-            motorController->saveConfiguration();
-        }
-        else Logger::console("Invalid RPM value. Please enter a value 0 to 10000");
-    } else if (cmdString == String("TAPERHI") && motorConfig) {
-        if (newValue >=  motorConfig->regenTaperLower && newValue < 10001) {
-            Logger::console("Setting taper upper limit to %i", newValue);
-            motorConfig->regenTaperUpper = newValue;
-            motorController->saveConfiguration();
-        }
-        else Logger::console("Invalid RPM value. Please enter a value higher than low limit and under 10000");
-    } else */if (cmdString == String("ENABLE")) {
+/*} else */if (cmdString == String("ENABLE")) {
         if (PrefHandler::setDeviceStatus(newValue, true)) {
-            sysPrefs->saveChecksum();
-            sysPrefs->forceCacheWrite(); //just in case someone takes us literally and power cycles quickly
+            memCache->FlushAllPages();
             Logger::console("Successfully enabled device.(%X, %d) Power cycle to activate.", newValue, newValue);
         }
         else {
@@ -591,154 +404,17 @@ void SerialConsole::handleConfigCmd() {
         }
     } else if (cmdString == String("DISABLE")) {
         if (PrefHandler::setDeviceStatus(newValue, false)) {
-            sysPrefs->saveChecksum();
-            sysPrefs->forceCacheWrite(); //just in case someone takes us literally and power cycles quickly
+            memCache->FlushAllPages();
             Logger::console("Successfully disabled device. Power cycle to deactivate.");
         }
         else {
             Logger::console("Invalid device ID (%X, %d)", newValue, newValue);
         }
-    } else if (cmdString == String("SYSTYPE")) {
-        if (newValue < 7 && newValue > 0) {
-            sysPrefs->write("SysType", (uint8_t)(newValue));
-            sysPrefs->saveChecksum();
-            sysPrefs->forceCacheWrite(); //just in case someone takes us literally and power cycles quickly
-            Logger::console("System type updated. Power cycle to apply.");
-        }
-        else Logger::console("Invalid system type. Please enter a value 1 - 4");
-    } else if (cmdString == String("ADC0OFF")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc0Offset", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC0 Offset to %i", newValue);
-        }
-        else Logger::console("Invalid offset. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC0GAIN")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc0Gain", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC0 Gain to %i", newValue);
-        }
-        else Logger::console("Invalid gain. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC1OFF")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc1Offset", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC1 Offset to %i", newValue);
-        }
-        else Logger::console("Invalid offset. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC1GAIN")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc1Gain", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC1 Gain to %i", newValue);
-        }
-        else Logger::console("Invalid gain. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC2OFF")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc2Offset", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC2 Offset to %i", newValue);
-        }
-        else Logger::console("Invalid offset. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC2GAIN")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc2Gain", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC2 Gain to %i", newValue);
-        }
-        else Logger::console("Invalid gain. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC3OFF")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc3Offset", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC3 Offset to %i", newValue);
-        }
-        else Logger::console("Invalid offset. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC3GAIN")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc3Gain", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC3 Gain to %i", newValue);
-        }
-        else Logger::console("Invalid gain. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC4OFF")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc4Offset", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC4 Offset to %i", newValue);
-        }
-        else Logger::console("Invalid offset. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC4GAIN")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc4Gain", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC4 Gain to %i", newValue);
-        }
-        else Logger::console("Invalid gain. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC5OFF")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc5Offset", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC5 Offset to %i", newValue);
-        }
-        else Logger::console("Invalid offset. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC5GAIN")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc5Gain", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC5 Gain to %i", newValue);
-        }
-        else Logger::console("Invalid gain. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC6OFF")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc6Offset", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC6 Offset to %i", newValue);
-        }
-        else Logger::console("Invalid offset. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC6GAIN")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc6Gain", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC6 Gain to %i", newValue);
-        }
-        else Logger::console("Invalid gain. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC7OFF")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc7Offset", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC7 Offset to %i", newValue);
-        }
-        else Logger::console("Invalid offset. Enter value from 0 to 65535");
-    } else if (cmdString == String("ADC7GAIN")) {
-        if (newValue >= 0 && newValue <= 65535) {
-            sysPrefs->write("Adc7Gain", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            systemIO.setup_ADC_params(); //change takes immediate effect
-            Logger::console("Setting ADC7 Gain to %i", newValue);
-        }
-        else Logger::console("Invalid gain. Enter value from 0 to 65535");
-    } else if (cmdString == String("CAN0SPEED")) {
+    /*} else if (cmdString == String("CAN0SPEED")) {
         if (newValue >= 33 && newValue <= 1000) {
             sysPrefs->write("CAN0Speed", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
-            canHandlerEv.setup();
+            canHandlerBus0.setup();
             Logger::console("Setting CAN0 speed to %i", newValue);
         }
         else Logger::console("Invalid speed. Enter a value between 33 and 1000");
@@ -746,7 +422,7 @@ void SerialConsole::handleConfigCmd() {
         if (newValue >= 33 && newValue <= 1000) {
             sysPrefs->write("CAN1Speed", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
-            canHandlerCar.setup();
+            canHandlerBus1.setup();
             Logger::console("Setting CAN1 speed to %i", newValue);
         }
         else Logger::console("Invalid speed. Enter a value between 33 and 1000");
@@ -754,7 +430,7 @@ void SerialConsole::handleConfigCmd() {
         if (newValue >= 33 && newValue <= 1000) {
             sysPrefs->write("CAN2Speed", (uint16_t)(newValue));
             sysPrefs->saveChecksum();
-            canHandlerCar2.setup();
+            canHandlerBus2.setup();
             Logger::console("Setting CAN2 speed to %i", newValue);
         }
         else Logger::console("Invalid speed. Enter a value between 33 and 1000");
@@ -766,33 +442,7 @@ void SerialConsole::handleConfigCmd() {
             Logger::console("Setting SWCAN speed to %i", newValue);
         }
         else Logger::console("Invalid speed. Enter a value between 33 and 1000");
-    } else if (cmdString == String("LOGLEVEL")) {
-        switch (newValue) {
-        case 0:
-            Logger::setLoglevel(Logger::Debug);
-            Logger::console("setting loglevel to 'debug'");
-            break;
-        case 1:
-            Logger::setLoglevel(Logger::Info);
-            Logger::console("setting loglevel to 'info'");
-            break;
-        case 2:
-            Logger::console("setting loglevel to 'warning'");
-            Logger::setLoglevel(Logger::Warn);
-            break;
-        case 3:
-            Logger::console("setting loglevel to 'error'");
-            Logger::setLoglevel(Logger::Error);
-            break;
-        case 4:
-            Logger::console("setting loglevel to 'off'");
-            Logger::setLoglevel(Logger::Off);
-            break;
-        }
-        if (!sysPrefs->write("LogLevel", (uint8_t)newValue))
-            Logger::error("Couldn't write log level!");
-        sysPrefs->saveChecksum();
-   
+    } */
     } else if (cmdString == String("OUTPUT") && newValue<8) {
         int outie = systemIO.getDigitalOutput(newValue);
         Logger::console("DOUT%d,  STATE: %d",newValue, outie);
@@ -812,63 +462,7 @@ void SerialConsole::handleConfigCmd() {
                         systemIO.getDigitalOutput(0), systemIO.getDigitalOutput(1), systemIO.getDigitalOutput(2), systemIO.getDigitalOutput(3), 
                         systemIO.getDigitalOutput(4), systemIO.getDigitalOutput(5), systemIO.getDigitalOutput(6), systemIO.getDigitalOutput(7));
 
-    } /*else if (cmdString == String("CAPACITY") && bmsConfig ) {
-        if (newValue >= 0 && newValue <= 6000) {
-            bmsConfig->packCapacity = newValue;
-            bms->saveConfiguration();
-            Logger::console("Battery Pack Capacity set to: %d", bmsConfig->packCapacity);
-        }
-        else Logger::console("Invalid capacity please enter a value between 0 and 6000");
-    } else if (cmdString == String("AHLEFT") && bmsConfig ) {
-        if (newValue >= 0 && newValue <= 6000) {
-            bmsConfig->packAHRemaining = newValue * 100000ul;
-            bms->saveConfiguration();
-            Logger::console("Battery Pack remaining capacity set to: %d", newValue);
-        }
-        else Logger::console("Invalid remaining capacity please enter a value between 0 and 6000");
-    } else if (cmdString == String("VOLTLIMHI") && bmsConfig ) {
-        if (newValue >= 0 && newValue <= 6000) {
-            bmsConfig->highVoltLimit = newValue;
-            bms->saveConfiguration();
-            Logger::console("Battery High Voltage Limit set to: %d", bmsConfig->highVoltLimit);
-        }
-        else Logger::console("Invalid high voltage limit please enter a value between 0 and 6000");
-    } else if (cmdString == String("VOLTLIMLO") && bmsConfig ) {
-        if (newValue >= 0 && newValue <= 6000) {
-            bmsConfig->lowVoltLimit = newValue;
-            bms->saveConfiguration();
-            Logger::console("Battery Low Voltage Limit set to: %d", bmsConfig->lowVoltLimit);
-        }
-        else Logger::console("Invalid low voltage limit please enter a value between 0 and 6000");
-    } else if (cmdString == String("CELLLIMHI") && bmsConfig ) {
-        if (newValue >= 0 && newValue <= 20000) {
-            bmsConfig->highCellLimit = newValue;
-            bms->saveConfiguration();
-            Logger::console("Cell High Voltage Limit set to: %d", bmsConfig->highCellLimit);
-        }
-        else Logger::console("Invalid high voltage limit please enter a value between 0 and 20000");
-    } else if (cmdString == String("CELLLIMLO") && bmsConfig ) {
-        if (newValue >= 0 && newValue <= 20000) {
-            bmsConfig->lowCellLimit = newValue;
-            bms->saveConfiguration();
-            Logger::console("Cell Low Voltage Limit set to: %d", bmsConfig->lowCellLimit);
-        }
-        else Logger::console("Invalid low voltage limit please enter a value between 0 and 20000");
-    } else if (cmdString == String("TEMPLIMHI") && bmsConfig ) {
-        if (newValue >= 0 && newValue <= 2000) {
-            bmsConfig->highTempLimit = newValue;
-            bms->saveConfiguration();
-            Logger::console("Battery Temperature Upper Limit set to: %d", bmsConfig->highTempLimit);
-        }
-        else Logger::console("Invalid temperature upper limit please enter a value between 0 and 2000");
-    } else if (cmdString == String("TEMPLIMLO") && bmsConfig ) {
-        if (newValue >= -2000 && newValue <= 2000) {
-            bmsConfig->lowTempLimit = newValue;
-            bms->saveConfiguration();
-            Logger::console("Battery Temperature Lower Limit set to: %d", bmsConfig->lowTempLimit);
-        }
-        else Logger::console("Invalid temperature lower limit please enter a value between -2000 and 2000");
-    } */else if (cmdString == String("NUKE")) {
+    } else if (cmdString == String("NUKE")) {
         if (newValue == 1) {
             Logger::console("Start of EEPROM Nuke");
             memCache->InvalidateAll(); //first force writing of all dirty pages and invalidate them
@@ -954,7 +548,8 @@ void SerialConsole::handleShortCmd() {
         {
             systemIO.calibrateADCOffset(i, true);
         }
-        sysPrefs->saveChecksum();
+        Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
+        sysDev->saveConfiguration();
         systemIO.setup_ADC_params(); //change takes immediate effect
         break;
     case 'a':

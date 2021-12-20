@@ -67,12 +67,13 @@ void EVIC::setup() {
     Device::setup(); // run the parent class version of this function
 
     // register ourselves as observer of all 0x404 and 0x505 can frames from JLD505
-    canHandlerCar.attach(this, 0x404, 0x7ff, false);
-    canHandlerCar.attach(this, 0x505, 0x7ff, false);
+    canHandlerBus1.attach(this, 0x404, 0x7ff, false);
+    canHandlerBus1.attach(this, 0x505, 0x7ff, false);
     
     //This is just a handy place to load the CAN_SWITCH message ID for CANIO.  CANIO will not work without EVIC then.
-    canHandlerCar.attach(this, CAN_SWITCH, 0x7ff, false);
-    canHandlerEv.attach(this, CAN_SWITCH, 0x7ff, false);
+    //Note to self: WHAT IN THE HELL? Why does CANIO need EVIC?! That's dumb! TODO - FIX THIS!
+    canHandlerBus1.attach(this, CAN_SWITCH, 0x7ff, false);
+    canHandlerBus0.attach(this, CAN_SWITCH, 0x7ff, false);
 
     MotorController* motorController = deviceManager.getMotorController();
     //nominalVolt=(motorController->nominalVolts); //Get default nominal volts and capacity from motorcontroller
@@ -213,7 +214,7 @@ void EVIC::sendTestCmdCurtis()
     output.buf[6] = highByte(DCV);
     output.buf[7] = lowByte(DCV);
 
-    canHandlerCar.sendFrame(output);  //Mail it.
+    canHandlerBus1.sendFrame(output);  //Mail it.
 
     timestamp();
 
@@ -238,7 +239,7 @@ void EVIC::sendTestCmdOrion()
     output.buf[6] = 0;  //Cell temp
     output.buf[7] = 0; //Cell temp
 
-    canHandlerCar.sendFrame(output);  //Mail it.
+    canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
 
     Logger::debug("Orion Message1: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
@@ -257,7 +258,7 @@ void EVIC::sendTestCmdOrion()
     output.buf[6] = 0;  //pack cycles MSB
     output.buf[7] = 0; //pack cycles LSB
 
-    canHandlerCar.sendFrame(output);  //Mail it.
+    canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
 
     Logger::debug("Orion Message2: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
@@ -289,7 +290,7 @@ void EVIC::sendCmdCurtis()
     output.buf[6] = highByte(dcVoltage);
     output.buf[7] = lowByte(dcVoltage);
 
-    canHandlerCar.sendFrame(output);  //Mail it.
+    canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
     Logger::debug("EVIC Message: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
@@ -345,7 +346,7 @@ void EVIC::sendCmdOrion()
     output.buf[6] = CellHi;  //Cell temp
     output.buf[7] = Cello; //Cell temp
 
-    canHandlerCar.sendFrame(output);  //Mail it.
+    canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
     Logger::debug("Orion Message1: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
@@ -368,7 +369,7 @@ void EVIC::sendCmdOrion()
     output.buf[6] = 0;  //pack cycles MSB
     output.buf[7] = 0; //pack cycles LSB
 
-    canHandlerCar.sendFrame(output);  //Mail it.
+    canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
     Logger::debug("Orion Message2: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);

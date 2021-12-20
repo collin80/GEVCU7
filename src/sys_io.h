@@ -39,19 +39,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class CANIODevice;
 
-typedef struct {
-    uint16_t offset;
-    uint16_t gain;
-} ADC_COMP;
-
-enum SystemType {
-    GEVCU1 = 1,
-    GEVCU2 = 2,
-    GEVCU3 = 3,
-    GEVCU4 = 4,
-    GEVCU5 = 5,
-    GEVCU6 = 6,
-    GEVCU7 = 7
+enum SystemType 
+{
+    GEVCU7A = 0,
+    GEVCU7B = 1,
+    GEVCU7C = 2
 };
 
 class ExtendedIODev
@@ -114,8 +106,6 @@ private:
 
     SystemType sysType;
 
-    ADC_COMP adc_comp[NUM_ANALOG]; //GEVCU 7 has 8 adc inputs
-
     int adcMuxSelect;
 
     uint8_t pcaDigitalOutputCache;
@@ -131,7 +121,6 @@ private:
     ExtendedIODev extendedAnalogIn[NUM_EXT_IO];    
 };
 
-extern PrefHandler *sysPrefs;
 extern SystemIO systemIO;
 
 #endif

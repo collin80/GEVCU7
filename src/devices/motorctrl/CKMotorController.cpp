@@ -56,7 +56,7 @@ void CKMotorController::setup() {
     MotorController::setup(); // run the parent class version of this function
 
     // register ourselves as observer of 0x23x and 0x65x can frames
-    canHandlerEv.attach(this, 0x410, 0x7f0, false);
+    canHandlerBus0.attach(this, 0x410, 0x7f0, false);
 
     running = false;
     setSelectedGear(NEUTRAL);
@@ -190,7 +190,7 @@ void CKMotorController::sendPowerCmd() {
 	
 	Logger::debug("CKInverter Sent Frame: %X  %X  %X  %X  %X  %X  %X  %X  %X", output.id, output.buf[0] , output.buf[1], output.buf[2], output.buf[3], output.buf[4], output.buf[5], output.buf[6]);
 
-    canHandlerEv.sendFrame(output);
+    canHandlerBus0.sendFrame(output);
 }
 
 //just a bog standard CRC8 calculation with custom generator byte. Good enough.

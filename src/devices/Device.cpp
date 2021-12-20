@@ -91,6 +91,7 @@ void Device::saveConfiguration() {
 }
 
 DeviceConfiguration *Device::getConfiguration() {
+    //if (!this->deviceConfiguration) this->loadConfiguration(); //try to load configuration if it hasn't been done yet.
     return this->deviceConfiguration;
 }
 

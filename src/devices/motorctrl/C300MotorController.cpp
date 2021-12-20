@@ -53,7 +53,7 @@ void C300MotorController::setup() {
 
     //CFF7902, CFF7B02, CFF7A02, CFF7C02 are the addresses. Only the lower nibble of the second byte changes
     //So, set up to filter and let anything in that nibble through but otherwise match exactly
-    canHandlerEv.attach(this, 0x0CFF7802, 0x0FFFF0FF, true);
+    canHandlerBus0.attach(this, 0x0CFF7802, 0x0FFFF0FF, true);
 
     running = false;
     setPowerMode(modeTorque);
@@ -223,7 +223,7 @@ void C300MotorController::sendCmd()
     Logger::debug("C300 Command tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
                   output.buf[4], output.buf[5], output.buf[6], output.buf[7]);
 
-    canHandlerEv.sendFrame(output);
+    canHandlerBus0.sendFrame(output);
 }
 
 //I don't believe motor controllers need to handle regen taper themselves. 

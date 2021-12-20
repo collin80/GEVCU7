@@ -67,6 +67,7 @@ void UDSController::handleIsoTP(const ISOTP_data &iso_config, const uint8_t *buf
     UDSConfiguration* config = (UDSConfiguration *)getConfiguration();
     ISOTP_data reply;
     uint32_t firmwareSize;
+    uint32_t firmwareAddr;
 
     Logger::debug("UDS SID: %X config: %X", buf[0], config);
 
@@ -143,13 +144,23 @@ void UDSController::handleIsoTP(const ISOTP_data &iso_config, const uint8_t *buf
             is the length. But, these values are passed after this byte, first address then length */
             //really are supposed to respond with error codes if conditions aren't right but doing nothing
             //is faster to code for now. Also, need to validate returned length 
-            if (buf[1] != 0) break;
-            if (buf[2] != 0x44) break;
+            if (buf[1] != 0) break; //NRC 0x70
+            if (buf[2] != 0x44) break; //NRC 0x13
+            if (!inSecurityMode) break; //this is NRC 0x33
             //don't care about the address but maybe validate it just to be 100% sure we're talking to the sane
+            firmwareAddr = (buf[3] << 24) + (buf[4] << 16) + (buf[5] << 8) + (buf[6]);
             firmwareSize = (buf[7] << 24) + (buf[8] << 16) + (buf[9] << 8) + (buf[10]);
-            
+            //positive reply causes us to send the max acceptable payload info.
+            sendBuffer[0] = UDS_REQUEST_DOWNLOAD + 0x40;
+            sendBuffer[1] = 0x20; //16 bit reply with max packet size
+            sendBuffer[2] = 0x1;
+            sendBuffer[3] = 2;   //0x102 is 258 bytes.
+            udsIsoTPTargetted.write(reply, sendBuffer, 4);
         break;
     case UDS_TRANSFER_DATA: //a chunk of firmware data
+        //buf[1] has the block sequence counter which had better be going up by one each time. Must fault
+        //if the counter goes out of sequence, otherwise, buf[2] - potentially buf[257] should be firmware data.
+        //grab that data, keep track of our position in flash, and write it 256 bytes at a time.
         break;
     case UDS_REQUEST_TX_EXIT:
         break;
@@ -235,12 +246,12 @@ void UDSController::setup() {
     }
     
 /*    
-    if (config->useExtended) canHandlerEv.attach(this, config->udsRx, 0x1FFFFFFFul, true);
-    else canHandlerEv.attach(this, config->udsRx, 0x7FF, false);
+    if (config->useExtended) canHandlerBus0.attach(this, config->udsRx, 0x1FFFFFFFul, true);
+    else canHandlerBus0.attach(this, config->udsRx, 0x7FF, false);
 
     if (config->listenBroadcast)
     {
-        canHandlerEv.attach(this, 0x7DF, 0x7FF, false);
+        canHandlerBus0.attach(this, 0x7DF, 0x7FF, false);
     }
 */
     //TickHandler::getInstance()->attach(this, CFG_TICK_INTERVAL_CAN_THROTTLE);

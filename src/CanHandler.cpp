@@ -27,52 +27,41 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
  */
 
-/* 
-Really, I think the outside API doesn't need to change necessarily. Most
-of the things that aren't the same with this new CAN library are different
-in this handler code. But, I'm contemplating switching over to natively
-use the FlexCAN API. This would make devices not even remotely compatible
-with GEVCU6 and GEVCU4/5 though. Not sure I want to do that.
-*/
-
 #include "CanHandler.h"
 #include "sys_io.h"
+#include "devices/misc/SystemDevice.h"
 
 /*
 CAN1 is isolated (and has an FD capable transceiver....)
 CAN2 is shared between being a second standard CAN bus and being SingleWire.
-CAN3 is CAN-FD capable. It seems I managed to order non CAN-FD transceivers though! Crap!
+CAN3 is CAN-FD capable. GEVCU7A boards failed to get an FD transceiver though.
 
-Not using hardware filtering right now. CAN buses aren't really that fast and this is a\
+Not using hardware filtering right now. CAN buses aren't really that fast and this is a
 very fast chip. But, still it might not be a bad idea to eventually try it.
 FIFOs are not available for CAN-FD mode but CAN-FD mode is not being attempted right now
 */
 
-//we need the system preferences to get the CAN bus speeds
-extern PrefHandler *sysPrefs;
+CanHandler canHandlerBus0 = CanHandler(CanHandler::CAN_BUS_0);
+CanHandler canHandlerBus1 = CanHandler(CanHandler::CAN_BUS_1);
+CanHandler canHandlerBus2 = CanHandler(CanHandler::CAN_BUS_2);
 
-CanHandler canHandlerEv = CanHandler(CanHandler::CAN_BUS_EV);
-CanHandler canHandlerCar = CanHandler(CanHandler::CAN_BUS_CAR);
-CanHandler canHandlerCar2 = CanHandler(CanHandler::CAN_BUS_CAR2);
-CanHandler canHandlerSingleWire = CanHandler(CanHandler::CAN_BUS_SW);
-
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0; //Either CAN or SWCAN depending on mode
+FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0; //Reg CAN or SWCAN depending on mode
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1; //Isolated CAN
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2; //Only CAN-FD capable output
 
 void canRX0(const CAN_message_t &msg) 
 {
-    canHandlerCar.process(msg);
+    canHandlerBus0.process(msg);
 }
 
 void canRX1(const CAN_message_t &msg) 
 {
-    canHandlerCar2.process(msg); 
+    canHandlerBus1.process(msg); 
 }
 
 void canRX2(const CAN_message_t &msg) 
 {
-    canHandlerEv.process(msg);
+    canHandlerBus2.process(msg);
 }
 
 void canRX3(const CAN_message_t &msg) 
@@ -92,6 +81,7 @@ CanHandler::CanHandler(CanBusNode canBusNode)
     }
     masterID = 0x05;
     busSpeed = 0;
+    swmode = SW_SLEEP;
 }
 
 /*
@@ -104,44 +94,21 @@ void CanHandler::setup()
     uint32_t realSpeed;
     int busNum = 0;
 
-    //these pins control whether differential CAN or SingleWire CAN is found on CAN2
+    //these pins control whether differential CAN or SingleWire CAN is found on CAN0
     pinMode(33, OUTPUT);
-    pinMode(26, OUTPUT);
-    pinMode(32, OUTPUT);
+    pinMode(MODE0_PIN, OUTPUT);
+    pinMode(MODE1_PIN, OUTPUT);
 
-    if (canBusNode == CAN_BUS_EV) 
+    switch (canBusNode)
     {
-        sysPrefs->read("CAN1Speed", &storedVal, 500);
-        realSpeed = storedVal * 1000; //was stored in thousands, now in actual rate
+    case CAN_BUS_0:
+        realSpeed = sysConfig->canSpeed[0];
         if (realSpeed < 33333ul) realSpeed = 33333u; 
         if (realSpeed > 1000000ul) realSpeed = 1000000ul;
         busSpeed = realSpeed;
         if (busSpeed > 0)
         {
-            busNum = 0;
-            Can2.begin();
-            Can2.setBaudRate(realSpeed);
-            Can2.setMaxMB(16);
-            //Can2.enableFIFO();
-            //Can2.enableFIFOInterrupt();
-            Can2.enableMBInterrupts();
-            Can2.onReceive(canRX1);
-        }
-        else Can2.reset();
-    }
-    else if (canBusNode == CAN_BUS_CAR)
-    {
-        sysPrefs->read("CAN0Speed", &storedVal, 500);
-        realSpeed = storedVal * 1000; //was stored in thousands, now in actual rate
-        if (realSpeed < 33333ul) realSpeed = 33333u; 
-        if (realSpeed > 1000000ul) realSpeed = 1000000ul;
-        busSpeed = realSpeed;
-        if (busSpeed > 0)
-        {
-            busNum = 1;
-            digitalWrite(26, LOW); //turn off SWCAN transceiver
-            digitalWrite(32, LOW);
-            digitalWrite(33, HIGH); //turn on CAN1 transceiver            
+            busNum = 0;                    
             Can0.begin();
             Can0.setBaudRate(realSpeed);
             Can0.setMaxMB(16);
@@ -149,53 +116,85 @@ void CanHandler::setup()
             //Can0.enableFIFOInterrupt();
             Can0.enableMBInterrupts();
             Can0.onReceive(canRX0);
+            setSWMode(SW_SLEEP);
         }
         else Can0.reset();
-    }
-    else if (canBusNode == CAN_BUS_CAR2)
-    {
-        sysPrefs->read("CAN2Speed", &storedVal, 500);
-        realSpeed = storedVal * 1000; //was stored in thousands, now in actual rate
+        break;
+    case CAN_BUS_1:
+        realSpeed = sysConfig->canSpeed[1];
         if (realSpeed < 33333ul) realSpeed = 33333u; 
         if (realSpeed > 1000000ul) realSpeed = 1000000ul;
         busSpeed = realSpeed;
         if (busSpeed > 0)
         {
-            busNum = 2;
+            busNum = 1;            
             Can1.begin();
             Can1.setBaudRate(realSpeed);
             Can1.setMaxMB(16);
             //Can1.enableFIFO();
             //Can1.enableFIFOInterrupt();
             Can1.enableMBInterrupts();
-            Can1.onReceive(canRX2);
+            Can1.onReceive(canRX1);
         }
-    }
-    else //swcan
-    {
-        sysPrefs->read("SWCANSpeed", &storedVal, 11111);
-        realSpeed = storedVal * 3; //stored in thirds
+        else Can1.reset();
+        break;
+    case CAN_BUS_2:
+        realSpeed = sysConfig->canSpeed[2];
         if (realSpeed < 33333ul) realSpeed = 33333u; 
         if (realSpeed > 1000000ul) realSpeed = 1000000ul;
         busSpeed = realSpeed;
-        if (realSpeed > 0)
+        if (busSpeed > 0)
         {
-            digitalWrite(33, LOW); //turn off CAN1 transceiver
-            digitalWrite(26, HIGH); //turn on SWCAN transceiver to normal mode
-            digitalWrite(32, HIGH);
-            busNum = 3;
-            Can0.begin();
-            Can0.setBaudRate(realSpeed);
-            Can0.setMaxMB(16);
-            //Can0.enableFIFO();
-            //Can0.enableFIFOInterrupt();
-            Can0.enableMBInterrupts();
-            Can0.onReceive(canRX0);
+            busNum = 2;
+            Can2.begin();
+            Can2.setBaudRate(realSpeed);
+            Can2.setMaxMB(16);
+            //Can2.enableFIFO();
+            //Can2.enableFIFOInterrupt();
+            Can2.enableMBInterrupts();
+            Can2.onReceive(canRX2);
         }
+        else Can2.reset();
+        break;
     }
 
     Logger::info("CAN%d init ok. Speed = %i", busNum, busSpeed);
 }
+
+void CanHandler::setSWMode(SWMode newMode)
+{
+    if (canBusNode != CAN_BUS_0) return; //naughty!
+    swmode = newMode;
+    switch (swmode)
+    {
+    case SW_SLEEP:
+        digitalWrite(MODE0_PIN, LOW); //turn off SWCAN transceiver
+        digitalWrite(MODE1_PIN, LOW);
+        digitalWrite(33, HIGH); //turn on CAN1 transceiver    
+        break;
+    case SW_HVWAKE:
+        digitalWrite(MODE0_PIN, LOW);
+        digitalWrite(MODE1_PIN, HIGH);
+        digitalWrite(33, LOW); //turn off CAN1 transceiver
+        break;
+    case SW_HISPEED:
+        digitalWrite(MODE0_PIN, HIGH);
+        digitalWrite(MODE1_PIN, LOW);
+        digitalWrite(33, LOW); //turn off CAN1 transceiver
+        break;
+    case SW_NORMAL:
+        digitalWrite(MODE0_PIN, HIGH);
+        digitalWrite(MODE1_PIN, HIGH);
+        digitalWrite(33, LOW); //turn off CAN1 transceiver
+        break;
+    }
+}
+
+SWMode CanHandler::getSWMode()
+{
+    return swmode;
+}
+
 
 uint32_t CanHandler::getBusSpeed()
 {
@@ -205,9 +204,9 @@ uint32_t CanHandler::getBusSpeed()
 void CanHandler::setBusSpeed(uint32_t newSpeed)
 {
     int busNum = 0;
-    if (canBusNode == CAN_BUS_EV) 
+    if (canBusNode == CAN_BUS_2) 
     {
-        busNum = 0;
+        busNum = 2;
         busSpeed = newSpeed;
         if (busSpeed > 0)
         {
@@ -215,22 +214,19 @@ void CanHandler::setBusSpeed(uint32_t newSpeed)
         }
         else Can2.reset();
     }
-    else if (canBusNode == CAN_BUS_CAR)
+    else if (canBusNode == CAN_BUS_0)
     {
-        busNum = 1;
+        busNum = 0;
         busSpeed = newSpeed;
         if (busSpeed > 0)
         {
-            digitalWrite(26, LOW); //turn off SWCAN transceiver
-            digitalWrite(32, LOW);
-            digitalWrite(33, HIGH); //turn on CAN1 transceiver
             Can0.setBaudRate(busSpeed);
         }
         else Can0.reset();
     }
-    else if (canBusNode == CAN_BUS_CAR2)
+    else if (canBusNode == CAN_BUS_1)
     {
-        busNum = 2;
+        busNum = 1;
         busSpeed = newSpeed;
         if (busSpeed > 0)
         {
@@ -240,23 +236,6 @@ void CanHandler::setBusSpeed(uint32_t newSpeed)
             Can1.enableMBInterrupts();
             Can1.onReceive(canRX1);
         }
-    }
-    else //swcan
-    {
-        
-        busNum = 3;
-        busSpeed = newSpeed;
-        if (busSpeed > 0)
-        {
-            digitalWrite(33, LOW); //turn off CAN1 transceiver
-            digitalWrite(26, HIGH); //turn on SWCAN transceiver to normal mode
-            digitalWrite(32, HIGH);
-            Can0.begin();
-            Can0.setBaudRate(busSpeed);
-            Can0.setMaxMB(16);
-            Can0.enableMBInterrupts();
-            Can0.onReceive(canRX0);
-        }        
     }
 
     Logger::info("CAN%d init ok. Speed = %i", busNum, busSpeed);
@@ -329,8 +308,8 @@ void CanHandler::logFrame(const CAN_message_t &msg)
 {
     
     if (Logger::isDebug()) {
-        Logger::debug("CAN: id=%X dlc=%X ide=%X data=%X,%X,%X,%X,%X,%X,%X,%X",
-                      msg.id, msg.len, msg.flags.extended,
+        Logger::debug("CAN: bus=%i id=%X dlc=%X ide=%X data=%X,%X,%X,%X,%X,%X,%X,%X",
+                      (int)canBusNode, msg.id, msg.len, msg.flags.extended,
                       msg.buf[0], msg.buf[1], msg.buf[2], msg.buf[3],
                       msg.buf[4], msg.buf[5], msg.buf[6], msg.buf[7]);
     }
@@ -519,14 +498,13 @@ void CanHandler::sendFrame(const CAN_message_t &msg)
 {
     switch (canBusNode)
     {
-    case CAN_BUS_CAR:
-    case CAN_BUS_SW:
+    case CAN_BUS_0:
         Can0.write(msg);
         break;
-    case CAN_BUS_CAR2:    
+    case CAN_BUS_1:    
         Can1.write(msg);
         break;
-    case CAN_BUS_EV:
+    case CAN_BUS_2:
         Can2.write(msg);
         break;            
     }
