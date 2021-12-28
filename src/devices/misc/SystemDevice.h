@@ -39,7 +39,7 @@ public:
     uint8_t systemType;
     uint16_t adcGain[NUM_ANALOG];
     uint16_t adcOffset[NUM_ANALOG];
-    uint32_t canSpeed[3];
+    uint32_t canSpeed[4];
     uint8_t swcanMode; //should can0 be in SWCAN mode?
     uint8_t logLevel;
 };

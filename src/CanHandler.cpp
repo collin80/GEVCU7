@@ -32,8 +32,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "devices/misc/SystemDevice.h"
 
 /*
-CAN1 is isolated (and has an FD capable transceiver....)
-CAN2 is shared between being a second standard CAN bus and being SingleWire.
+CAN1 is regular can but with some chip changes could be put into SWCAN mode.
+CAN2 is isolated
 CAN3 is CAN-FD capable. GEVCU7A boards failed to get an FD transceiver though.
 
 Not using hardware filtering right now. CAN buses aren't really that fast and this is a
@@ -47,7 +47,7 @@ CanHandler canHandlerBus2 = CanHandler(CanHandler::CAN_BUS_2);
 
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0; //Reg CAN or SWCAN depending on mode
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1; //Isolated CAN
-FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2; //Only CAN-FD capable output
+FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> Can2; //Only CAN-FD capable output
 
 void canRX0(const CAN_message_t &msg) 
 {
@@ -59,14 +59,9 @@ void canRX1(const CAN_message_t &msg)
     canHandlerBus1.process(msg); 
 }
 
-void canRX2(const CAN_message_t &msg) 
+void canRX2(const CANFD_message_t &msg) 
 {
     canHandlerBus2.process(msg);
-}
-
-void canRX3(const CAN_message_t &msg) 
-{
-    canHandlerSingleWire.process(msg);
 }
 
 /*
@@ -92,6 +87,8 @@ void CanHandler::setup()
     // Initialize the canbus at the specified baudrate
     uint16_t storedVal;
     uint32_t realSpeed;
+    uint32_t fdSpeed;
+    CANFD_timings_t fdTimings;
     int busNum = 0;
 
     //these pins control whether differential CAN or SingleWire CAN is found on CAN0
@@ -143,18 +140,25 @@ void CanHandler::setup()
         if (realSpeed < 33333ul) realSpeed = 33333u; 
         if (realSpeed > 1000000ul) realSpeed = 1000000ul;
         busSpeed = realSpeed;
+        fdSpeed = sysConfig->canSpeed[3];
+        if (fdSpeed < 500000ul) fdSpeed = 500000u; 
+        if (fdSpeed > 8000000ul) fdSpeed = 8000000ul;
         if (busSpeed > 0)
         {
             busNum = 2;
             Can2.begin();
-            Can2.setBaudRate(realSpeed);
-            Can2.setMaxMB(16);
+            fdTimings.baudrate = realSpeed;
+            fdTimings.baudrateFD = fdSpeed;
+            if (fdSpeed < 2000000ul) fdTimings.clock = 24;
+            else fdTimings.clock = 40;
+            Can2.setBaudRate(fdTimings);
+            //Can2.setMaxMB(16);
             //Can2.enableFIFO();
             //Can2.enableFIFOInterrupt();
             Can2.enableMBInterrupts();
             Can2.onReceive(canRX2);
         }
-        else Can2.reset();
+        //else Can2.reset();
         break;
     }
 
@@ -201,8 +205,15 @@ uint32_t CanHandler::getBusSpeed()
     return busSpeed;
 }
 
+uint32_t CanHandler::getBusFDSpeed()
+{
+    return fdSpeed;
+}
+
 void CanHandler::setBusSpeed(uint32_t newSpeed)
 {
+    CANFD_timings_t fdTimings;
+    uint32_t fdSpeed;
     int busNum = 0;
     if (canBusNode == CAN_BUS_2) 
     {
@@ -210,9 +221,14 @@ void CanHandler::setBusSpeed(uint32_t newSpeed)
         busSpeed = newSpeed;
         if (busSpeed > 0)
         {
-            Can2.setBaudRate(busSpeed);
+            fdTimings.baudrate = newSpeed;
+            fdSpeed = (newSpeed >= 500000ul) ? newSpeed : 500000ul;
+            fdTimings.baudrateFD = fdSpeed;
+            if (fdSpeed < 2000000ul) fdTimings.clock = 24;
+            else fdTimings.clock = 40;
+            Can2.setBaudRate(fdTimings);
         }
-        else Can2.reset();
+        //else Can2.reset();
     }
     else if (canBusNode == CAN_BUS_0)
     {
@@ -239,6 +255,21 @@ void CanHandler::setBusSpeed(uint32_t newSpeed)
     }
 
     Logger::info("CAN%d init ok. Speed = %i", busNum, busSpeed);
+}
+
+void CanHandler::setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed)
+{
+    CANFD_timings_t fdTimings;
+    if (canBusNode != CAN_BUS_2) return; //only CAN2 can do FD mode
+    if (nomSpeed > 125000ul)
+    {
+        fdTimings.baudrate = nomSpeed;
+        fdTimings.baudrateFD = dataSpeed;
+        if (dataSpeed < 2000000ul) fdTimings.clock = 24;
+        else fdTimings.clock = 40;
+        Can2.setBaudRate(fdTimings);        
+    }
+    //else Can2.reset();
 }
 
 /*
@@ -312,6 +343,17 @@ void CanHandler::logFrame(const CAN_message_t &msg)
                       (int)canBusNode, msg.id, msg.len, msg.flags.extended,
                       msg.buf[0], msg.buf[1], msg.buf[2], msg.buf[3],
                       msg.buf[4], msg.buf[5], msg.buf[6], msg.buf[7]);
+    }
+}
+
+//obviously it should be actually using FD not just normal CAN.... TODO
+void CanHandler::logFrame(const CANFD_message_t &msg_fd)
+{
+    if (Logger::isDebug()) {
+        Logger::debug("CANFD: bus=%i id=%X dlc=%X ide=%X data=%X,%X,%X,%X,%X,%X,%X,%X",
+                      (int)canBusNode, msg_fd.id, msg_fd.len, msg_fd.flags.extended,
+                      msg_fd.buf[0], msg_fd.buf[1], msg_fd.buf[2], msg_fd.buf[3],
+                      msg_fd.buf[4], msg_fd.buf[5], msg_fd.buf[6], msg_fd.buf[7]);
     }
 }
 
@@ -423,6 +465,38 @@ void CanHandler::process(const CAN_message_t &msg)
     }
 }
 
+void CanHandler::process(const CANFD_message_t &msgfd)
+{
+    static SDO_FRAME sFrame;
+
+    CanObserver *observer;
+
+    //see if we can turn this into a standard CAN frame and process it via that interface. Otherwise
+    //continue with CAN-FD interpretation
+    if ( (msgfd.brs == 0) && (msgfd.edl == 0) && (msgfd.len < 9) )
+    {
+        CAN_message_t msg;
+        msg.id = msgfd.id;
+        msg.bus = msgfd.bus;
+        msg.len = msgfd.len;
+        msg.timestamp = msgfd.timestamp;
+        msg.flags.extended = msgfd.flags.extended;
+        for (int i = 0; i < msg.len; i++) msg.buf[i] = msgfd.buf[i];
+        process(msg);
+        return;
+    }    
+
+    for (int i = 0; i < CFG_CAN_NUM_OBSERVERS; i++) 
+    {
+        observer = observerData[i].observer;
+        if (observer != NULL) {
+            if ((msgfd.id & observerData[i].mask) == (observerData[i].id & observerData[i].mask)) {
+                observer->handleCanFDFrame(msgfd);
+            }
+        }
+    }
+}
+
 /*
  * Prepare the CAN transmit frame.
  * Re-sets all parameters in the re-used frame.
@@ -505,9 +579,23 @@ void CanHandler::sendFrame(const CAN_message_t &msg)
         Can1.write(msg);
         break;
     case CAN_BUS_2:
-        Can2.write(msg);
+        //can't do this directly. Have to package it into a CANFD frame to send
+        CANFD_message_t fdMsg;
+        fdMsg.id = msg.id;
+        fdMsg.brs = 0; //no rate switching
+        fdMsg.edl = 0; //no extended data length either
+        fdMsg.len = msg.len;
+        fdMsg.flags.extended = msg.flags.extended;
+        for (int i = 0; i < msg.len; i++) fdMsg.buf[i] = msg.buf[i];
+        Can2.write(fdMsg);
         break;            
     }
+}
+
+void CanHandler::sendFrameFD(const CANFD_message_t& framefd)
+{
+    if (canBusNode != CAN_BUS_2) return;
+    Can2.write(framefd);
 }
 
 void CanHandler::sendISOTP(int id, int length, uint8_t *data)
@@ -697,17 +785,35 @@ bool CanObserver::isCANOpen()
  */
 void CanObserver::handleCanFrame(const CAN_message_t &frame)
 {
-    Logger::error("CanObserver does not implement handleCanFrame(), frame.id=%d", frame.id);
+    Logger::error("CanObserver does not implement handleCanFrame(), frame.id=0x%x", frame.id);
+}
+
+void CanObserver::handleCanFDFrame(const CANFD_message_t &frame_fd)
+{
+    //we will handle the case where this was called but really the traffic was standard CAN.
+    //In that case, try to massage the data and send it as normal CAN
+    if ( (frame_fd.brs == 0) && (frame_fd.edl == 0) && (frame_fd.len < 9) )
+    {
+        CAN_message_t msg;
+        msg.id = frame_fd.id;
+        msg.bus = frame_fd.bus;
+        msg.len = frame_fd.len;
+        msg.timestamp = frame_fd.timestamp;
+        msg.flags.extended = frame_fd.flags.extended;
+        for (int i = 0; i < msg.len; i++) msg.buf[i] = frame_fd.buf[i];
+        handleCanFrame(msg);
+    }
+    else Logger::error("CanObserver does not implement handleCanFDFrame(), frame.id=0x%x", frame_fd.id);
 }
 
 void CanObserver::handlePDOFrame(const CAN_message_t &frame)
 {
-    Logger::error("CanObserver does not implement handlePDOFrame(), frame.id=%d", frame.id);
+    Logger::error("CanObserver does not implement handlePDOFrame(), frame.id=0x%x", frame.id);
 }
 
 void CanObserver::handleSDORequest(SDO_FRAME &frame)
 {
-    Logger::error("CanObserver does not implement handleSDORequest(), frame.id=%d", frame.nodeID);
+    Logger::error("CanObserver does not implement handleSDORequest(), frame.id=0x%x", frame.nodeID);
 }
 
 void CanObserver::handleSDOResponse(SDO_FRAME &frame)

@@ -64,27 +64,29 @@ void SystemDevice::setup() {
     char buff[20];
 
     ConfigEntry entry;
-    entry = {"SYSTYPE", "", &config->systemType  , CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"SYSTYPE", "Set board revision level (0=7-A, 1=7-B, 2=7-C", &config->systemType  , CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"LOGLEVEL", "", &config->logLevel, CFG_ENTRY_VAR_TYPE::BYTE, 0, 4, 0, nullptr};
+    entry = {"LOGLEVEL", "Set system logging level (0=Debug, 1=Info, 2=Warn, 3=Error 4=Off)", &config->logLevel, CFG_ENTRY_VAR_TYPE::BYTE, 0, 4, 0, nullptr};
     cfgEntries.push_back(entry);
     for (int i = 0; i < NUM_ANALOG; i++)
     {
         snprintf(buff, 20, "ADCGAIN%u", i);
-        entry = {buff, "", &config->adcGain[i], CFG_ENTRY_VAR_TYPE::UINT16, 0, 60000, 0, nullptr};
+        entry = {buff, "Set gain of ADC input. 1024 is 1 to 1 scaling", &config->adcGain[i], CFG_ENTRY_VAR_TYPE::UINT16, 0, 60000, 0, nullptr};
         cfgEntries.push_back(entry);
         snprintf(buff, 20, "ADCOFF%u", i);
-        entry = {buff, "", &config->adcOffset[i], CFG_ENTRY_VAR_TYPE::UINT16, 0, 60000, 0, nullptr};
+        entry = {buff, "Set offset for ADC input. 0 is normal value", &config->adcOffset[i], CFG_ENTRY_VAR_TYPE::UINT16, 0, 60000, 0, nullptr};
         cfgEntries.push_back(entry);
     }
 
-    entry = {"CAN0SPEED", "", &config->canSpeed[0], CFG_ENTRY_VAR_TYPE::UINT32, 33333, 1000000, 0, nullptr};
+    entry = {"CAN0SPEED", "Set speed of CAN0 bus", &config->canSpeed[0], CFG_ENTRY_VAR_TYPE::UINT32, 33333, 1000000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"CAN1SPEED", "", &config->canSpeed[1], CFG_ENTRY_VAR_TYPE::UINT32, 33333, 1000000, 0, nullptr};
+    entry = {"CAN1SPEED", "Set speed of CAN1 bus", &config->canSpeed[1], CFG_ENTRY_VAR_TYPE::UINT32, 33333, 1000000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"CAN2SPEED", "", &config->canSpeed[2], CFG_ENTRY_VAR_TYPE::UINT32, 33333, 1000000, 0, nullptr};
+    entry = {"CAN2SPEED", "Set speed of CAN2 bus", &config->canSpeed[2], CFG_ENTRY_VAR_TYPE::UINT32, 33333, 1000000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"SWCANMODE", "", &config->swcanMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    entry = {"CANFDSPEED", "Set speed of FD mode data", &config->canSpeed[2], CFG_ENTRY_VAR_TYPE::UINT32, 500000, 8000000, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"SWCANMODE", "Set whether CAN0 is in SingleWire mode (only with hardware mods)", &config->swcanMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
     cfgEntries.push_back(entry);
 }
 
@@ -146,6 +148,7 @@ void SystemDevice::loadConfiguration() {
     prefsHandler->read("CAN0Speed", &config->canSpeed[0], 500000);
     prefsHandler->read("CAN1Speed", &config->canSpeed[1], 500000);
     prefsHandler->read("CAN2Speed", &config->canSpeed[2], 500000);
+    prefsHandler->read("CANFDSpeed", &config->canSpeed[3], 1000000);
     prefsHandler->read("SWCANMode", &config->swcanMode, 0);
 }
 
@@ -178,6 +181,7 @@ void SystemDevice::saveConfiguration() {
     prefsHandler->write("CAN0Speed", config->canSpeed[0]);
     prefsHandler->write("CAN1Speed", config->canSpeed[1]);
     prefsHandler->write("CAN2Speed", config->canSpeed[2]);
+    prefsHandler->write("CANFDSpeed", config->canSpeed[3]);
     prefsHandler->write("SWCANMode", config->swcanMode);
     
     prefsHandler->saveChecksum();

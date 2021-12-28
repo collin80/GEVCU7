@@ -71,6 +71,7 @@ class CanObserver
 public:
     CanObserver();
     virtual void handleCanFrame(const CAN_message_t &frame);
+    virtual void handleCanFDFrame(const CANFD_message_t &framefd);
     virtual void handlePDOFrame(const CAN_message_t &frame);
     virtual void handleSDORequest(SDO_FRAME &frame);
     virtual void handleSDOResponse(SDO_FRAME &frame);
@@ -104,13 +105,17 @@ public:
     CanHandler(CanBusNode busNumber);
     void setup();
     uint32_t getBusSpeed();
+    uint32_t getBusFDSpeed();
     void setBusSpeed(uint32_t newSpeed);
+    void setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed);
     void attach(CanObserver *observer, uint32_t id, uint32_t mask, bool extended);
     void detach(CanObserver *observer, uint32_t id, uint32_t mask);
     void process(const CAN_message_t &msg);
+    void process(const CANFD_message_t &msg_fd);
     void prepareOutputFrame(CAN_message_t &frame, uint32_t id);
     void CANIO(const CAN_message_t& frame);
     void sendFrame(const CAN_message_t& frame);
+    void sendFrameFD(const CANFD_message_t& framefd);
     void sendISOTP(int id, int length, uint8_t *data);
     void setSWMode(SWMode newMode);
     SWMode getSWMode();
@@ -140,9 +145,11 @@ private:
     CanBusNode canBusNode;  // indicator to which can bus this instance is assigned to
     CanObserverData observerData[CFG_CAN_NUM_OBSERVERS];    // Can observers
     uint32_t busSpeed;
+    uint32_t fdSpeed;
     SWMode swmode;
 
     void logFrame(const CAN_message_t &msg);
+    void logFrame(const CANFD_message_t &msg_fd);
     int8_t findFreeObserverData();
     int8_t findFreeMailbox();
 
@@ -154,6 +161,5 @@ private:
 extern CanHandler canHandlerBus0;
 extern CanHandler canHandlerBus1;
 extern CanHandler canHandlerBus2;
-extern CanHandler canHandlerSingleWire;
 
 #endif /* CAN_HANDLER_H_ */
