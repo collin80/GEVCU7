@@ -54,7 +54,7 @@ void SerialConsole::init() {
 void SerialConsole::loop() {
   
     if (handlingEvent == false) {
-        if (SerialUSB.available()) {
+        while (SerialUSB.available()) {
             serialEvent();
         }
     }

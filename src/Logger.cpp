@@ -28,6 +28,7 @@
 #include "SdFat.h"
 #include "RingBuf.h"
 #include "DeviceManager.h"
+#include "devices/misc/SystemDevice.h"
 
 extern SdFs sdCard;
 extern bool sdCardPresent;
@@ -45,9 +46,7 @@ FsFile file;
 // RingBuf for File type FsFile.
 RingBuf<FsFile, RING_BUF_CAPACITY> rb;
 
-Logger::LogLevel Logger::logLevel = Logger::Info;
 uint32_t Logger::lastLogTime = 0;
-
 
 void Logger::initializeFile()
 {
@@ -103,7 +102,7 @@ void Logger::loop()
  *
  */
 void Logger::debug(const char *message, ...) {
-    if (logLevel > Debug)
+    if (sysConfig->logLevel > Debug)
         return;
     va_list args;
     va_start(args, message);
@@ -116,7 +115,7 @@ void Logger::debug(const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::debug(DeviceId deviceId, const char *message, ...) {
-    if (logLevel > Debug)
+    if (sysConfig->logLevel > Debug)
         return;
     va_list args;
     va_start(args, message);
@@ -129,7 +128,7 @@ void Logger::debug(DeviceId deviceId, const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::info(const char *message, ...) {
-    if (logLevel > Info)
+    if (sysConfig->logLevel > Info)
         return;
     va_list args;
     va_start(args, message);
@@ -142,7 +141,7 @@ void Logger::info(const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::info(DeviceId deviceId, const char *message, ...) {
-    if (logLevel > Info)
+    if (sysConfig->logLevel > Info)
         return;
     va_list args;
     va_start(args, message);
@@ -155,7 +154,7 @@ void Logger::info(DeviceId deviceId, const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::warn(const char *message, ...) {
-    if (logLevel > Warn)
+    if (sysConfig->logLevel > Warn)
         return;
     va_list args;
     va_start(args, message);
@@ -168,7 +167,7 @@ void Logger::warn(const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::warn(DeviceId deviceId, const char *message, ...) {
-    if (logLevel > Warn)
+    if (sysConfig->logLevel > Warn)
         return;
     va_list args;
     va_start(args, message);
@@ -181,7 +180,7 @@ void Logger::warn(DeviceId deviceId, const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::error(const char *message, ...) {
-    if (logLevel > Error)
+    if (sysConfig->logLevel > Error)
         return;
     va_list args;
     va_start(args, message);
@@ -194,7 +193,7 @@ void Logger::error(const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::error(DeviceId deviceId, const char *message, ...) {
-    if (logLevel > Error)
+    if (sysConfig->logLevel > Error)
         return;
     va_list args;
     va_start(args, message);
@@ -219,14 +218,14 @@ void Logger::console(const char *message, ...) {
  * Set the log level. Any output below the specified log level will be omitted.
  */
 void Logger::setLoglevel(LogLevel level) {
-    logLevel = level;
+    sysConfig->logLevel = (int)level;
 }
 
 /*
  * Retrieve the current log level.
  */
 Logger::LogLevel Logger::getLogLevel() {
-    return logLevel;
+    return (Logger::LogLevel)(sysConfig->logLevel);
 }
 
 /*
@@ -247,7 +246,7 @@ uint32_t Logger::getLastLogTime() {
  * }
  */
 boolean Logger::isDebug() {
-    return logLevel == Debug;
+    return (sysConfig->logLevel == Debug);
 }
 
 /*

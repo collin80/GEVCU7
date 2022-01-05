@@ -30,6 +30,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CanHandler.h"
 #include "sys_io.h"
 #include "devices/misc/SystemDevice.h"
+#include "sys_io.h"
 
 /*
 CAN1 is regular can but with some chip changes could be put into SWCAN mode.
@@ -39,6 +40,15 @@ CAN3 is CAN-FD capable. GEVCU7A boards failed to get an FD transceiver though.
 Not using hardware filtering right now. CAN buses aren't really that fast and this is a
 very fast chip. But, still it might not be a bad idea to eventually try it.
 FIFOs are not available for CAN-FD mode but CAN-FD mode is not being attempted right now
+
+
+Should allow for the GEVCU7 board to be used with SavvyCAN for easy debugging. Maybe don't even
+support anything other than sending frames back and forth - no bus config? Set GEVCU to present
+two serial ports. The second one will be for SavvyCAN. This keeps things simple as then the normal
+debugging and config stuff can stay on the first serial port and will not be interrupted.
+The CanHandler class directly implements this interface. That way it can easily send and receive
+traffic with low overhead and it can even tunnel frames it sent on the bus to savvycan as well so
+that both sides of the communication are clearly shown.
 */
 
 CanHandler canHandlerBus0 = CanHandler(CanHandler::CAN_BUS_0);
@@ -77,6 +87,9 @@ CanHandler::CanHandler(CanBusNode canBusNode)
     masterID = 0x05;
     busSpeed = 0;
     swmode = SW_SLEEP;
+    binOutput = false;
+    gvretState = IDLE;
+    gvretStep = 0;
 }
 
 /*
@@ -272,6 +285,339 @@ void CanHandler::setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed)
     //else Can2.reset();
 }
 
+uint8_t CanHandler::checksumCalc(uint8_t *buffer, int length)
+{
+    uint8_t valu = 0;
+    for (int c = 0; c < length; c++) {
+        valu ^= buffer[c];
+    }
+    return valu;
+}
+
+void CanHandler::sendFrameToUSB(const CAN_message_t &msg, int busNum)
+{
+    if (!binOutput) return;
+    uint8_t buff[20];
+    uint32_t now = micros();
+    buff[0] = 0xF1;
+    buff[1] = 0;
+    buff[2] = now & 0xFF;
+    buff[3] = (now >> 8) & 0xFF;
+    buff[4] = (now >> 16) & 0xFF;
+    buff[5] = (now >> 24) & 0xFF;
+    buff[6] = msg.id & 0xFF;
+    buff[7] = (msg.id >> 8) & 0xFF;
+    buff[8] = (msg.id >> 16) & 0xFF;
+    buff[9] = (msg.id >> 24) & 0xFF;
+    if (busNum == -1)
+        buff[10] = (msg.bus << 4) + msg.len;
+    else
+        buff[10] = (busNum << 4) + msg.len;
+    for (int i = 0; i < msg.len; i++)
+    {
+        buff[11 + i] = msg.buf[i];
+    }
+    buff[11 + msg.len] = 0;
+    SerialUSB1.write(buff, 12 + msg.len);
+}
+
+void CanHandler::sendFrameToUSB(const CANFD_message_t &msg, int busNum)
+{
+    if (!binOutput) return;
+    uint8_t buff[70];
+    uint32_t now = micros();
+    buff[0] = 0xF1;
+    buff[1] = 0;
+    buff[2] = now & 0xFF;
+    buff[3] = (now >> 8) & 0xFF;
+    buff[4] = (now >> 16) & 0xFF;
+    buff[5] = (now >> 24) & 0xFF;
+    buff[6] = msg.id & 0xFF;
+    buff[7] = (msg.id >> 8) & 0xFF;
+    buff[8] = (msg.id >> 16) & 0xFF;
+    buff[9] = (msg.id >> 24) & 0xFF;
+    buff[10] = 2;
+    buff[11] = msg.len;
+    for (int i = 0; i < msg.len; i++)
+    {
+        buff[12 + i] = msg.buf[i];
+    }
+    buff[12 + msg.len] = 0;
+    SerialUSB1.write(buff, 13 + msg.len);
+}
+
+void CanHandler::loop()
+{
+    uint8_t buff[80];
+    uint8_t temp8;
+    uint16_t temp16;
+    int c;
+    uint32_t now;
+    int out_bus;
+    while (SerialUSB1.available()) {
+        c = SerialUSB1.read();
+        switch (gvretState)
+        {
+        case IDLE:
+            switch (c)
+            {
+            case 0xE7: //puts interface into binary mode. Otherwise it'll be outputting in ascii
+                binOutput = true;
+                break;
+            case 0xF1:
+                gvretState = GET_COMMAND;
+                break;
+            }
+            break;
+        case GET_COMMAND:
+            switch (c)
+            {
+            case PROTO_BUILD_CAN_FRAME:
+                gvretState = BUILD_CAN_FRAME;
+                gvretStep = 0;
+                break;
+            case PROTO_TIME_SYNC:
+                gvretState = IDLE; //ignore
+                gvretStep = 0;
+                now = micros();
+                buff[0] = 0xF1;
+                buff[1] = 1;
+                buff[2] = (now & 0xFF);
+                buff[3] = (now >> 8) & 0xFF;
+                buff[4] = (now >> 16) & 0xFF;
+                buff[5] = (now >> 24) & 0xFF;
+                SerialUSB1.write(buff, 6);
+                break;                
+            case PROTO_DIG_INPUTS:
+                //immediately return the data for digital inputs
+                temp8 = 0;
+                for (int j = 0; j < 8; j++)
+                {
+                    if (systemIO.getDigitalIn(0)) temp8 |= 1 << j;
+                }
+                buff[0] = 0xF1;
+                buff[1] = 2;
+                buff[2] = temp8;
+                buff[3] = checksumCalc(buff, 3);
+                SerialUSB1.write(buff, 4);
+                gvretState = IDLE; //ignore
+                break;
+            case PROTO_ANA_INPUTS:
+                //immediately return data on analog inputs
+                buff[0] = 0xF1;
+                buff[1] = 3;
+                temp16 = systemIO.getAnalogIn(0);
+                buff[2] = temp16 & 0xFF;
+                buff[3] = (temp16 >> 8) && 0xFF;
+                temp16 = systemIO.getAnalogIn(1);
+                buff[4] = temp16 & 0xFF;
+                buff[5] = (temp16 >> 8) && 0xFF;
+                temp16 = systemIO.getAnalogIn(2);
+                buff[6] = temp16 & 0xFF;
+                buff[7] = (temp16 >> 8) && 0xFF;
+                temp16 = systemIO.getAnalogIn(3);
+                buff[8] = temp16 & 0xFF;
+                buff[9] = (temp16 >> 8) && 0xFF;
+                temp16 = systemIO.getAnalogIn(4);
+                buff[10] = temp16 & 0xFF;
+                buff[11] = (temp16 >> 8) && 0xFF;
+                temp16 = systemIO.getAnalogIn(5);
+                buff[12] = temp16 & 0xFF;
+                buff[13] = (temp16 >> 8) && 0xFF;
+                temp16 = systemIO.getAnalogIn(6);
+                buff[14] = temp16 & 0xFF;
+                buff[15] = (temp16 >> 8) && 0xFF;
+                temp8 = checksumCalc(buff, 16);
+                buff[16] = temp8;
+                SerialUSB1.write(buff, 17);
+                gvretState = IDLE; //ignore
+                break;
+            case PROTO_SET_DIG_OUT:
+                gvretState = IDLE; //ignore
+                break;
+            case PROTO_SETUP_CANBUS:
+                gvretState = IDLE; //ignore
+                break;
+            case PROTO_GET_CANBUS_PARAMS:
+                //immediately return data on canbus params
+                buff[0] = 0xF1;
+                buff[1] = 6;
+                buff[2] = sysConfig->canSpeed[0] > 33000 ? 1 : 0; //GEVCU doesn't do listen only so can't really send that.
+                buff[3] = sysConfig->canSpeed[0] & 0xFF;
+                buff[4] = (sysConfig->canSpeed[0] >> 8) & 0xFF;
+                buff[5] = (sysConfig->canSpeed[0] >> 16) & 0xFF;
+                buff[6] = (sysConfig->canSpeed[0] >> 24) & 0xFF;
+                buff[7] = sysConfig->canSpeed[1] > 33000 ? 1 : 0; //GEVCU doesn't do listen only so can't really send that.
+                buff[8] = sysConfig->canSpeed[1] & 0xFF;
+                buff[9] = (sysConfig->canSpeed[1] >> 8) & 0xFF;
+                buff[10] = (sysConfig->canSpeed[1] >> 16) & 0xFF;
+                buff[11] = (sysConfig->canSpeed[1] >> 24) & 0xFF;
+                SerialUSB1.write(buff, 12);
+                gvretState = IDLE; //ignore
+                break;
+            case PROTO_GET_DEV_INFO:
+                //immediately return device information
+                buff[0] = 0xF1;
+                buff[1] = 7;
+                buff[2] = CFG_BUILD_NUM & 0xFF;
+                buff[3] = (CFG_BUILD_NUM >> 8);
+                buff[4] = 0x20;
+                buff[5] = 0;
+                buff[6] = 0;
+                buff[7] = 0; //singlewire mode. Maybe use some day
+                SerialUSB1.write(buff, 8);
+                gvretState = IDLE; //ignore
+                break;
+            case PROTO_SET_SW_MODE:
+                gvretState = IDLE; //ignore
+                break;
+            case PROTO_KEEPALIVE:
+                buff[0] = 0xF1;
+                buff[1] = 0x09;
+                buff[2] = 0xDE;
+                buff[3] = 0xAD;
+                SerialUSB1.write(buff, 4);
+                gvretState = IDLE;            
+                break;
+            case PROTO_SET_SYSTYPE:
+                gvretState = IDLE; //ignore
+                break;
+            case PROTO_ECHO_CAN_FRAME:
+                gvretState = IDLE; //ignore
+                break;
+            case PROTO_GET_NUMBUSES:
+                buff[0] = 0xF1;
+                buff[1] = 12;
+                buff[2] = 3;
+                SerialUSB1.write(buff, 3);
+                gvretState = IDLE;
+                break;
+            case PROTO_GET_EXT_BUSES:
+                buff[0] = 0xF1;
+                buff[1] = 13;
+                for (int u = 2; u < 17; u++) buff[u] = 0;
+                SerialUSB1.write(buff, 18);
+                gvretStep = 0;
+                gvretState = IDLE;            
+                break;
+            case PROTO_SET_EXT_BUSES:
+                gvretState = IDLE;
+                break;
+            case PROTO_BUILD_FD_FRAME:
+                gvretState = BUILD_FD_FRAME;
+                gvretStep = 0;            
+                break;
+            case PROTO_SETUP_FD:
+                break;
+            case PROTO_GET_FD:
+                break;
+            }
+            break;
+
+        case BUILD_CAN_FRAME:
+            buff[1 + gvretStep] = c;
+            switch(gvretStep)
+            {
+            case 0:
+                build_out_frame.id = c;
+                break;
+            case 1:
+                build_out_frame.id |= c << 8;
+                break;
+            case 2:
+                build_out_frame.id |= c << 16;
+                break;
+            case 3:
+                build_out_frame.id |= c << 24;
+                if(build_out_frame.id & 1 << 31)
+                {
+                    build_out_frame.id &= 0x7FFFFFFF;
+                    build_out_frame.flags.extended = true;
+                } else build_out_frame.flags.extended = false;
+                break;
+            case 4:
+                out_bus = c & 3;
+                break;
+            case 5:
+                build_out_frame.len = c & 0xF;
+                if(build_out_frame.len > 8) 
+                {
+                    build_out_frame.len = 8;
+                }
+                break;
+            default:
+                if(gvretStep < build_out_frame.len + 6)
+                {
+                    build_out_frame.buf[gvretStep - 6] = c;
+                } 
+                else
+                {
+                    gvretState = IDLE;
+                    //this would be the checksum byte. Compute and compare.
+                    //temp8 = checksumCalc(buff, step);
+                    build_out_frame.flags.remote = 0; //its the default anyway
+                    if (out_bus == 0) canHandlerBus0.sendFrame(build_out_frame);
+                    if (out_bus == 1) canHandlerBus1.sendFrame(build_out_frame);
+                    if (out_bus == 2) canHandlerBus2.sendFrame(build_out_frame);
+                }
+                break;
+            }
+            gvretStep++;
+            break;
+        case BUILD_FD_FRAME:
+            buff[1 + gvretStep] = c;
+            switch(gvretStep)
+            {
+            case 0:
+                build_out_fd.id = c;
+                break;
+            case 1:
+                build_out_fd.id |= c << 8;
+                break;
+            case 2:
+                build_out_fd.id |= c << 16;
+                break;
+            case 3:
+                build_out_fd.id |= c << 24;
+                if(build_out_fd.id & 1 << 31)
+                {
+                    build_out_fd.id &= 0x7FFFFFFF;
+                    build_out_fd.flags.extended = true;
+                } else build_out_fd.flags.extended = false;
+                break;
+            case 4:
+                //out_bus = c & 3;
+                break;
+            case 5:
+                build_out_fd.len = c; //& 0x3F;
+                if(build_out_fd.len > 64) 
+                {
+                    build_out_fd.len = 64;
+                }
+                break;
+            default:
+                if(gvretStep < build_out_fd.len + 6)
+                {
+                    build_out_fd.buf[gvretStep - 6] = c;
+                } 
+                else
+                {
+                    gvretState = IDLE;
+                    //this would be the checksum byte. Compute and compare.
+                    //temp8 = checksumCalc(buff, step);
+                    //build_out_frame.flags.rtr = 0;
+                    //the CANFD_message_t structure defaults to using fast data bytes and extended length
+                    //so it might be needed to be able to set this explicitly to be able to turn them off.
+                    canHandlerBus2.sendFrame(build_out_frame);
+                }
+                break;
+            }
+            gvretStep++;
+            break;
+        }
+    }
+}
+
 /*
  * Attach a CanObserver. Can frames which match the id/mask will be forwarded to the observer
  * via the method handleCanFrame(RX_CAN_FRAME).
@@ -408,6 +754,8 @@ void CanHandler::process(const CAN_message_t &msg)
 
     CanObserver *observer;
 
+    sendFrameToUSB(msg);
+
     if(msg.id == CAN_SWITCH) CANIO(msg);
     for (int i = 0; i < CFG_CAN_NUM_OBSERVERS; i++) 
     {
@@ -485,6 +833,8 @@ void CanHandler::process(const CANFD_message_t &msgfd)
         process(msg);
         return;
     }    
+
+    sendFrameToUSB(msgfd);
 
     for (int i = 0; i < CFG_CAN_NUM_OBSERVERS; i++) 
     {
@@ -570,13 +920,16 @@ void CanHandler::CANIO(const CAN_message_t &msg) {
 //(whatever happens to be open) or queue it to send (if nothing is open)
 void CanHandler::sendFrame(const CAN_message_t &msg)
 {
+    int busNum = -1;
     switch (canBusNode)
     {
     case CAN_BUS_0:
         Can0.write(msg);
+        busNum = 0;
         break;
     case CAN_BUS_1:    
         Can1.write(msg);
+        busNum = 1;
         break;
     case CAN_BUS_2:
         //can't do this directly. Have to package it into a CANFD frame to send
@@ -588,13 +941,17 @@ void CanHandler::sendFrame(const CAN_message_t &msg)
         fdMsg.flags.extended = msg.flags.extended;
         for (int i = 0; i < msg.len; i++) fdMsg.buf[i] = msg.buf[i];
         Can2.write(fdMsg);
+        busNum = 2;
         break;            
     }
+
+    sendFrameToUSB(msg, busNum);
 }
 
 void CanHandler::sendFrameFD(const CANFD_message_t& framefd)
 {
     if (canBusNode != CAN_BUS_2) return;
+    sendFrameToUSB(framefd);
     Can2.write(framefd);
 }
 

@@ -133,7 +133,7 @@ void sendTestCANFrames()
     output.buf[7] = 0xAB;
     canHandlerBus0.sendFrame(output);
     output.id = 0x345;
-	canHandlerBus1.sendFrame(output);
+	  canHandlerBus1.sendFrame(output);
     output.id = 0x678;
     canHandlerBus2.sendFrame(output);
 }
@@ -276,7 +276,8 @@ void setup() {
     Logger::setLoglevel((Logger::LogLevel)0); //force debugging logging on during early start up
        
 	digitalWrite(BLINK_LED, LOW);
-    Serial.begin(115200);
+    Serial.begin(1000000);
+    SerialUSB1.begin(1000000);
 	Serial.println(CFG_VERSION);
 	Serial.print("Build number: ");
 	Serial.println(CFG_BUILD_NUM);
@@ -355,7 +356,7 @@ void setup() {
 	//Logger::setLoglevel((Logger::LogLevel)sysConfig->logLevel);
 	systemIO.setup();
 	canHandlerBus0.setup();
-	canHandlerBus1.setup(); //shared with SWCAN. Both cannot be active at once.
+	canHandlerBus1.setup();
     canHandlerBus2.setup();
     //canHandlerBus0.setSWMode(SW_NORMAL);
 	Logger::info("SYSIO init ok");	
@@ -382,12 +383,25 @@ void loop() {
 	tickHandler.process();
 #endif
 
-	serialConsole->loop();
-    Logger::loop();
+	//serialConsole->loop();
+    canHandlerBus0.loop(); //the one loop actually handles incoming traffic for all three
+    //canHandlerBus1.loop(); //so no need to call these other two. It's redundant.
+    //canHandlerBus2.loop(); //technically you can call them but don't unless some actual need arises?!
+    //Logger::loop();
     
     //if (btDevice) btDevice->loop();
     
     wdt.feed();
-    sendTestCANFrames();
+    //sendTestCANFrames();
     //testGEVCUHardware();
+}
+
+//interrupt driven comm for the two USB serial ports
+void serialEvent() {
+    serialConsole->loop();
+}
+
+void serialEventUSB1()
+{
+    canHandlerBus0.loop();
 }

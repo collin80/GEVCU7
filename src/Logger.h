@@ -53,7 +53,6 @@ public:
     static void initializeFile();
     static void loop();
 private:
-    static LogLevel logLevel;
     static uint32_t lastLogTime;
 
     static void log(DeviceId, LogLevel, const char *format, va_list);
