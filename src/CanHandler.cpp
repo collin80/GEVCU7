@@ -127,8 +127,9 @@ void CanHandler::setup()
             Can0.enableMBInterrupts();
             Can0.onReceive(canRX0);
             setSWMode(SW_SLEEP);
+            Logger::info("CAN%d init ok. Speed = %i", busNum, busSpeed);
         }
-        else Can0.reset();
+        else Can0.reset();        
         break;
     case CAN_BUS_1:
         realSpeed = sysConfig->canSpeed[1];
@@ -145,6 +146,7 @@ void CanHandler::setup()
             //Can1.enableFIFOInterrupt();
             Can1.enableMBInterrupts();
             Can1.onReceive(canRX1);
+            Logger::info("CAN%d init ok. Speed = %i", busNum, busSpeed);
         }
         else Can1.reset();
         break;
@@ -160,22 +162,27 @@ void CanHandler::setup()
         {
             busNum = 2;
             Can2.begin();
+            Can2.setRegions(64);
             fdTimings.baudrate = realSpeed;
             fdTimings.baudrateFD = fdSpeed;
-            if (fdSpeed < 2000000ul) fdTimings.clock = 24;
-            else fdTimings.clock = 40;
-            Can2.setBaudRate(fdTimings);
+            fdTimings.clock = CLK_24MHz;
+            fdTimings.propdelay = 190;
+            fdTimings.bus_length = 1;
+            fdTimings.sample = 75;
+            //if (fdSpeed < 5000000ul) fdTimings.clock = 24;
+            //else fdTimings.clock = 40;
+            //Can2.setBaudRate(fdTimings);
+            Can2.setBaudRateAdvanced(fdTimings, 1, 1);
             //Can2.setMaxMB(16);
             //Can2.enableFIFO();
             //Can2.enableFIFOInterrupt();
             Can2.enableMBInterrupts();
             Can2.onReceive(canRX2);
+            Logger::info("CAN%d FD init ok. Speed = %i / %i", busNum, busSpeed, fdSpeed);
         }
         //else Can2.reset();
         break;
     }
-
-    Logger::info("CAN%d init ok. Speed = %i", busNum, busSpeed);
 }
 
 void CanHandler::setSWMode(SWMode newMode)

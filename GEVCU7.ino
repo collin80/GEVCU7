@@ -133,9 +133,19 @@ void sendTestCANFrames()
     output.buf[7] = 0xAB;
     canHandlerBus0.sendFrame(output);
     output.id = 0x345;
-	  canHandlerBus1.sendFrame(output);
-    output.id = 0x678;
-    canHandlerBus2.sendFrame(output);
+	canHandlerBus1.sendFrame(output);
+    //output.id = 0x678;
+    //canHandlerBus2.sendFrame(output);
+
+    //now try sending a CAN-FD frame
+    CANFD_message_t fd_out;
+    fd_out.id = 0x789;
+    //fd_out.brs = 1; //do the baud rate switch for data section
+    //fd_out.edl = 1; //do extended data length too
+    fd_out.len = 32;
+    for (int l = 0; l < 32; l++) fd_out.buf[l] = l * 3;
+    canHandlerBus2.sendFrameFD(fd_out);
+    
 }
 
 void testGEVCUHardware()
@@ -180,79 +190,6 @@ void testGEVCUHardware()
         }   
     }
     digitalWrite(45, LOW); */
-}
-
-esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
-{
-    esp_loader_error_t err;
-    static uint8_t payload[1024];
-
-    size_t size = file->fileSize();
-
-    Logger::debug("Erasing flash (this may take a while)...");
-    err = esp_loader_flash_start(address, size, sizeof(payload));
-    if (err != ESP_LOADER_SUCCESS) {
-        Logger::debug("Erasing flash failed with error %d.", err);
-        return err;
-    }
-    Logger::debug("Start programming %u bytes\n", size);
-
-    size_t binary_size = size;
-    size_t written = 0;
-    int lastPercentage = 0;
-
-    Serial.print("Progress Percentage: ");
-
-    while (size > 0) {
-        size_t to_read = min(size, sizeof(payload));
-        file->read(payload, to_read);
-
-        err = esp_loader_flash_write(payload, to_read);
-        if (err != ESP_LOADER_SUCCESS) {
-            Logger::debug("\nPacket could not be written! Error %d.", err);
-            return err;
-        }
-
-        size -= to_read;
-        //bin_addr += to_read;
-        written += to_read;
-
-        int progress = (int)(((float)written / binary_size) * 100);
-        if (progress > (lastPercentage + 4))
-        {
-            Serial.printf("%d ", progress);
-            Serial.flush();
-            lastPercentage = progress;
-        }
-    };
-
-    Serial.printf("\n\nFinished programming\n");
-
-    return ESP_LOADER_SUCCESS;
-}
-
-bool flashESP32(const char *filename, uint32_t address)
-{
-    FsFile file;
-    if (file.open(filename, O_READ))
-    {
-        Logger::debug("Found an esp32 update image. Flashing it to esp32");
-        loader_port_gevcu_init(115200);
-        esp_loader_connect_args_t conn = ESP_LOADER_CONNECT_DEFAULT();
-        esp_loader_error_t err = esp_loader_connect(&conn);
-        if (err != ESP_LOADER_SUCCESS) {
-            Logger::debug("Cannot connect to target. Error: %u\n", err);
-        }
-        Logger::debug("Connected to target\n");
-        if (flash_esp32_binary(&file, address) == ESP_LOADER_SUCCESS)
-        {
-            loader_port_reset_target();
-            sdCard.remove(filename);
-            return true;
-        }
-        file.close();        
-    }
-    return false;
 }
 
 void setup() {
@@ -383,15 +320,21 @@ void loop() {
 	tickHandler.process();
 #endif
 
+    //the direct calls here anymore. The serial connections are handled via interrupt callbacks.
 	//serialConsole->loop();
-    canHandlerBus0.loop(); //the one loop actually handles incoming traffic for all three
+    //canHandlerBus0.loop(); //the one loop actually handles incoming traffic for all three
     //canHandlerBus1.loop(); //so no need to call these other two. It's redundant.
     //canHandlerBus2.loop(); //technically you can call them but don't unless some actual need arises?!
+    
+    //This needs to be called to handle sdCard writing though.
     //Logger::loop();
     
+    //ESP32 would be our BT device now. Does it need a loop function?
     //if (btDevice) btDevice->loop();
     
-    wdt.feed();
+    wdt.feed(); //must feed the watchdog every so often or it'll get angry
+
+    //obviously only for hardware testing. Disable for normal builds.
     //sendTestCANFrames();
     //testGEVCUHardware();
 }

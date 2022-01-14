@@ -84,7 +84,7 @@ void SystemDevice::setup() {
     cfgEntries.push_back(entry);
     entry = {"CAN2SPEED", "Set speed of CAN2 bus", &config->canSpeed[2], CFG_ENTRY_VAR_TYPE::UINT32, 33333, 1000000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"CANFDSPEED", "Set speed of FD mode data", &config->canSpeed[2], CFG_ENTRY_VAR_TYPE::UINT32, 500000, 8000000, 0, nullptr};
+    entry = {"CANFDSPEED", "Set speed of FD mode data", &config->canSpeed[3], CFG_ENTRY_VAR_TYPE::UINT32, 500000, 8000000, 0, nullptr};
     cfgEntries.push_back(entry);
     entry = {"SWCANMODE", "Set whether CAN0 is in SingleWire mode (only with hardware mods)", &config->swcanMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
     cfgEntries.push_back(entry);
@@ -148,7 +148,7 @@ void SystemDevice::loadConfiguration() {
     prefsHandler->read("CAN0Speed", &config->canSpeed[0], 500000);
     prefsHandler->read("CAN1Speed", &config->canSpeed[1], 500000);
     prefsHandler->read("CAN2Speed", &config->canSpeed[2], 500000);
-    prefsHandler->read("CANFDSpeed", &config->canSpeed[3], 1000000);
+    prefsHandler->read("CANFDSpeed", &config->canSpeed[3], 2000000);
     prefsHandler->read("SWCANMode", &config->swcanMode, 0);
 }
 

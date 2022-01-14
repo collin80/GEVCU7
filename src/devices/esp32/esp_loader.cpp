@@ -21,6 +21,10 @@
 #include "md5_hash.h"
 #include <string.h>
 #include <assert.h>
+#include "../../Logger.h"
+#include "gevcu_port.h"
+
+extern SdFs sdCard;
 
 #ifndef MAX
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
@@ -75,6 +79,78 @@ static inline void md5_final(uint8_t digets[16]) { }
 
 #endif
 
+esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
+{
+    esp_loader_error_t err;
+    static uint8_t payload[1024];
+
+    size_t size = file->fileSize();
+
+    Logger::debug("Erasing flash (this may take a while)...");
+    err = esp_loader_flash_start(address, size, sizeof(payload));
+    if (err != ESP_LOADER_SUCCESS) {
+        Logger::debug("Erasing flash failed with error %d.", err);
+        return err;
+    }
+    Logger::debug("Start programming %u bytes\n", size);
+
+    size_t binary_size = size;
+    size_t written = 0;
+    int lastPercentage = 0;
+
+    Serial.print("Progress Percentage: ");
+
+    while (size > 0) {
+        size_t to_read = min(size, sizeof(payload));
+        file->read(payload, to_read);
+
+        err = esp_loader_flash_write(payload, to_read);
+        if (err != ESP_LOADER_SUCCESS) {
+            Logger::debug("\nPacket could not be written! Error %d.", err);
+            return err;
+        }
+
+        size -= to_read;
+        //bin_addr += to_read;
+        written += to_read;
+
+        int progress = (int)(((float)written / binary_size) * 100);
+        if (progress > (lastPercentage + 4))
+        {
+            Serial.printf("%d ", progress);
+            Serial.flush();
+            lastPercentage = progress;
+        }
+    };
+
+    Serial.printf("\n\nFinished programming\n");
+
+    return ESP_LOADER_SUCCESS;
+}
+
+bool flashESP32(const char *filename, uint32_t address)
+{
+    FsFile file;
+    if (file.open(filename, O_READ))
+    {
+        Logger::debug("Found an esp32 update image. Flashing it to esp32");
+        loader_port_gevcu_init(115200);
+        esp_loader_connect_args_t conn = ESP_LOADER_CONNECT_DEFAULT();
+        esp_loader_error_t err = esp_loader_connect(&conn);
+        if (err != ESP_LOADER_SUCCESS) {
+            Logger::debug("Cannot connect to target. Error: %u\n", err);
+        }
+        Logger::debug("Connected to target\n");
+        if (flash_esp32_binary(&file, address) == ESP_LOADER_SUCCESS)
+        {
+            loader_port_reset_target();
+            sdCard.remove(filename);
+            return true;
+        }
+        file.close();        
+    }
+    return false;
+}
 
 static uint32_t timeout_per_mb(uint32_t size_bytes, uint32_t time_per_mb)
 {

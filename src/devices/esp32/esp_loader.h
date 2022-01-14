@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "SdFat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -226,7 +227,8 @@ esp_loader_error_t esp_loader_flash_verify(void);
   */
 void esp_loader_reset_target(void);
 
-
+esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address);
+bool flashESP32(const char *filename, uint32_t address);
 
 #ifdef __cplusplus
 }

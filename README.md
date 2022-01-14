@@ -13,9 +13,10 @@ The project now builds in the Arduino IDE. So, use it to compile, send the firmw
 
 You will need the following to have any hope of compiling and running the firmware:
 - A GEVCU board. This version supports GEVCU7 hardware (the one with Teessy MicroMod)
-- Arduino IDE 1.6.10 - or later even 1.8.13 or such newer IDEs should work fine.
-- TeensyDuino 1.54 (https://www.pjrc.com/teensy/td_download.html)
-- All needed libraries come with TeensyDuino or are bundled in source
+- Arduino IDE 1.8.16 - or later
+- TeensyDuino 1.56 (https://www.pjrc.com/teensy/td_download.html)
+- TeensyTimerTool (https://github.com/luni64/TeensyTimerTool)
+- All other libraries are bundled with TeensyDuino
 
 The canbus is supposed to be terminated on both ends of the bus. If you are testing with a DMOC and GEVCU then you've got two devices, each on opposing ends of the bus. GEVCU7 hardware is selectively terminated. By default it is not terminated but this can be solved by soldering the appropriate solder jumper
 
