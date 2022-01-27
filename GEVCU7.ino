@@ -28,15 +28,17 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
 /*
 Notes on GEVCU7 conversion - Quite far into the conversion process. it compiles
-now and most stuff should kind of work. No hardware to test on though.
-Currently nothing is being done with the onboard ESP32. It must be able to
-be programmed from this sketch. I think the easiest approach is to allow
-firmware upgrades from sdcard. Hopefully both processors can be updated
-from sdcard. I would also like to be able to log to sdcard to get longer
-running logs of the system. Addionally, it would be nice to be able to 
-log entire CAN buses to sdcard for analysis. This could be done either in
-GVRET format or some special binary format to make it more efficient.
-
+now and most stuff should work. There have been two prototypes so far. The first
+one wasn't so good but the second is useable with minor hardware fixes.
+Both the onboard ESP32 and the MicroMod adapter itself can be updated
+via files on the sdcard. Code to log to sdcard is done. It appears that sometimes
+the sdcard log file gets corrupted. This might have been due to a previous problem
+in the TeensyDuino files themselves. Need to test again to see if sdcard is more
+stable now. The board now presents as two serial ports. The first one is the standard
+serial console where settings can be changed. The second port is a GVRET compatible
+binary protocol port for use with SavvyCAN. This port will forward all traffic on
+all three buses to SavvyCAN for debugging and analysis.
+ 
 D0 in documentation is Teensy Pin 4 and is connected to DIG_INT (interrupt from 16 way I/O expander)
 D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card is inserted when line is low)
 
@@ -58,12 +60,13 @@ D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card i
 #include "src/FlasherX.h"
 #include "src/devices/misc/SystemDevice.h"
 
-// Use Teensy SDIO
+// Use Teensy SDIO - SDIO is four bit and direct in hardware - it should be plenty fast
 #define SD_CONFIG  SdioConfig(FIFO_SDIO)
 
 //if this is defined there is a large start up delay so you can see the start up messages. NOT for production!
 #define DEBUG_STARTUP_DELAY
 //If this is defined then we will ignore the hardware sd inserted signal and just claim it's inserted. Required for first prototype.
+//Probably don't enable this on more recent hardware. Starting at the 2nd prototype the sdcard can properly be detected.
 //#define ASSUME_SDCARD_INSERTED
 
 //Evil, global variables
@@ -93,6 +96,7 @@ the setup() method and that the device manager must be already instantiated
 when the devices try to register. Hopefully this happens but if not it might
 be necessary to switch the device handler to a singleton and have it automatically
 create itself on first access.
+So far, so good. It seems this functionality is working properly.
 */
 
 
@@ -108,10 +112,11 @@ void initializeDevices() {
     //send message is not asynchronous so it will block for as long as it takes for all devices to complete.
     //this makes initialization easier but means a device could freeze the system. Might want to do
     //asynchronous or threaded messages at some point but that opens up many other cans of worms.
-    deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_STARTUP, NULL); //allows each device to register it's preference handler
+    deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_STARTUP, NULL); //allows each device to register its preference handler
     deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_SETUP, NULL); //then use the preference handler to initialize only enabled devices
 }
 
+//called when the watchdog triggers because it was not reset properly. Probably means a hangup has occurred.
 void wdtCallback() 
 {
     Serial.println("Watchdog was not fed. It will eat you soon. Sorry...");
@@ -134,16 +139,18 @@ void sendTestCANFrames()
     canHandlerBus0.sendFrame(output);
     output.id = 0x345;
 	canHandlerBus1.sendFrame(output);
-    //output.id = 0x678;
-    //canHandlerBus2.sendFrame(output);
+    output.id = 0x678;
+    canHandlerBus2.sendFrame(output);
+
+    delayMicroseconds(200);
 
     //now try sending a CAN-FD frame
     CANFD_message_t fd_out;
     fd_out.id = 0x789;
     //fd_out.brs = 1; //do the baud rate switch for data section
     //fd_out.edl = 1; //do extended data length too
-    fd_out.len = 32;
-    for (int l = 0; l < 32; l++) fd_out.buf[l] = l * 3;
+    fd_out.len = 16;
+    for (int l = 0; l < 16; l++) fd_out.buf[l] = l * 3;
     canHandlerBus2.sendFrameFD(fd_out);
     
 }
@@ -179,6 +186,8 @@ void testGEVCUHardware()
         systemIO.setDigitalOutput(i, false);
     }
     delay(500);
+
+    //below turns esp32 on and off while also forwarding anything it sends to the serial console
     /*
     digitalWrite(45, HIGH);
     uint32_t thisTime = millis();
@@ -295,8 +304,8 @@ void setup() {
 	canHandlerBus0.setup();
 	canHandlerBus1.setup();
     canHandlerBus2.setup();
-    //canHandlerBus0.setSWMode(SW_NORMAL);
-	Logger::info("SYSIO init ok");	
+    //canHandlerBus0.setSWMode(SW_NORMAL); //you can't do this unless you do hardware mods.
+	Logger::info("SYSIO init ok");
 
 	initializeDevices();
     Logger::debug("Initialized all devices successfully!");
@@ -320,17 +329,20 @@ void loop() {
 	tickHandler.process();
 #endif
 
-    //the direct calls here anymore. The serial connections are handled via interrupt callbacks.
+    //no direct calls here anymore. The serial connections are handled via interrupt callbacks.
 	//serialConsole->loop();
     //canHandlerBus0.loop(); //the one loop actually handles incoming traffic for all three
     //canHandlerBus1.loop(); //so no need to call these other two. It's redundant.
     //canHandlerBus2.loop(); //technically you can call them but don't unless some actual need arises?!
     
     //This needs to be called to handle sdCard writing though.
+    //Commented just because it was having trouble in the past. I think it was software related. Try again.
     //Logger::loop();
     
     //ESP32 would be our BT device now. Does it need a loop function?
     //if (btDevice) btDevice->loop();
+
+    canEvents();
     
     wdt.feed(); //must feed the watchdog every so often or it'll get angry
 

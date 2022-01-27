@@ -74,6 +74,13 @@ void canRX2(const CANFD_message_t &msg)
     canHandlerBus2.process(msg);
 }
 
+void canEvents()
+{
+    Can0.events();
+    Can1.events();
+    Can2.events();
+}
+
 /*
  * Constructor of the can handler
  */
@@ -122,9 +129,9 @@ void CanHandler::setup()
             Can0.begin();
             Can0.setBaudRate(realSpeed);
             Can0.setMaxMB(16);
-            //Can0.enableFIFO();
-            //Can0.enableFIFOInterrupt();
-            Can0.enableMBInterrupts();
+            Can0.enableFIFO();
+            Can0.enableFIFOInterrupt();
+            //Can0.enableMBInterrupts();
             Can0.onReceive(canRX0);
             setSWMode(SW_SLEEP);
             Logger::info("CAN%d init ok. Speed = %i", busNum, busSpeed);
@@ -142,9 +149,9 @@ void CanHandler::setup()
             Can1.begin();
             Can1.setBaudRate(realSpeed);
             Can1.setMaxMB(16);
-            //Can1.enableFIFO();
-            //Can1.enableFIFOInterrupt();
-            Can1.enableMBInterrupts();
+            Can1.enableFIFO();
+            Can1.enableFIFOInterrupt();
+            //Can1.enableMBInterrupts();
             Can1.onReceive(canRX1);
             Logger::info("CAN%d init ok. Speed = %i", busNum, busSpeed);
         }
@@ -176,8 +183,10 @@ void CanHandler::setup()
             //Can2.setMaxMB(16);
             //Can2.enableFIFO();
             //Can2.enableFIFOInterrupt();
+            Can2.setMBFilter(ACCEPT_ALL);
             Can2.enableMBInterrupts();
             Can2.onReceive(canRX2);
+            Can2.mailboxStatus();
             Logger::info("CAN%d FD init ok. Speed = %i / %i", busNum, busSpeed, fdSpeed);
         }
         //else Can2.reset();
@@ -692,7 +701,7 @@ void CanHandler::logFrame(const CAN_message_t &msg)
 {
     
     if (Logger::isDebug()) {
-        Logger::debug("CAN: bus=%i id=%X dlc=%X ide=%X data=%X,%X,%X,%X,%X,%X,%X,%X",
+        Logger::debug("CAN: bus=%i id=%X dlc=%u ide=%X data=%X,%X,%X,%X,%X,%X,%X,%X",
                       (int)canBusNode, msg.id, msg.len, msg.flags.extended,
                       msg.buf[0], msg.buf[1], msg.buf[2], msg.buf[3],
                       msg.buf[4], msg.buf[5], msg.buf[6], msg.buf[7]);
@@ -703,10 +712,11 @@ void CanHandler::logFrame(const CAN_message_t &msg)
 void CanHandler::logFrame(const CANFD_message_t &msg_fd)
 {
     if (Logger::isDebug()) {
-        Logger::debug("CANFD: bus=%i id=%X dlc=%X ide=%X data=%X,%X,%X,%X,%X,%X,%X,%X",
+        String dataBytes;
+        for (int i = 0; i < msg_fd.len; i++) dataBytes += String(msg_fd.buf[i], HEX) + ",";
+        Logger::debug("CANFD: bus=%i id=%X dlc=%u ide=%X data=%s",
                       (int)canBusNode, msg_fd.id, msg_fd.len, msg_fd.flags.extended,
-                      msg_fd.buf[0], msg_fd.buf[1], msg_fd.buf[2], msg_fd.buf[3],
-                      msg_fd.buf[4], msg_fd.buf[5], msg_fd.buf[6], msg_fd.buf[7]);
+                      dataBytes.c_str());
     }
 }
 
@@ -762,6 +772,7 @@ void CanHandler::process(const CAN_message_t &msg)
     CanObserver *observer;
 
     sendFrameToUSB(msg);
+    logFrame(msg);
 
     if(msg.id == CAN_SWITCH) CANIO(msg);
     for (int i = 0; i < CFG_CAN_NUM_OBSERVERS; i++) 
@@ -842,6 +853,7 @@ void CanHandler::process(const CANFD_message_t &msgfd)
     }    
 
     sendFrameToUSB(msgfd);
+    logFrame(msgfd);
 
     for (int i = 0; i < CFG_CAN_NUM_OBSERVERS; i++) 
     {

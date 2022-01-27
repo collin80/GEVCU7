@@ -42,7 +42,19 @@ Rethink this entire thing. For one, the devices should be setting their own EEPR
 or otherwise not need to worry about the actual placement. Maybe store settings based on
 a hash of the given variable name. A 32 bit hash shouldn't collide very often at all so
 it may be possible to store settings that way. That adds 4 bytes of overhead but the EEPROM
-is quite large so there's no reason it can't store enough data.
+is quite large so there's no reason it can't store enough data. 
+
+This has now been done. There is no static mapping any longer. Now each device registers
+various variable names and those names are hashed to create tags that are stored
+into EEPROM along with the value. Currently the whole thing is packed into eeprom
+tightly. This means that you cannot change the size of a variable as it would then
+create trouble. The easiest approach is probably to move the variable if it changes
+size. The size is stored in eeprom so this is pretty easy to detect. If the size is
+smaller we'd not find the next item properly. If the size is larger we would
+clobber the next variable in line and still mess everything up. So, perhaps
+length should also encode status flags. That way an entry could move by setting
+the current location as "empty" leaving its size alone and maybe setting the hash to some
+set value. In fact, the set value hash could be the signal that an entry is open.
 
 */
 

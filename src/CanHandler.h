@@ -207,6 +207,8 @@ private:
     int masterID; //what is our ID as the master node?      
 };
 
+void canEvents();
+
 extern CanHandler canHandlerBus0;
 extern CanHandler canHandlerBus1;
 extern CanHandler canHandlerBus2;
