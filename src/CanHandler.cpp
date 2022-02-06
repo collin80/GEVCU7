@@ -105,7 +105,7 @@ CanHandler::CanHandler(CanBusNode canBusNode)
 void CanHandler::setup()
 {
     // Initialize the canbus at the specified baudrate
-    uint16_t storedVal;
+    //uint16_t storedVal;
     uint32_t realSpeed;
     uint32_t fdSpeed;
     CANFD_timings_t fdTimings;
@@ -178,8 +178,8 @@ void CanHandler::setup()
             fdTimings.sample = 75;
             //if (fdSpeed < 5000000ul) fdTimings.clock = 24;
             //else fdTimings.clock = 40;
-            //Can2.setBaudRate(fdTimings);
-            Can2.setBaudRateAdvanced(fdTimings, 1, 1);
+            Can2.setBaudRate(fdTimings);
+            //Can2.setBaudRateAdvanced(fdTimings, 1, 1);
             //Can2.setMaxMB(16);
             //Can2.enableFIFO();
             //Can2.enableFIFOInterrupt();
@@ -253,8 +253,9 @@ void CanHandler::setBusSpeed(uint32_t newSpeed)
             fdTimings.baudrate = newSpeed;
             fdSpeed = (newSpeed >= 500000ul) ? newSpeed : 500000ul;
             fdTimings.baudrateFD = fdSpeed;
-            if (fdSpeed < 2000000ul) fdTimings.clock = 24;
-            else fdTimings.clock = 40;
+            //if (fdSpeed < 2000000ul) fdTimings.clock = 24;
+            //else fdTimings.clock = 40;
+            fdTimings.clock = CLK_24MHz;
             Can2.setBaudRate(fdTimings);
         }
         //else Can2.reset();
@@ -294,8 +295,9 @@ void CanHandler::setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed)
     {
         fdTimings.baudrate = nomSpeed;
         fdTimings.baudrateFD = dataSpeed;
-        if (dataSpeed < 2000000ul) fdTimings.clock = 24;
-        else fdTimings.clock = 40;
+        //if (dataSpeed < 2000000ul) fdTimings.clock = 24;
+        //else fdTimings.clock = 40;
+        fdTimings.clock = CLK_24MHz;
         Can2.setBaudRate(fdTimings);        
     }
     //else Can2.reset();
@@ -369,7 +371,7 @@ void CanHandler::loop()
     uint16_t temp16;
     int c;
     uint32_t now;
-    int out_bus;
+    static int out_bus = 0;
     while (SerialUSB1.available()) {
         c = SerialUSB1.read();
         switch (gvretState)
@@ -630,6 +632,20 @@ void CanHandler::loop()
             }
             gvretStep++;
             break;
+        //all these are unused but they exist so they might want to be implemented some day
+        case TIME_SYNC:
+        case GET_DIG_INPUTS:
+        case GET_ANALOG_INPUTS:
+        case SET_DIG_OUTPUTS:
+        case SETUP_CANBUS:
+        case GET_CANBUS_PARAMS:
+        case GET_DEVICE_INFO:
+        case SET_SINGLEWIRE_MODE:
+        case SET_SYSTYPE:
+        case ECHO_CAN_FRAME:
+        case SETUP_EXT_BUSES:
+            gvretState = IDLE; //ignore this state and return to idle
+            break;
         }
     }
 }
@@ -833,7 +849,7 @@ void CanHandler::process(const CAN_message_t &msg)
 
 void CanHandler::process(const CANFD_message_t &msgfd)
 {
-    static SDO_FRAME sFrame;
+    //static SDO_FRAME sFrame;
 
     CanObserver *observer;
 

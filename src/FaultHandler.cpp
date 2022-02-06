@@ -211,7 +211,9 @@ uint16_t FaultHandler::setFaultACK(uint16_t fault)
     {
         faultList[fault].ack = 1;
         writeFaultToEEPROM(fault);
+        return fault;
     }
+    return 0xFFFF;
 }
 
 uint16_t FaultHandler::setFaultOngoing(uint16_t fault, bool ongoing)
@@ -220,7 +222,9 @@ uint16_t FaultHandler::setFaultOngoing(uint16_t fault, bool ongoing)
     {
         faultList[fault].ongoing = ongoing;
         writeFaultToEEPROM(fault);
+        return fault;
     }
+    return 0xFFFF;
 }
 
 FaultHandler faultHandler;

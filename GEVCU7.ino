@@ -211,6 +211,11 @@ void setup() {
 
     pinMode(BLINK_LED, OUTPUT);
     pinMode(SD_DETECT, INPUT_PULLUP);
+    pinMode(ESP32_ENABLE, OUTPUT);
+    pinMode(ESP32_BOOT, OUTPUT);
+
+    digitalWrite(ESP32_ENABLE, LOW);
+    digitalWrite(ESP32_BOOT, HIGH);
 
 #ifdef DEBUG_STARTUP_DELAY
     for (int c = 0; c < 200; c++) {
@@ -325,6 +330,11 @@ void setup() {
 //timer queuing on then those tasks will be dispatched here. Otherwise the loop just cycles very rapidly while
 //all the real work is done via interrupt.
 void loop() {
+
+//Maybe may want to move the tickhandler process function to a different thread.
+//this call could wake up a variety of modules all of which might run code in their tick handlers
+//that do a lot of work. So, it's debateable whether that's a good idea to run it all on the main
+//thread.
 #ifdef CFG_TIMER_USE_QUEUING
 	tickHandler.process();
 #endif
@@ -336,8 +346,7 @@ void loop() {
     //canHandlerBus2.loop(); //technically you can call them but don't unless some actual need arises?!
     
     //This needs to be called to handle sdCard writing though.
-    //Commented just because it was having trouble in the past. I think it was software related. Try again.
-    //Logger::loop();
+    Logger::loop();
     
     //ESP32 would be our BT device now. Does it need a loop function?
     //if (btDevice) btDevice->loop();
@@ -351,7 +360,10 @@ void loop() {
     //testGEVCUHardware();
 }
 
-//interrupt driven comm for the two USB serial ports
+//Not interrupt driven but the callbacks should still happen quickly.
+//On Teensy MM the serial is interrupt driven and stored into buffers, then 
+//if there is data in the buffer to read any call to yield() could call these 
+//functions to process data while the original process is waiting for something.
 void serialEvent() {
     serialConsole->loop();
 }

@@ -55,8 +55,8 @@ protected:
     };
 
 private:
-    Heartbeat* heartbeat;
     MemCache* memCache;
+    Heartbeat* heartbeat;
     bool handlingEvent;
     char cmdBuffer[80];
     int ptrBuffer;
@@ -74,7 +74,7 @@ private:
     void getResponse();
     void printConfigEntry(const Device *dev, const ConfigEntry &entry);
     void getConfigEntriesForDevice(Device *dev);
-    void updateSetting(char *settingName, char *valu);
+    void updateSetting(const char *settingName, char *valu);
 };
 
 #endif /* SERIALCONSOLE_H_ */

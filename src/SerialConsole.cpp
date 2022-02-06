@@ -84,7 +84,7 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
         char formatString[20];
         if (entry.descFunc)
         {
-            snprintf(formatString, 20, "%%.%uf [%s] - ", entry.precision);
+            snprintf(formatString, 20, "%%.%uf [%%s] - ", entry.precision);            
             str += formatString + entry.helpText;
             Logger::console(str.c_str(), *(float *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
         }
@@ -169,7 +169,7 @@ void SerialConsole::getConfigEntriesForDevice(Device *dev)
 //If so process the config entry and return. Otherwise keep going.
 //doesn't yet actually tell the device to update EEPROM and doesn't output
 //anything yet if setting was a success. But, it's getting there.
-void SerialConsole::updateSetting(char *settingName, char *valu)
+void SerialConsole::updateSetting(const char *settingName, char *valu)
 {
     Device *deviceMatched;
     const ConfigEntry *entry = deviceManager.findConfigEntry(settingName, &deviceMatched);
@@ -343,15 +343,6 @@ void SerialConsole::handleConsoleCmd() {
 }
 
 void SerialConsole::handleConfigCmd() {
-    PotThrottleConfiguration *acceleratorConfig = NULL;
-    PotThrottleConfiguration *brakeConfig = NULL;
-    MotorControllerConfiguration *motorConfig = NULL;
-    BatteryManagerConfiguration *bmsConfig = NULL;
-
-    Throttle *accelerator = deviceManager.getAccelerator();
-    Throttle *brake = deviceManager.getBrake();
-    MotorController *motorController = deviceManager.getMotorController();
-    BatteryManager *bms = static_cast<BatteryManager *>(deviceManager.getDeviceByType(DEVICE_BMS));
     int i;
     int newValue;
     bool updateWifi = true;
@@ -375,15 +366,6 @@ void SerialConsole::handleConfigCmd() {
         Logger::console("");
         return; //or, we could use this to display the parameter instead of setting
     }
-
-    if (accelerator)
-        acceleratorConfig = (PotThrottleConfiguration *) accelerator->getConfiguration();
-    if (brake)
-        brakeConfig = (PotThrottleConfiguration *) brake->getConfiguration();
-    if (motorController)
-        motorConfig = (MotorControllerConfiguration *) motorController->getConfiguration();
-    if (bms)
-        bmsConfig = static_cast<BatteryManagerConfiguration *>(bms->getConfiguration());
 
     // strtol() is able to parse also hex values (e.g. a string "0xCAFE"), useful for enable/disable by device id
     newValue = strtol((char *) (cmdBuffer + i), NULL, 0);
@@ -410,39 +392,6 @@ void SerialConsole::handleConfigCmd() {
         else {
             Logger::console("Invalid device ID (%X, %d)", newValue, newValue);
         }
-    /*} else if (cmdString == String("CAN0SPEED")) {
-        if (newValue >= 33 && newValue <= 1000) {
-            sysPrefs->write("CAN0Speed", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            canHandlerBus0.setup();
-            Logger::console("Setting CAN0 speed to %i", newValue);
-        }
-        else Logger::console("Invalid speed. Enter a value between 33 and 1000");
-    } else if (cmdString == String("CAN1SPEED")) {
-        if (newValue >= 33 && newValue <= 1000) {
-            sysPrefs->write("CAN1Speed", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            canHandlerBus1.setup();
-            Logger::console("Setting CAN1 speed to %i", newValue);
-        }
-        else Logger::console("Invalid speed. Enter a value between 33 and 1000");
-    } else if (cmdString == String("CAN2SPEED")) {
-        if (newValue >= 33 && newValue <= 1000) {
-            sysPrefs->write("CAN2Speed", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            canHandlerBus2.setup();
-            Logger::console("Setting CAN2 speed to %i", newValue);
-        }
-        else Logger::console("Invalid speed. Enter a value between 33 and 1000");
-    } else if (cmdString == String("SWCANSPEED")) {
-        if (newValue >= 33 && newValue <= 200) {
-            sysPrefs->write("SWCANSpeed", (uint16_t)(newValue));
-            sysPrefs->saveChecksum();
-            canHandlerSingleWire.setup();
-            Logger::console("Setting SWCAN speed to %i", newValue);
-        }
-        else Logger::console("Invalid speed. Enter a value between 33 and 1000");
-    } */
     } else if (cmdString == String("OUTPUT") && newValue<8) {
         int outie = systemIO.getDigitalOutput(newValue);
         Logger::console("DOUT%d,  STATE: %d",newValue, outie);
@@ -487,6 +436,7 @@ void SerialConsole::handleShortCmd() {
     MotorController* motorController = (MotorController*) deviceManager.getMotorController();
     Throttle *accelerator = deviceManager.getAccelerator();
     Throttle *brake = deviceManager.getBrake();
+    Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
 
     switch (cmdBuffer[0]) {
     case 'h':
@@ -547,8 +497,7 @@ void SerialConsole::handleShortCmd() {
         for (int i = 0; i < 7; i++)
         {
             systemIO.calibrateADCOffset(i, true);
-        }
-        Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
+        }        
         sysDev->saveConfiguration();
         systemIO.setup_ADC_params(); //change takes immediate effect
         break;

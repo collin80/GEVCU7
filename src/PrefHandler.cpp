@@ -42,7 +42,7 @@ bool PrefHandler::isEnabled()
 
 void PrefHandler::setEnabledStatus(bool en)
 {
-    uint16_t id;
+    uint16_t id = 0;
 
     enabled = en;
 

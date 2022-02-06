@@ -35,7 +35,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Sys_Messages.h"
 #include "devices/DeviceTypes.h"
 
-#define CALL_MEMBER_FN(object,ptrToMember)  ((object)->*(ptrToMember))
+#define CALL_MEMBER_FN(object,ptrToMember)  (((const Device*)(object))->*(ptrToMember))
 
 class MotorController; // cyclic reference between MotorController and DeviceManager
 
@@ -63,7 +63,7 @@ public:
     void printDeviceList();
     void updateWifi();
     Device *updateWifiByID(DeviceId);
-    const ConfigEntry* findConfigEntry(char *settingName, Device **matchingDevice);
+    const ConfigEntry* findConfigEntry(const char *settingName, Device **matchingDevice);
 
 protected:
 

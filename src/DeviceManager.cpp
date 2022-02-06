@@ -89,6 +89,16 @@ void DeviceManager::removeDevice(Device *device) {
     case DEVICE_MOTORCTRL:
         motorController = NULL;
         break;
+    case DEVICE_ANY:
+    case DEVICE_BMS:
+    case DEVICE_CHARGER:
+    case DEVICE_DISPLAY:
+    case DEVICE_MISC:
+    case DEVICE_WIFI:
+    case DEVICE_IO:
+    case DEVICE_DCDC:
+    case DEVICE_NONE:
+        break;
     }
 }
 
@@ -280,13 +290,13 @@ Inputs:
 Outputs:
     returns a pointer to the ConfigEntry that matches. Returns nullptr if nothing matched.
 */
-const ConfigEntry* DeviceManager::findConfigEntry(char *settingName, Device **matchingDevice)
+const ConfigEntry* DeviceManager::findConfigEntry(const char *settingName, Device **matchingDevice)
 {
     for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++) {
         if (devices[i] && devices[i]->isEnabled()) 
         {
             const std::vector<ConfigEntry> *entries = devices[i]->getConfigEntries();
-            for (int idx = 0; idx < entries->size(); idx++)
+            for (size_t idx = 0; idx < entries->size(); idx++)
             {
                 //Serial.printf("%s %s\n", settingName, ent.cfgName.c_str());
                 if (!strcmp(settingName, entries->at(idx).cfgName.c_str()))

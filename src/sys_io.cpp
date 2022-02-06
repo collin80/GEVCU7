@@ -100,9 +100,10 @@ void SystemIO::setup() {
     {
         Logger::debug("GEVCU7B detected. Using work around analog IO");
         pinMode(2, INPUT); //input won't mess up the CAN line this got crossed with
-        pinMode(6, OUTPUT); //PWM1 = ADC Select B
+        pinMode(6, OUTPUT); //ESP32 boot pin - kludge to allow prototype to work still
         digitalWrite(6, LOW); //both off by default to select mux 0
     }
+
 
     initDigitalMultiplexor(); //set I/O direction for all pins, polarity, etc.
 }
@@ -253,7 +254,10 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
     if (neededMux != adcMuxSelect) //must change mux to read this
     {
         if (sysConfig->systemType != GEVCU7B) digitalWrite(2, (neededMux & 2) ? HIGH : LOW);
-        else digitalWrite(6, (neededMux & 2) ? HIGH : LOW);
+        else 
+        {
+            digitalWrite(6, (neededMux & 2) ? HIGH : LOW);
+        }
 
         digitalWrite(3, (neededMux & 1) ? HIGH : LOW);
         //Logger::debug("ADC for %u mux1 %u mux2 %u", which, (neededMux & 1), (neededMux & 2));
