@@ -73,8 +73,8 @@ void BrusaMotorController::setup() {
     MotorController::setup(); // run the parent class version of this function
 
     // register ourselves as observer of 0x258-0x268 and 0x458 can frames
-    canHandlerBus0.attach(this, CAN_MASKED_ID_1, CAN_MASK_1, false);
-    canHandlerBus0.attach(this, CAN_MASKED_ID_2, CAN_MASK_2, false);
+    canHandlerIsolated.attach(this, CAN_MASKED_ID_1, CAN_MASK_1, false);
+    canHandlerIsolated.attach(this, CAN_MASKED_ID_2, CAN_MASK_2, false);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_BRUSA);
 }
@@ -144,7 +144,7 @@ void BrusaMotorController::sendControl() {
     if (Logger::isDebug())
         Logger::debug(BRUSA_DMC5, "requested Speed: %i rpm, requested Torque: %.2f Nm", speedRequested, (float)torqueRequested);
 
-    canHandlerBus0.sendFrame(outputFrame);
+    canHandlerIsolated.sendFrame(outputFrame);
 }
 
 /*
@@ -166,7 +166,7 @@ void BrusaMotorController::sendControl2() {
     outputFrame.buf[6] = (config->maxMechanicalPowerRegen & 0xFF00) >> 8;
     outputFrame.buf[7] = (config->maxMechanicalPowerRegen & 0x00FF);
 
-    canHandlerBus0.sendFrame(outputFrame);
+    canHandlerIsolated.sendFrame(outputFrame);
 }
 
 /*
@@ -192,7 +192,7 @@ void BrusaMotorController::sendLimits() {
     outputFrame.buf[6] = (dcCurrLimR & 0xFF00) >> 8;
     outputFrame.buf[7] = (dcCurrLimR & 0x00FF);
 
-    canHandlerBus0.sendFrame(outputFrame);
+    canHandlerIsolated.sendFrame(outputFrame);
 }
 
 /*

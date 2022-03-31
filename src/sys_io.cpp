@@ -57,8 +57,6 @@ SystemIO::SystemIO()
 
 void SystemIO::setup_ADC_params()
 {
-    int i;
-
     for (int i = 0; i < 8; i++) 
         Logger::debug( "ADC:%d GAIN: %d Offset: %d", i, sysConfig->adcGain[i], sysConfig->adcOffset[i] );
 }
@@ -78,8 +76,6 @@ SystemType SystemIO::getSystemType() {
 }
 
 void SystemIO::setup() {
-    int i;
-
     analogReadRes(12);
 
     setup_ADC_params();
@@ -110,14 +106,13 @@ void SystemIO::setup() {
 
 void SystemIO::installExtendedIO(CANIODevice *device)
 {
-    bool found = false;
     int counter;
     
-    //Logger::debug("Before adding extended IO counts are DI:%i DO:%i AI:%i AO:%i", numDigIn, numDigOut, numAnaIn, numAnaOut);
-    //Logger::debug("Num Analog Inputs: %i", device->getAnalogInputCount());
-    //Logger::debug("Num Analog Outputs: %i", device->getAnalogOutputCount());
-    //Logger::debug("Num Digital Inputs: %i", device->getDigitalInputCount());
-    //Logger::debug("Num Digital Outputs: %i", device->getDigitalOutputCount());
+    Logger::avalanche("Before adding extended IO counts are DI:%i DO:%i AI:%i AO:%i", numDigIn, numDigOut, numAnaIn, numAnaOut);
+    Logger::avalanche("Num Analog Inputs: %i", device->getAnalogInputCount());
+    Logger::avalanche("Num Analog Outputs: %i", device->getAnalogOutputCount());
+    Logger::avalanche("Num Digital Inputs: %i", device->getDigitalInputCount());
+    Logger::avalanche("Num Digital Outputs: %i", device->getDigitalOutputCount());
    
     if (device->getAnalogInputCount() > 0)
     {
@@ -291,7 +286,6 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
 get value of one of the analog inputs
 */
 int16_t SystemIO::getAnalogIn(uint8_t which) {
-    int base;
     int valu;
 
     if (which > numAnaIn)

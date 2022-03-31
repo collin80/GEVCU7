@@ -125,7 +125,7 @@ private:
     bool processShowData(const uint8_t *inData);
     bool processShowCustomData(const CAN_message_t &inFrame, CAN_message_t& outFrame);
     void generateChallenge();
-    bool validateResponse(uint8_t *bytes);
+    bool validateResponse(const uint8_t *bytes);
     uint8_t sendBuffer[512];
     uint8_t challenge[4];
     bool inSecurityMode;

@@ -148,7 +148,7 @@ int16_t PotBrake::mapPedalPosition(int16_t pedalPosition) {
     range = config->maximumRegen - config->minimumRegen;
     brakeLevel = -10 * range * pedalPosition / 1000;
     brakeLevel -= 10 * config->minimumRegen;
-    //Logger::debug(POTBRAKEPEDAL, "level: %d", level);
+    Logger::avalanche(POTBRAKEPEDAL, "level: %d", brakeLevel);
 
     return brakeLevel;
 }

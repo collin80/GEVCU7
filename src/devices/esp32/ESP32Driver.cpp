@@ -6,15 +6,67 @@
 Specification for Comm Protocol between ESP32 and GEVCU7 core
 
 First of all, the things that we want to be able to do:
-1. Get/Set configuration for the ESP32 - SSID, WPA2Key, Mode
-2. Get/Set configuration items for GEVCU7
-3. Get performance metrics from running device drivers
+1. Get/Set configuration for the ESP32 - SSID, WPA2Key, Mode (sending to esp32 works now)
+2. Get/Set configuration items for GEVCU7 (this would handle being able to set new values)
+3. Get performance metrics from running device drivers (faked out right now)
 4. Get log from sdcard and send it to ESP32
 5. Send firmware files from ESP32 to the sdcard
 6. Connect to ESP32 from the internet to do remote diag
 
 The first three items can all be done over JSON. Key on { as the first
 character to determine that it's JSON and we should process it that way.
+
+The ESP32 should return the string "BOOTOK" once it is fully loaded
+and has booted successfully. This allows the code here to know that the ESP32
+is running properly and ready for input.
+
+For #2 it should be possible for the other side (esp32 running web server) to
+query what devices are possible and which are enabled. Enabled devices should
+then be able to be queried to get their configuration items. All of this can be
+done via json, even the queries. 
+{"GetDevices":1} is sufficient to ask for device list. 
+The returned list (obviously without all the whitespace):
+{
+    "DeviceList":[
+        {
+            "DeviceID":"0x1000"
+            "DeviceName":"DMOC645 Inverter",
+            "DeviceEnabled":0,
+            "DeviceType":"Motor Controller"
+        },
+        {
+            "DeviceID":"0x2000"
+            "DeviceName":"Potentiometer Accelerator",
+            "DeviceEnabled":1,
+            "DeviceType":"Throttle"
+        }
+    ]
+}
+Then ask for parameters for a specific device:
+{"GetDevConfig":"0x1000"}
+This returns a list of all parameters with their details:
+{
+    "DeviceID":"0x1000",
+    "DeviceDetails":[
+        {
+            "CfgName":"SomeSetting",
+            "HelpTxt":"Describe what this thing does",
+            "Valu":"SomeValue or integer",
+            "ValType":"INT16",
+            "MinValue":"-10",
+            "MaxValue":"10",
+            "Precision":4
+        }
+    ]
+}
+if the ESP32 side changes the value it must reply back with the change:
+{
+    "DeviceID":"0x1000",
+    "CfgName":"SomeSetting",
+    "Valu":"New Value"
+}
+GEVCU knows the way the value should be interpreted so it can process things
+and do the actual setting update.
 
 For #4 there is a special method:
 Send 0xB0 followed by the desired log number (0=current, 1-4 are historical)
@@ -37,6 +89,11 @@ above - Send 0xDA followed by an 8 bit counter, followed by 256 bytes of
 firmware, followed by CRC8. Once again, pad the comm to 256 chunks but in
 this case GEVCU7 will silently drop any bytes past the end of the file size.
 
+But, the real question is how will the ESP32 get these firmware files? Can't be by
+magic! So, probably this has to be either the internet (connect to my server)
+or the app has to be able to connect to the internet and do it. The media3.evtv.me
+site would be a decent place to put the files.
+
 #6 is trickier. We do NOT want this active unless the owner of the GEVCU7
 has specifically requested it but the case is waterproof, sealed, and hard to open.
 So, the most logical approach is to allow a digital input to trigger the ability
@@ -58,6 +115,60 @@ to the ESP32 should first require the unique code. 32 bits should be enough
 as that's still 4 billion possible codes. And, the ESP32 can quit responding
 if too many codes are attempted. Perhaps 10 tries is enough then require a power
 cycle to be able to try it again.
+
+File transfers need to work reliably between the teensy and esp32 both for
+firmware updates and for sdcard downloads. Really, they're the exact same thing
+as either is just a tunnel from the sdcard on the teensy to the esp32 either
+coming or going. I looked for XMODEM and YMODEM implmentations for Arduino.
+They exist but usually are one sided and sometimes directly use ancient C
+code that looks terrible. This serial link is extremely short and low latency
+and is very unlikely to drop any characters either. So, to some extent a 
+transfer protocol is not needed but using one is better than trusting fate.
+So, I'm just going to make a very simple transfer protocol that uses CRC16
+(the XMODEM version) and is somewhat like X/Y modem. But, a big difference
+in implementation is that I don't care about backward compatibility
+and there will not be any waiting around for ACKs with delays. The file
+transfer code is going to be essentially non-blocking and work via polling
+the timer in a loop function and serial interrupts. This way the rest of the program
+can keep running.
+
+Use bundled FastCRC library.
+
+File transfers are started from the sender. It sends 0xD0 as a start of transfer
+signal. Then it sends a header with the filename and size. The other side ACKs
+that it is ready with 0xAA. Then the sender sends 0xDA, followed by a sequence
+number (0-255), followed by 512 bytes (padding if needed), followed by the CRC16
+of the 512 bytes. The receiver then ACKs (0xAA, followed by sequence #) to show it
+has received the chunk, confirmed the CRC, and is ready for another chunk. 0x26 is instead
+used for NAK (was going to use 0x55 but that's just a bit shift away from AA which is not ideal)
+If NAK then we need to resend that last packet. 0xFA signals the receiver wants to ABORT.
+
+That's it. We know the filesize so no need to signal the end. We know it's the end when we
+received enough bytes. This doesn't cover how the receiver might ask for a file to be
+sent to it. In the case of a firmware update, the Teensy isn't going to ask. The ESP32
+just plain initiates a transfer when nothing else is happening and then transfers the file.
+The teensy wasn't expecting it. But for logs the ESP32 has to ask the Teensy to send the log
+so some sort of protocol is needed to have it ask for a log file. This could be done pretty
+much like above where the ESP32 sends 0xB0 asking for a log number and giving an offset
+so it can ask the Teensy not to send the whole file (in case it's large) or maybe an 
+offset of 0 means send the whole thing. But, the Teensy should rotate log files somehow,
+perhaps rotate every time the system is started so log 0 is always the currently accumulating
+log and 1 is the previous, 2 is previous to that, etc. But, renaming log files would be dumb
+as if we had 100 logs you'd have to rename 100 then start a new one. Probably instead should
+store in EEPROM the current log number and increment it each time the power is cycled. This way
+we can save LogFileXXXX.log or something like that. It can have just as many numbers as necessary
+and no more. And, store the log index as 32 bit so you can't possibly power cycle the unit
+enough times to overflow it. Still, this may eventually wear out the card and/or fill it up.
+Maybe have a limit to the number of logs that can be kept and automatically attempt to delete
+the log X back. For instance, if we create LogFile200.log and we're keeping 50 logs we might
+try to delete LogFile151.log upon power up. That way it is constantly cleaning up old files
+and trying to keep the # of logs managable.
+
+Header could be something like:
+struct {
+    char filename[128];
+    uint32_t filesize;
+};
 */
 
 
@@ -68,6 +179,7 @@ ESP32Driver::ESP32Driver() : Device()
     currState = ESP32NS::RESET;
     desiredState = ESP32NS::RESET;
     systemAlive = false;
+    systemEnabled = false;
 }
 
 void ESP32Driver::earlyInit()
@@ -92,6 +204,9 @@ void ESP32Driver::setup()
     entry = {"ESP32-PW", "Set WiFi password / WPA2 Key", &config->ssid_pw, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr};
     cfgEntries.push_back(entry);
 
+    entry = {"ESP32-HOSTNAME", "Set wireless host name (mDNS / OTA)", &config->hostName, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr};
+    cfgEntries.push_back(entry);
+
     entry = {"ESP32-MODE", "Set ESP32 Mode (0 = Create AP, 1 = Connect to SSID)", &config->esp32_mode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
     cfgEntries.push_back(entry);
 
@@ -101,6 +216,10 @@ void ESP32Driver::setup()
     Serial2.setTimeout(2);
     Serial2.addMemoryForRead(serialReadBuffer, sizeof(serialReadBuffer));
     Serial2.addMemoryForWrite(serialWriteBuffer, sizeof(serialWriteBuffer));
+
+    fileSender = new SerialFileSender(&Serial2);
+
+    systemEnabled = true;
 
     pinMode(ESP32_ENABLE, OUTPUT);
     pinMode(ESP32_BOOT, OUTPUT);
@@ -125,7 +244,7 @@ void ESP32Driver::handleTick() {
             digitalWrite(ESP32_ENABLE, LOW);
             delay(40);
             digitalWrite(ESP32_ENABLE, HIGH);
-            if (sysConfig->systemType == GEVCU7B)  delay(400); //seems we have to wait this long otherwise it won't stick
+            if (sysConfig->systemType == GEVCU7B) delay(400); //seems we have to wait this long otherwise it won't stick
             else delay(40);
             currState = ESP32NS::NORMAL;
         }
@@ -137,40 +256,204 @@ void ESP32Driver::handleTick() {
 //which could get called frequently (and always in the main loop if nothing else)
 void ESP32Driver::processSerial()
 {
+    if (!systemEnabled) return;
     while (Serial2.available())
     {
-        char c = Serial2.read();\
-        if (c == '\n')
+        char c = Serial2.read();
+        if (fileSender->isActive())
         {
-            Logger::debug("ESP32: %s", bufferedLine.c_str());
-            if (bufferedLine.indexOf("BOOTOK") > -1)
-            {
-                systemAlive = true;
-            }
-
-            bufferedLine = "";
+            fileSender->processCharacter(c);
         }
-        else bufferedLine += c;
+        else
+        {
+            if (c == 0xD0) fileSender->processCharacter(c);
+            else if (c == '\n')
+            {
+                Logger::debug("ESP32: %s", bufferedLine.c_str());
+                if (bufferedLine.indexOf("BOOTOK") > -1)
+                {
+                    systemAlive = true;
+                    sendWirelessConfig();
+                }
+
+                if (bufferedLine[0] == '{')
+                {
+                    StaticJsonDocument<1300>doc;
+                    DeserializationError err = deserializeJson(doc, bufferedLine.c_str());
+                    if (err)
+                    {
+                        Logger::error("deserializeJson() failed with code %s", err.f_str());
+                    }
+                    else
+                    {
+                        if (doc["GetDevices"] == 1)
+                        {
+                            sendDeviceList();
+                        }
+
+                        uint16_t devID = doc["GetDevConfig"];
+                        if (devID > 0)
+                        {
+                            sendDeviceDetails(devID);
+                        }
+
+                        devID = doc["DeviceID"];
+                        if (devID > 0)
+                        {
+                            processConfigReply(&doc);
+                        }
+                    }
+                }
+
+                bufferedLine = "";
+            }
+            else bufferedLine += c;
+        }
     }    
 }
 
-//send SSID to ESP32
-void ESP32Driver::sendSSID()
+//send wireless configuration to ESP32 and cause it to attempt to start up wireless comm
+//Note to self, JSON is case sensitive so make sure the letters are in the proper case or it don't work bro.
+void ESP32Driver::sendWirelessConfig()
+{
+    Logger::debug("Sending wifi cfg to ESP32");
+    ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
+    StaticJsonDocument<300> doc;
+    doc["SSID"] = config->ssid;
+    doc["WIFIPW"] = config->ssid_pw;
+    doc["WiFiMode"] = config->esp32_mode;
+    doc["HostName"] = config->hostName;
+    serializeJson(doc, Serial2);
+    Serial2.println();
+
+    //shall we send it to the serial console for debugging?
+    //serializeJson(doc, Serial);
+    //Serial.println();
+}
+
+void ESP32Driver::sendDeviceList()
+{
+    Device *dev = nullptr;
+    DynamicJsonDocument doc(10000);
+
+    for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++)
+    {
+        dev = deviceManager.getDeviceByIdx(i);
+        if (!dev) break;
+        doc["DeviceList"][i]["DeviceID"] = (uint16_t)dev->getId();
+        doc["DeviceList"][i]["DeviceName"] = dev->getCommonName();
+        doc["DeviceList"][i]["DeviceEnabled"] = dev->isEnabled();
+        switch (dev->getType())
+        {
+        case DeviceType::DEVICE_BMS:
+            doc["DeviceList"][i]["DeviceType"] = "BMS";
+            break;
+        case DeviceType::DEVICE_MOTORCTRL:
+            doc["DeviceList"][i]["DeviceType"] = "MOTORCTRL";
+            break;
+        case DeviceType::DEVICE_CHARGER:
+            doc["DeviceList"][i]["DeviceType"] = "CHARGER";
+            break;
+        case DeviceType::DEVICE_DISPLAY:
+            doc["DeviceList"][i]["DeviceType"] = "DISPLAY";
+            break;
+        case DeviceType::DEVICE_THROTTLE:
+            doc["DeviceList"][i]["DeviceType"] = "THROTTLE";
+            break;
+        case DeviceType::DEVICE_BRAKE:
+            doc["DeviceList"][i]["DeviceType"] = "BRAKE";
+            break;
+        case DeviceType::DEVICE_MISC:
+            doc["DeviceList"][i]["DeviceType"] = "MISC";
+            break;
+        case DeviceType::DEVICE_WIFI:
+            doc["DeviceList"][i]["DeviceType"] = "WIFI";
+            break;
+        case DeviceType::DEVICE_IO:
+            doc["DeviceList"][i]["DeviceType"] = "IO";
+            break;
+        case DeviceType::DEVICE_DCDC:
+            doc["DeviceList"][i]["DeviceType"] = "DCDC";
+            break;
+        }
+    }
+    //serializeJson(doc, Serial2);
+    //Serial2.println();
+
+    //shall we send it to the serial console for debugging?
+    serializeJson(doc, Serial);
+    Serial.println();
+}
+
+void ESP32Driver::sendDeviceDetails(uint16_t deviceID)
+{
+    Device *dev = nullptr;
+    DynamicJsonDocument doc(10000);
+
+    dev = deviceManager.getDeviceByID(deviceID);
+    if (!dev) return;
+
+    doc["DeviceID"] = deviceID;
+    int i = 0;
+
+    const std::vector<ConfigEntry> *entries = dev->getConfigEntries();
+    for (const ConfigEntry ent : *entries)
+    {
+        
+        doc["DeviceDetails"][i]["CfgName"] = ent.cfgName;
+        doc["DeviceDetails"][i]["HelpTxt"] = ent.helpText;
+        doc["DeviceDetails"][i]["MinValue"] = ent.minValue;
+        doc["DeviceDetails"][i]["MaxValue"] = ent.maxValue;
+        doc["DeviceDetails"][i]["Precision"] = ent.precision;
+        switch (ent.varType)
+        {
+        case CFG_ENTRY_VAR_TYPE::BYTE:
+            doc["DeviceDetails"][i]["Valu"] =  *((uint8_t *)(ent.varPtr));
+            doc["DeviceDetails"][i]["ValType"] = "BYTE";
+            break;
+        case CFG_ENTRY_VAR_TYPE::STRING:
+            doc["DeviceDetails"][i]["Valu"] = (char *)(ent.varPtr);
+            doc["DeviceDetails"][i]["ValType"] = "STR";
+            break;
+        case CFG_ENTRY_VAR_TYPE::INT16:
+            doc["DeviceDetails"][i]["Valu"] =  *((int16_t *)(ent.varPtr));
+            doc["DeviceDetails"][i]["ValType"] = "INT16";
+            break;
+        case CFG_ENTRY_VAR_TYPE::UINT16:
+            doc["DeviceDetails"][i]["Valu"] =  *((uint16_t *)(ent.varPtr));
+            doc["DeviceDetails"][i]["ValType"] = "UINT16";
+            break;
+        case CFG_ENTRY_VAR_TYPE::INT32:
+            doc["DeviceDetails"][i]["Valu"] =  *((int32_t *)(ent.varPtr));
+            doc["DeviceDetails"][i]["ValType"] = "INT32";
+            break;
+        case CFG_ENTRY_VAR_TYPE::UINT32:
+            doc["DeviceDetails"][i]["Valu"] =  *((uint32_t *)(ent.varPtr));
+            doc["DeviceDetails"][i]["ValType"] = "UINT32";
+            break;
+        case CFG_ENTRY_VAR_TYPE::FLOAT:
+            doc["DeviceDetails"][i]["Valu"] =  *((float *)(ent.varPtr));
+            doc["DeviceDetails"][i]["ValType"] = "FLOAT";
+            break;
+        }
+        i++;
+    }
+
+    void *varPtr; //pointer to the variable whose value we'd like to get or set
+    
+    //serializeJson(doc, Serial2);
+    //Serial2.println();
+
+    //shall we send it to the serial console for debugging?
+    serializeJson(doc, Serial);
+    Serial.println();
+}
+
+void ESP32Driver::processConfigReply(JsonDocument* doc)
 {
 
 }
 
-//send password / WPA2 key to esp32
-void ESP32Driver::sendPW()
-{
-
-}
-
-//whether to be an AP or connect to existing SSID
-void ESP32Driver::sendESPMode()
-{
-
-}
 
 DeviceId ESP32Driver::getId() {
     return (ESP32);
@@ -190,12 +473,29 @@ void ESP32Driver::loadConfiguration() {
         setConfiguration(config);
     }
 
-    Device::loadConfiguration(); // call parent
+    prefsHandler->read("SSID", (char *)config->ssid, "GEVCU7");
+    prefsHandler->read("WIFIPW", (char *)config->ssid_pw, "Default123");
+    prefsHandler->read("HostName", (char *)config->hostName, "gevcu7");
+    prefsHandler->read("WiFiMode", &config->esp32_mode, 0); //create an AP
 
+    Logger::debug("SSID: %s", config->ssid);
+    Logger::debug("PW: %s", config->ssid_pw);
+    Logger::debug("Hostname: %s", config->hostName);
+
+    Device::loadConfiguration(); // call parent
 }
 
 void ESP32Driver::saveConfiguration() {
     Device::saveConfiguration();
+
+    ESP32Configuration *config = (ESP32Configuration *)getConfiguration();
+
+    prefsHandler->write("SSID", config->ssid, 64);
+    prefsHandler->write("WIFIPW", config->ssid_pw, 64);
+    prefsHandler->write("HostName", config->hostName, 64);
+    prefsHandler->write("WiFiMode", config->esp32_mode);
+    prefsHandler->saveChecksum();
+    prefsHandler->forceCacheWrite();
 }
 
 ESP32Driver esp32Driver;

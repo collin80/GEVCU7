@@ -2,6 +2,8 @@
 #include "../Device.h"
 #include "../DeviceTypes.h"
 #include "../../TickHandler.h"
+#include "SerialFileSender.h"
+#include <ArduinoJson.h>
 
 #define ESP32 0x800
 #define CFG_TICK_INTERVAL_WIFI                      200000
@@ -20,6 +22,7 @@ class ESP32Configuration: public DeviceConfiguration {
 public:
     uint8_t ssid[64];
     uint8_t ssid_pw[64];
+    uint8_t hostName[64];
     uint8_t esp32_mode;
 };
 
@@ -38,15 +41,18 @@ public:
     virtual void loadConfiguration();
     virtual void saveConfiguration();
 private:
-    void sendSSID(); //send SSID to ESP32
-    void sendPW(); //send password / WPA2 key to esp32
-    void sendESPMode(); //whether to be an AP or connect to existing SSID
+    void sendWirelessConfig();
+    void sendDeviceList();
+    void sendDeviceDetails(uint16_t deviceID);
+    void processConfigReply(JsonDocument* doc);
 
     String bufferedLine;
     ESP32NS::ESP32_STATE currState;
     ESP32NS::ESP32_STATE desiredState;
     bool systemAlive;
+    bool systemEnabled;
     uint8_t serialReadBuffer[1024];
     uint8_t serialWriteBuffer[1024];
+    SerialFileSender *fileSender;
 };
 

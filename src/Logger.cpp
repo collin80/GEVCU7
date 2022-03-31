@@ -84,7 +84,7 @@ void Logger::loop()
     if ( ( (n >= 512) || ((millis() - lastWriteTime) > 1000) ) && !file.isBusy()) {
       // Not busy only allows one sector before possible busy wait.
       // Write one sector from RingBuf to file.
-      int writeBytes = min(n, 512);
+      int writeBytes = min(n, 512u);
       ret = rb.writeOut(writeBytes);
       if (writeBytes != ret) {
         Serial.printf("Writeout failed. Want to write %u bytes but wrote %u\n", writeBytes, ret);
@@ -94,6 +94,33 @@ void Logger::loop()
       else file.flush(); //make sure it is updated on disk
       lastWriteTime = millis();
     }
+}
+
+/*
+ * Output a very verbose debugging message with a variable amount of parameters.
+ * printf() style, see Logger::log()
+ * 
+ */
+void Logger::avalanche(const char *message, ...) {
+    if (sysConfig->logLevel > Avalanche)
+        return;
+    va_list args;
+    va_start(args, message);
+    Logger::log((DeviceId) NULL, Avalanche, message, args);
+    va_end(args);
+}
+
+/*
+ * Output a debug message with the name of a device appended before the message
+ * printf() style, see Logger::log()
+ */
+void Logger::avalanche(DeviceId deviceId, const char *message, ...) {
+    if (sysConfig->logLevel > Avalanche)
+        return;
+    va_list args;
+    va_start(args, message);
+    Logger::log(deviceId, Avalanche, message, args);
+    va_end(args);
 }
 
 /*
@@ -261,6 +288,12 @@ void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list 
     String outputString;// = String(lastLogTime) + " - ";
 
     switch (level) {
+    case Off:
+        return;
+        break;
+    case Avalanche:
+        outputString += "~";
+        break;
     case Debug:
         //Serial.print("D");
         outputString += "D";

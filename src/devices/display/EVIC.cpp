@@ -75,7 +75,7 @@ void EVIC::setup() {
     canHandlerBus1.attach(this, CAN_SWITCH, 0x7ff, false);
     canHandlerBus0.attach(this, CAN_SWITCH, 0x7ff, false);
 
-    MotorController* motorController = deviceManager.getMotorController();
+    //MotorController* motorController = deviceManager.getMotorController();
     //nominalVolt=(motorController->nominalVolts); //Get default nominal volts and capacity from motorcontroller
     //capacity=(motorController->capacity);//If we do NOT have a JLD505, we will use these.
 
@@ -411,7 +411,7 @@ DeviceId EVIC::getId() {
 
 
 void EVIC::loadConfiguration() {
-    EVICConfiguration *config = (EVICConfiguration *)getConfiguration();
+    //EVICConfiguration *config = (EVICConfiguration *)getConfiguration();
 
     if (prefsHandler->checksumValid())
     {   //checksum is good, read in the values stored in EEPROM
@@ -432,7 +432,7 @@ void EVIC::loadConfiguration() {
 }
 
 void EVIC::saveConfiguration() {
-    EVICConfiguration *config = (EVICConfiguration *)getConfiguration();
+    //EVICConfiguration *config = (EVICConfiguration *)getConfiguration();
 
 
     //Device::saveConfiguration();  //call parent save routine

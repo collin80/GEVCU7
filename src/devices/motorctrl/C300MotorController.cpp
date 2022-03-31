@@ -53,7 +53,7 @@ void C300MotorController::setup() {
 
     //CFF7902, CFF7B02, CFF7A02, CFF7C02 are the addresses. Only the lower nibble of the second byte changes
     //So, set up to filter and let anything in that nibble through but otherwise match exactly
-    canHandlerBus0.attach(this, 0x0CFF7802, 0x0FFFF0FF, true);
+    canHandlerIsolated.attach(this, 0x0CFF7802, 0x0FFFF0FF, true);
 
     running = false;
     setPowerMode(modeTorque);
@@ -144,7 +144,8 @@ void C300MotorController::handleTick() {
             if(getReverseIn()<0)setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
         }
     }
-    else {
+    else 
+    {
         setSelectedGear(NEUTRAL); //We will stay in NEUTRAL until we get at least 40 frames ahead indicating continous communications.
     }
 
@@ -223,7 +224,7 @@ void C300MotorController::sendCmd()
     Logger::debug("C300 Command tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
                   output.buf[4], output.buf[5], output.buf[6], output.buf[7]);
 
-    canHandlerBus0.sendFrame(output);
+    canHandlerIsolated.sendFrame(output);
 }
 
 //I don't believe motor controllers need to handle regen taper themselves. 

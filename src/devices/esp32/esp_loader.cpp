@@ -86,13 +86,13 @@ esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
 
     size_t size = file->fileSize();
 
-    Logger::debug("Erasing flash (this may take a while)...");
+    Logger::console("Erasing flash (this may take a while)...");
     err = esp_loader_flash_start(address, size, sizeof(payload));
     if (err != ESP_LOADER_SUCCESS) {
-        Logger::debug("Erasing flash failed with error %d.", err);
+        Logger::console("Erasing flash failed with error %d.", err);
         return err;
     }
-    Logger::debug("Start programming %u bytes\n", size);
+    Logger::console("Start programming %u bytes\n", size);
 
     size_t binary_size = size;
     size_t written = 0;
@@ -106,7 +106,7 @@ esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
 
         err = esp_loader_flash_write(payload, to_read);
         if (err != ESP_LOADER_SUCCESS) {
-            Logger::debug("\nPacket could not be written! Error %d.", err);
+            Logger::console("\nPacket could not be written! Error %d.", err);
             return err;
         }
 
@@ -133,14 +133,14 @@ bool flashESP32(const char *filename, uint32_t address)
     FsFile file;
     if (file.open(filename, O_READ))
     {
-        Logger::debug("Found an esp32 update image. Flashing it to esp32");
+        Logger::console("Found an esp32 update image. Flashing it to esp32");
         loader_port_gevcu_init(115200);
         esp_loader_connect_args_t conn = ESP_LOADER_CONNECT_DEFAULT();
         esp_loader_error_t err = esp_loader_connect(&conn);
         if (err != ESP_LOADER_SUCCESS) {
-            Logger::debug("Cannot connect to target. Error: %u\n", err);
+            Logger::console("Cannot connect to target. Error: %u\n", err);
         }
-        Logger::debug("Connected to target\n");
+        Logger::console("Connected to ESP32 target\n");
         if (flash_esp32_binary(&file, address) == ESP_LOADER_SUCCESS)
         {
             loader_port_reset_target();

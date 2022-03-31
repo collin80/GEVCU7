@@ -35,8 +35,10 @@
 class Logger {
 public:
     enum LogLevel {
-        Debug = 0, Info = 1, Warn = 2, Error = 3, Off = 4
+        Avalanche = -1, Debug = 0, Info = 1, Warn = 2, Error = 3, Off = 4
     };
+    static void avalanche(const char *, ...);
+    static void avalanche(DeviceId, const char *, ...);
     static void debug(const char *, ...);
     static void debug(DeviceId, const char *, ...);
     static void info(const char *, ...);

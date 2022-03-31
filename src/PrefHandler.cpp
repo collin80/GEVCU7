@@ -182,14 +182,14 @@ bool PrefHandler::setDeviceStatus(uint16_t device, bool enabled)
     for (int x = 1; x < CFG_DEV_MGR_MAX_DEVICES; x++) {
         memCache->Read(EE_DEVICE_TABLE + (2 * x), &id);
         if ((id & 0x7FFF) == (device & 0x7FFF)) {
-            Logger::debug("Found a device record to edit");
+            Logger::avalanche("Found a device record to edit");
             if (enabled) {
                 id |= 0x8000;
             }
             else {
                 id &= 0x7FFF;
             }
-            Logger::debug("ID to write: %X", id);
+            Logger::avalanche("ID to write: %X", id);
             memCache->Write(EE_DEVICE_TABLE + (2 * x), id);
             return true;
         }
@@ -212,7 +212,7 @@ uint32_t PrefHandler::findSettingLocation(uint32_t hash)
 {
     while (semKeyLookup);
     semKeyLookup = true;
-    //Logger::debug("Key lookup for %x", hash);
+    Logger::avalanche("Key lookup for %x", hash);
     uint32_t readHash;
     uint8_t readLength;
     for (uint32_t idx = SETTINGS_START; idx < EE_DEVICE_SIZE;)
@@ -241,7 +241,7 @@ uint32_t PrefHandler::findEmptySettingLoc()
     for (uint32_t idx = SETTINGS_START; idx < EE_DEVICE_SIZE;)
     {
         memCache->Read((uint32_t)idx + base_address + lkg_address, &readHash);
-        //Logger::debug("Read Hash = %x", readHash);
+        Logger::avalanche("Read Hash = %x", readHash);
         if (readHash == 0xFFFFFFFFul) //it's empty! Return this exact address
         {
             return (idx);
@@ -249,7 +249,7 @@ uint32_t PrefHandler::findEmptySettingLoc()
         //otherwise, read length then skip the 4 for hash, 1 for length, and length too.
         idx += 4;
         memCache->Read((uint32_t)idx + base_address + lkg_address, &readLength);
-        //Logger::debug("Read length: %u", readLength);
+        Logger::avalanche("Read length: %u", readLength);
         idx += 1 + readLength;
     }
     return 0xFFFFFFFFul;
@@ -257,18 +257,18 @@ uint32_t PrefHandler::findEmptySettingLoc()
 
 uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
 {
-    //Logger::debug("Key look up for %s", key);
+    Logger::avalanche("Key look up for %s", key);
     uint32_t hash = fnvHash(key);
     uint32_t address = findSettingLocation(hash);
     if (address >= EE_DEVICE_SIZE) 
     {
         if (createIfNecessary)
         {
-            //Logger::debug("Must create new entry for this setting");
+            Logger::avalanche("Must create new entry for this setting");
             address = findEmptySettingLoc();        
             if (address >= EE_DEVICE_SIZE) return 0xFFFFFFFFul;
             //write the hash value to this entry because it's new
-            //Logger::debug("Setting stored at %x", address);
+            Logger::avalanche("Setting stored at %x", address);
             memCache->Write((uint32_t)address + base_address + lkg_address, hash);
             uint8_t len = 0; //don't know length yet. Set it to zero.
             address += 4; //increment past hash location
@@ -276,7 +276,7 @@ uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
             address += 1; //increment past length too
         }
     }
-    //Logger::debug("Key: %s Returned Addr: %x", key, address);
+    Logger::avalanche("Key: %s Returned Addr: %x", key, address);
     return address;
 }
 
@@ -352,6 +352,27 @@ bool PrefHandler::write(const char *key, float val) {
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
+bool PrefHandler::write(const char *key, const char *val, size_t maxlen) {
+    uint32_t address = keyToAddress(key, true);    
+    uint8_t len;
+    size_t stringLen = strlen(val);
+    if (stringLen > maxlen) stringLen = maxlen;
+    memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
+    if (len == 0)
+    {
+        len = maxlen + 1;
+        memCache->Write((uint32_t)address + base_address + lkg_address - 1, len);
+    }
+    else if (len != (maxlen + 1))
+    {
+        Logger::error("Attempt to write improper length to variable %s!", key);
+        return false;
+    }
+    //then return whether we could write the value into the memory cache    
+    return memCache->Write((uint32_t)address + base_address + lkg_address, val, stringLen + 1);
+}
+
+
 bool PrefHandler::read(const char *key, uint8_t *val, uint8_t defval) {
     uint32_t address = keyToAddress(key, false);
     if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
@@ -388,6 +409,29 @@ bool PrefHandler::read(const char *key, float *val, float defval) {
     else 
     {
         *val = defval;
+        return true;
+    }
+}
+
+bool PrefHandler::read(const char *key, char *val, const char* defval)
+{
+    uint32_t address = keyToAddress(key, false);
+    if (address < EE_DEVICE_SIZE) 
+    {
+        uint8_t c;
+        int i = 0;
+        while ( memCache->Read((uint32_t)address + base_address + lkg_address + i, &c) )
+        {
+            *val++ = c;
+            i++;
+            if (c == 0) break;
+        }
+        *val = 0;
+        return true;
+    }
+    else 
+    {
+        strcpy(val, defval);
         return true;
     }
 }
@@ -461,6 +505,19 @@ uint32_t PrefHandler::fnvHash(const char *input)
         hash = hash * 16777619;
     }
     return hash;
+}
+
+//Resets the EEPROM storage for this particular PrefHandler instance. Everything will be reset
+//to 0xFF's and the cache flushed so the settings will be fresh thereafter. 
+void PrefHandler::resetEEPROM()
+{
+    //write over all the settings 32 bits at a time
+    uint32_t val = 0xFFFFFFFFul;
+    for (uint32_t idx = SETTINGS_START; idx < EE_DEVICE_SIZE; idx = idx + 4)
+    {
+        memCache->Write((uint32_t)idx + base_address + lkg_address, val);
+    }
+    memCache->FlushAllPages();
 }
 
 

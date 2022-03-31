@@ -104,5 +104,11 @@ const std::vector<ConfigEntry> *Device::getConfigEntries()
     return &cfgEntries;
 }
 
+void Device::zapConfiguration()
+{
+    prefsHandler->resetEEPROM();
+    loadConfiguration(); //then try to reload configuration to bring it back to defaults
+}
+
 
 

@@ -76,7 +76,7 @@ void VehicleSpecific::setup() {
  */
 void VehicleSpecific::handleTick() {
     Device::handleTick(); // Call parent which controls the workflow
-    Logger::debug("VS Tick Handler");
+    //Logger::avalanche("VS Tick Handler");
 
     MotorController * motor = deviceManager.getMotorController();
 

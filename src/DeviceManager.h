@@ -35,7 +35,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Sys_Messages.h"
 #include "devices/DeviceTypes.h"
 
-#define CALL_MEMBER_FN(object,ptrToMember)  (((const Device*)(object))->*(ptrToMember))
+#define CALL_MEMBER_FN(object,ptrToMember)  ( ((const Device*)(object))->*(ptrToMember) )
 
 class MotorController; // cyclic reference between MotorController and DeviceManager
 

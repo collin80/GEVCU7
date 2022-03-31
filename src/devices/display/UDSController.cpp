@@ -107,7 +107,9 @@ void UDSController::handleIsoTP(const ISOTP_data &iso_config, const uint8_t *buf
             if (!inSecurityMode)
             {                
                 generateChallenge();
-                Logger::debug("Challenge Bytes: %X", *((uint32_t *)challenge));
+                uint32_t challVal;
+                memcpy(&challVal, challenge, 4);
+                Logger::debug("Challenge Bytes: %X", challVal);
                 for (int i = 0; i < 4; i++) sendBuffer[i + 2] = challenge[i];
             }
             else
@@ -460,7 +462,7 @@ void UDSController::generateChallenge()
 //probably pretty secure and hard to crack.
 //Well, other than the fact that you're reading the source code...
 //The bytes array sent here starts right where the 4 returned bytes are so everything lines up
-bool UDSController::validateResponse(uint8_t *bytes)
+bool UDSController::validateResponse(const uint8_t *bytes)
 {
     uint8_t val; 
     Logger::debug("Validating security reply");

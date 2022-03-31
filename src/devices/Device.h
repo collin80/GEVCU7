@@ -65,6 +65,7 @@ public:
     virtual void loadConfiguration();
     virtual void saveConfiguration();
     DeviceConfiguration *getConfiguration();
+    void zapConfiguration();
     void setConfiguration(DeviceConfiguration *);
     const std::vector<ConfigEntry> *getConfigEntries();
 

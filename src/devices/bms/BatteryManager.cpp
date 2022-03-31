@@ -52,7 +52,7 @@ void BatteryManager::setup() {
     BatteryManagerConfiguration *config = (BatteryManagerConfiguration *) getConfiguration();
 
     ConfigEntry entry;
-    entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 1000000, 2, nullptr};
+    entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, 0.0f, 100000.0f, 2, nullptr};
     cfgEntries.push_back(entry);
     //entry = {"AHLEFT", "Number of amp hours remaining in pack in tenths ampere-hours", &config->packAHRemaining / 100000, CFG_ENTRY_VAR_TYPE::INT32, 0, 1000000, 0, nullptr};
     //cfgEntries.push_back(entry);

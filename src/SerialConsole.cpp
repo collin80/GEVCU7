@@ -64,15 +64,25 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
 {
     String str = "   ";
     str += entry.cfgName + "=";
+
+    String descString;
+    const char *descPtr = nullptr;
+    if (entry.descFunc)
+    {
+        //TODO: Anyone know how to squash the compiler warning for this next line? I give up...
+        descString = CALL_MEMBER_FN(dev, entry.descFunc)();
+        descPtr = descString.c_str();
+    }
+
     switch (entry.varType)
     {
     case CFG_ENTRY_VAR_TYPE::BYTE:
         if (entry.precision == 16) str += "0x%X";
         else str += "%u";
-        if (entry.descFunc)
+        if (descPtr)
         {
             str += " [%s] - " + entry.helpText;
-            Logger::console(str.c_str(), *(uint8_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+            Logger::console(str.c_str(), *(uint8_t *)entry.varPtr, descPtr);
         }
         else 
         {
@@ -82,11 +92,11 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
         break;
     case CFG_ENTRY_VAR_TYPE::FLOAT:
         char formatString[20];
-        if (entry.descFunc)
+        if (descPtr)
         {
             snprintf(formatString, 20, "%%.%uf [%%s] - ", entry.precision);            
             str += formatString + entry.helpText;
-            Logger::console(str.c_str(), *(float *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+            Logger::console(str.c_str(), *(float *)entry.varPtr, descPtr);
         }
         else 
         {
@@ -96,10 +106,10 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
         }
         break;
     case CFG_ENTRY_VAR_TYPE::INT16:
-        if (entry.descFunc)
+        if (descPtr)
         {
             str += "%i [%s] - " + entry.helpText;
-            Logger::console(str.c_str(), *(int16_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+            Logger::console(str.c_str(), *(int16_t *)entry.varPtr, descPtr);
         }
         else 
         {
@@ -111,7 +121,7 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
         if (entry.descFunc)
         {
             str += "%i [%s] - " + entry.helpText;
-            Logger::console(str.c_str(), *(int32_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+            Logger::console(str.c_str(), *(int32_t *)entry.varPtr, descPtr);
         }
         else 
         {
@@ -121,15 +131,15 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
         break;
     case CFG_ENTRY_VAR_TYPE::STRING:
         str += "%s - " + entry.helpText;
-        Logger::console(str.c_str(), *(char *)entry.varPtr);
+        Logger::console(str.c_str(), (char *)entry.varPtr);
         break;
     case CFG_ENTRY_VAR_TYPE::UINT16:
         if (entry.precision == 16) str += "0x%X";
         else str += "%u";
-        if (entry.descFunc)
+        if (descPtr)
         {
             str += " [%s] - " + entry.helpText;
-            Logger::console(str.c_str(), *(uint16_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+            Logger::console(str.c_str(), *(uint16_t *)entry.varPtr, descPtr);
         }
         else 
         {
@@ -140,10 +150,10 @@ void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry
     case CFG_ENTRY_VAR_TYPE::UINT32:
         if (entry.precision == 16) str += "0x%X";
         else str += "%u";
-        if (entry.descFunc)
+        if (descPtr)
         {
             str += " [%s] - " + entry.helpText;
-            Logger::console(str.c_str(), *(uint32_t *)entry.varPtr, CALL_MEMBER_FN(dev, entry.descFunc)().c_str());
+            Logger::console(str.c_str(), *(uint32_t *)entry.varPtr, descPtr);
         }
         else 
         {
@@ -239,11 +249,11 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
     }
     if (result == 1) //value was too low
     {
-        Logger::console("Value was below minimum value of %f for parameter %s", entry->minValue, entry->cfgName);
+        Logger::console("Value was below minimum value of %f for parameter %s", entry->minValue, settingName);
     }
     if (result == 2) //value was too high
     {
-        Logger::console("Value was above maximum value of %f for parameter %s", entry->maxValue, entry->cfgName);
+        Logger::console("Value was above maximum value of %f for parameter %s", entry->maxValue, settingName);
     }
 }
 
@@ -353,7 +363,6 @@ void SerialConsole::handleConfigCmd() {
     cmdBuffer[ptrBuffer] = 0; //make sure to null terminate
     String cmdString = String();
     char *strVal;
-    unsigned char whichEntry = '0';
     i = 0;
 
     while (cmdBuffer[i] != '=' && i < ptrBuffer) {
@@ -392,6 +401,17 @@ void SerialConsole::handleConfigCmd() {
         else {
             Logger::console("Invalid device ID (%X, %d)", newValue, newValue);
         }
+    } else if (cmdString == String("ZAPDEV")) {
+        Device *dev = deviceManager.getDeviceByID(newValue);
+        if (dev)
+        {
+            Logger::console("Zapping configuration space for ID %x", newValue);
+            dev->zapConfiguration();
+        }
+        else 
+        {
+            Logger::console("Invalid device ID (%X, %d)", newValue, newValue);
+        }
     } else if (cmdString == String("OUTPUT") && newValue<8) {
         int outie = systemIO.getDigitalOutput(newValue);
         Logger::console("DOUT%d,  STATE: %d",newValue, outie);
@@ -405,7 +425,6 @@ void SerialConsole::handleConfigCmd() {
             systemIO.setDigitalOutput(newValue,1);
             //motorController->statusBitfield1 |=1 << newValue;//setbit to Turn on annunciator
         }
-
 
         Logger::console("DOUT0:%d, DOUT1:%d, DOUT2:%d, DOUT3:%d, DOUT4:%d, DOUT5:%d, DOUT6:%d, DOUT7:%d", 
                         systemIO.getDigitalOutput(0), systemIO.getDigitalOutput(1), systemIO.getDigitalOutput(2), systemIO.getDigitalOutput(3), 
@@ -433,7 +452,7 @@ void SerialConsole::handleConfigCmd() {
 
 void SerialConsole::handleShortCmd() {
     uint8_t val;
-    MotorController* motorController = (MotorController*) deviceManager.getMotorController();
+    //MotorController* motorController = (MotorController*) deviceManager.getMotorController();
     Throttle *accelerator = deviceManager.getAccelerator();
     Throttle *brake = deviceManager.getBrake();
     Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
@@ -493,7 +512,6 @@ void SerialConsole::handleShortCmd() {
         break;
     
     case 'A':
-        uint32_t accum;
         for (int i = 0; i < 7; i++)
         {
             systemIO.calibrateADCOffset(i, true);

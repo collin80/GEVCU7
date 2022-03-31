@@ -99,7 +99,7 @@ void HeatCoolController::setup() {
  */
 void HeatCoolController::handleTick() {
     Device::handleTick(); // Call parent which controls the workflow
-    Logger::debug("HeatCool Tick Handler");
+    Logger::avalanche("HeatCool Tick Handler");
 
     HeatCoolConfiguration *config = (HeatCoolConfiguration *) getConfiguration();
 

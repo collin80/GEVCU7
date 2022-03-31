@@ -62,7 +62,7 @@ void RMSMotorController::setup()
     MotorController::setup(); // run the parent class version of this function
 
     //allow through 0xA0 through 0xAF	
-    canHandlerBus0.attach(this, 0x0A0, 0x7f0, false);
+    canHandlerIsolated.attach(this, 0x0A0, 0x7f0, false);
 
     operationState = ENABLE;
     selectedGear = NEUTRAL;
@@ -553,7 +553,7 @@ void RMSMotorController::sendCmdFrame()
     output.buf[1] = (torqueCommand & 0xFF00) >> 8;  //Stow torque command in bytes 0 and 1.
     output.buf[0] = (torqueCommand & 0x00FF);
     
-    canHandlerBus0.sendFrame(output);  //Mail it.
+    canHandlerIsolated.sendFrame(output);  //Mail it.
 
     Logger::debug("CAN Command Frame: %X  %X  %X  %X  %X  %X  %X  %X",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],

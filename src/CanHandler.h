@@ -213,4 +213,8 @@ extern CanHandler canHandlerBus0;
 extern CanHandler canHandlerBus1;
 extern CanHandler canHandlerBus2;
 
+//handy names for the special buses so it is explicit why they're being used.
+#define canHandlerIsolated canHandlerBus1
+#define canHandlerFD canHandlerBus2
+
 #endif /* CAN_HANDLER_H_ */

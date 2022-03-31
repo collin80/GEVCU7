@@ -85,7 +85,7 @@ old status bitfield stuff from motorcontroller class. Should find a way to integ
  */
 void Precharger::handleTick() {
     Device::handleTick(); // Call parent which controls the workflow
-    //Logger::debug("Precharge Tick Handler");
+    //Logger::avalanche("Precharge Tick Handler");
 
     PrechargeConfiguration *config = (PrechargeConfiguration *) getConfiguration();
 
@@ -117,7 +117,7 @@ void Precharger::handleTick() {
         //check on status, maybe fault, maybe set complete
         if (config->prechargeType == PT_TIME_DELAY)
         {
-            if ((prechargeBeginTime + config->prechargeTime) < millis()) //done!
+            if ( (millis() - prechargeBeginTime) >= config->prechargeTime) //done!
             {
                 state = PRECHARGE_COMPLETE;
                 if (config->mainRelay != 255) 
@@ -133,7 +133,7 @@ void Precharger::handleTick() {
             if (mc)
             {
                 float progress = (float)mc->getDcVoltage() / (float)targetVoltage;
-                if (progress > 0.98f) 
+                if (progress > 0.97f) 
                 {
                     state = PRECHARGE_COMPLETE;
                     if (config->mainRelay != 255) 

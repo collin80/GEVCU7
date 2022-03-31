@@ -91,7 +91,7 @@ To request 14.0 vdc, the message was:
 
 void DCDCController::sendCmd()
 {
-    DCDCConfiguration *config = (DCDCConfiguration *)getConfiguration();
+    //DCDCConfiguration *config = (DCDCConfiguration *)getConfiguration();
 
     CAN_message_t output;
     output.len = 8;

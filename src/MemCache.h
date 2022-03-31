@@ -79,7 +79,7 @@ public:
     boolean Write(uint32_t address, uint16_t valu);
     boolean Write(uint32_t address, uint32_t valu);
     boolean Write(uint32_t address, float valu);
-    boolean Write(uint32_t address, void* data, uint16_t len);
+    boolean Write(uint32_t address, const void* data, uint16_t len);
 
     //It's sort of weird to make the read function take a reference but it allows for overloading
     boolean Read(uint32_t address, uint8_t* valu);

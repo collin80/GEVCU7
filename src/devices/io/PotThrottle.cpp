@@ -266,7 +266,7 @@ void PotThrottle::loadConfiguration() {
         // will both be zero.  We really should refuse to operate in this condition and force
         // calibration, but for now at least allow calibration to work by setting numThrottlePots = 2
         if (config->numberPotMeters == 0 && config->throttleSubType == 0) {
-            Logger::debug(POTACCELPEDAL, "THROTTLE APPEARS TO NEED CALIBRATION/DETECTION - choose 'z' on the serial console menu");
+            Logger::info(POTACCELPEDAL, "THROTTLE APPEARS TO NEED CALIBRATION/DETECTION - choose 'z' on the serial console menu");
             config->numberPotMeters = 2;
         }
     //}

@@ -41,7 +41,6 @@ Not using hardware filtering right now. CAN buses aren't really that fast and th
 very fast chip. But, still it might not be a bad idea to eventually try it.
 FIFOs are not available for CAN-FD mode but CAN-FD mode is not being attempted right now
 
-
 Should allow for the GEVCU7 board to be used with SavvyCAN for easy debugging. Maybe don't even
 support anything other than sending frames back and forth - no bus config? Set GEVCU to present
 two serial ports. The second one will be for SavvyCAN. This keeps things simple as then the normal
@@ -127,6 +126,7 @@ void CanHandler::setup()
         {
             busNum = 0;                    
             Can0.begin();
+            Can0.setClock(CLK_60MHz);
             Can0.setBaudRate(realSpeed);
             Can0.setMaxMB(16);
             Can0.enableFIFO();
@@ -147,6 +147,7 @@ void CanHandler::setup()
         {
             busNum = 1;            
             Can1.begin();
+            Can1.setClock(CLK_60MHz);
             Can1.setBaudRate(realSpeed);
             Can1.setMaxMB(16);
             Can1.enableFIFO();
@@ -172,14 +173,11 @@ void CanHandler::setup()
             Can2.setRegions(64);
             fdTimings.baudrate = realSpeed;
             fdTimings.baudrateFD = fdSpeed;
-            fdTimings.clock = CLK_24MHz;
+            fdTimings.clock = CLK_60MHz;
             fdTimings.propdelay = 190;
             fdTimings.bus_length = 1;
             fdTimings.sample = 75;
-            //if (fdSpeed < 5000000ul) fdTimings.clock = 24;
-            //else fdTimings.clock = 40;
-            Can2.setBaudRate(fdTimings);
-            //Can2.setBaudRateAdvanced(fdTimings, 1, 1);
+            Can2.setBaudRateAdvanced(fdTimings, 1, 1);
             //Can2.setMaxMB(16);
             //Can2.enableFIFO();
             //Can2.enableFIFOInterrupt();
@@ -255,7 +253,7 @@ void CanHandler::setBusSpeed(uint32_t newSpeed)
             fdTimings.baudrateFD = fdSpeed;
             //if (fdSpeed < 2000000ul) fdTimings.clock = 24;
             //else fdTimings.clock = 40;
-            fdTimings.clock = CLK_24MHz;
+            fdTimings.clock = CLK_40MHz;
             Can2.setBaudRate(fdTimings);
         }
         //else Can2.reset();
@@ -279,7 +277,8 @@ void CanHandler::setBusSpeed(uint32_t newSpeed)
             Can1.begin();
             Can1.setBaudRate(busSpeed);
             Can1.setMaxMB(16);
-            Can1.enableMBInterrupts();
+            Can1.enableFIFO();
+            Can1.enableFIFOInterrupt();
             Can1.onReceive(canRX1);
         }
     }
@@ -297,7 +296,7 @@ void CanHandler::setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed)
         fdTimings.baudrateFD = dataSpeed;
         //if (dataSpeed < 2000000ul) fdTimings.clock = 24;
         //else fdTimings.clock = 40;
-        fdTimings.clock = CLK_24MHz;
+        fdTimings.clock = CLK_40MHz;
         Can2.setBaudRate(fdTimings);        
     }
     //else Can2.reset();
@@ -724,7 +723,6 @@ void CanHandler::logFrame(const CAN_message_t &msg)
     }
 }
 
-//obviously it should be actually using FD not just normal CAN.... TODO
 void CanHandler::logFrame(const CANFD_message_t &msg_fd)
 {
     if (Logger::isDebug()) {
@@ -986,8 +984,8 @@ void CanHandler::sendFrame(const CAN_message_t &msg)
 void CanHandler::sendFrameFD(const CANFD_message_t& framefd)
 {
     if (canBusNode != CAN_BUS_2) return;
-    sendFrameToUSB(framefd);
     Can2.write(framefd);
+    sendFrameToUSB(framefd, 2);
 }
 
 void CanHandler::sendISOTP(int id, int length, uint8_t *data)

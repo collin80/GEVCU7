@@ -138,21 +138,23 @@ void sendTestCANFrames()
     output.buf[7] = 0xAB;
     canHandlerBus0.sendFrame(output);
     output.id = 0x345;
-	canHandlerBus1.sendFrame(output);
+    canHandlerBus1.sendFrame(output);
     output.id = 0x678;
     canHandlerBus2.sendFrame(output);
 
     delayMicroseconds(200);
 
     //now try sending a CAN-FD frame
+    //Note, I've found that the underlying driver does not like FD frames if the nominal bitrate is 500k.
+    //For some reason you must use 1M as the nominal rate or things do not work when sending. It receives
+    //just fine with 500k nominal rate and a faster data rate.
     CANFD_message_t fd_out;
-    fd_out.id = 0x789;
-    //fd_out.brs = 1; //do the baud rate switch for data section
-    //fd_out.edl = 1; //do extended data length too
+    fd_out.id = 0x1AB;
+    fd_out.brs = 1; //do the baud rate switch for data section
+    fd_out.edl = 1; //do extended data length too
     fd_out.len = 16;
     for (int l = 0; l < 16; l++) fd_out.buf[l] = l * 3;
     canHandlerBus2.sendFrameFD(fd_out);
-    
 }
 
 void testGEVCUHardware()
@@ -270,7 +272,7 @@ void setup() {
         }
         else
         {
-            Logger::debug("Found teensy firmware. Flashing it");
+            Logger::info("Found teensy firmware. Flashing it");
             setup_flasherx();
             start_upgrade(&file);
             file.close();
@@ -322,7 +324,7 @@ void setup() {
 	Logger::info("System Ready");
 
     //just for testing obviously. Don't leave these uncommented.
-    //sendTestCANFrames();
+    sendTestCANFrames();
     //testGEVCUHardware();
 }
 

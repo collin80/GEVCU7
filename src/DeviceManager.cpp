@@ -188,7 +188,7 @@ Throttle *DeviceManager::getAccelerator() {
     //so down range code doesn't puke
     if (!throttle)
     {
-        //Logger::debug("getAccelerator() called but there is no registered accelerator!");
+        Logger::avalanche("getAccelerator() called but there is no registered accelerator!");
         return 0; //NULL!
     }
     return throttle;
@@ -200,7 +200,7 @@ Throttle *DeviceManager::getBrake() {
 
     if (!brake)
     {
-        //Logger::debug("getBrake() called but there is no registered brake!");
+        Logger::avalanche("getBrake() called but there is no registered brake!");
         return 0; //NULL!
     }
     return brake;
@@ -211,7 +211,7 @@ MotorController *DeviceManager::getMotorController() {
 
     if (!motorController)
     {
-        //Logger::debug("getMotorController() called but there is no registered motor controller!");
+        Logger::avalanche("getMotorController() called but there is no registered motor controller!");
         return 0; //NULL!
     }
     return motorController;
@@ -231,7 +231,7 @@ Device *DeviceManager::getDeviceByID(DeviceId id)
             if (devices[i]->getId() == id) return devices[i];
         }
     }
-    //Logger::debug("getDeviceByID - No device with ID: %X", (int)id);
+    Logger::avalanche("getDeviceByID - No device with ID: %X", (int)id);
     return 0; //NULL!
 }
 
@@ -254,7 +254,7 @@ Device *DeviceManager::getDeviceByType(DeviceType type)
             if (devices[i]->getType() == type) return devices[i];
         }
     }
-    //Logger::debug("getDeviceByType - No devices of type: %X", (int)type);
+    Logger::avalanche("getDeviceByType - No devices of type: %X", (int)type);
     return 0; //NULL!
 }
 
