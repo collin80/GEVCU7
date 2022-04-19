@@ -26,6 +26,7 @@
  */
 
 #include "Throttle.h"
+#include "../../DeviceManager.h"
 
 /*
  * Constructor
@@ -59,6 +60,11 @@ void Throttle::setup()
     cfgEntries.push_back(entry);
     entry = {"TCREEP", "Percent of full torque to use for creep (0=disable)", &config->creep, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr};
     cfgEntries.push_back(entry);
+
+    StatusEntry stat;
+    //        name              var         type             prevVal  obj
+    stat = {"Throttle_Level", &level, CFG_ENTRY_VAR_TYPE::INT16, 0, this};
+    deviceManager.addStatusEntry(stat);
 }
 
 

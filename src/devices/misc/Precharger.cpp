@@ -34,6 +34,7 @@ Precharger::Precharger() : Device() {
     shortName = "Precharge";
     state = PRECHARGE_INIT;
     targetVoltage = 0;
+    isPrecharged = false;
 }
 
 void Precharger::earlyInit()
@@ -66,6 +67,11 @@ void Precharger::setup() {
     cfgEntries.push_back(entry);
     entry = {"MAINCONTACTOR", "Set output to use for main contactor", &config->mainRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
+
+    StatusEntry stat;
+    //        name                       var         type               prevVal  obj
+    stat = {"IsPrechargeComplete", &isPrecharged, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_PRECHARGE);
 }
@@ -112,6 +118,7 @@ void Precharger::handleTick() {
             if (bms) targetVoltage = bms->getPackVoltage();
         }
         state = PRECHARGE_INPROGRESS;
+        isPrecharged = false;
         break;
     case PRECHARGE_INPROGRESS:
         //check on status, maybe fault, maybe set complete
@@ -147,6 +154,7 @@ void Precharger::handleTick() {
         break;
     case PRECHARGE_COMPLETE:
         //nothing more to do!
+        isPrecharged = true;
         break; 
     case PRECHARGE_FAULT: //if we fault then be sure to turn off the contactors
         if (config->prechargeRelay != 255) systemIO.setDigitalOutput(config->prechargeRelay, false);

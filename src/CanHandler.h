@@ -66,6 +66,8 @@ enum ISOTP_MODE
     FLOW = 3
 };
 
+class CanHandler;
+
 class CanObserver
 {
 public:
@@ -79,6 +81,10 @@ public:
     bool isCANOpen();
     void setNodeID(unsigned int id);
     unsigned int getNodeID();
+
+protected:
+    CanHandler *attachedCANBus;
+    void setAttachedCANBus(int bus);
 
 private:
     bool canOpenMode;

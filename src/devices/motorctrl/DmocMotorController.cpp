@@ -72,9 +72,18 @@ void DmocMotorController::setup() {
     loadConfiguration();
     MotorController::setup(); // run the parent class version of this function
 
+    StatusEntry stat;
+    //        name       var         type              prevVal  obj
+    stat = {"MC_ActualState", &actualState, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_Alive", &alive, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_torqueCmd", &torqueCommand, CFG_ENTRY_VAR_TYPE::UINT16, 0, this};
+    deviceManager.addStatusEntry(stat);
+
     // register ourselves as observer of 0x23x and 0x65x can frames
-    canHandlerIsolated.attach(this, 0x230, 0x7f0, false);
-    canHandlerIsolated.attach(this, 0x650, 0x7f0, false);
+    attachedCANBus->attach(this, 0x230, 0x7f0, false);
+    attachedCANBus->attach(this, 0x650, 0x7f0, false);
 
     running = false;
     setPowerMode(modeTorque);
@@ -271,7 +280,7 @@ void DmocMotorController::sendCmd1() {
     Logger::debug(DMOC645, "0x232 tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
                   output.buf[4], output.buf[5], output.buf[6], output.buf[7]);
 
-    canHandlerIsolated.sendFrame(output);
+    attachedCANBus->sendFrame(output);
 }
 
 void DmocMotorController::taperRegen()
@@ -348,7 +357,8 @@ void DmocMotorController::sendCmd2() {
 
     //Logger::debug("requested torque: %i",(((long) throttleRequested * (long) maxTorque) / 1000L));
 
-    canHandlerIsolated.sendFrame(output);
+    attachedCANBus->sendFrame(output);
+
     timestamp();
     Logger::debug(DMOC645, "Torque command: %X  %X  %X  %X  %X  %X  %X  CRC: %X",output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7]);
@@ -373,7 +383,7 @@ void DmocMotorController::sendCmd3() {
     output.buf[6] = alive;
     output.buf[7] = calcChecksum(output);
 
-    canHandlerIsolated.sendFrame(output);
+    attachedCANBus->sendFrame(output);
 }
 
 //challenge/response frame 1 - Really doesn't contain anything we need I dont think
@@ -391,7 +401,7 @@ void DmocMotorController::sendCmd4() {
     output.buf[6] = alive;
     output.buf[7] = calcChecksum(output);
 
-    canHandlerIsolated.sendFrame(output);
+    attachedCANBus->sendFrame(output);
 }
 
 //Another C/R frame but this one also specifies which shifter position we're in
@@ -417,7 +427,7 @@ void DmocMotorController::sendCmd5() {
     output.buf[6] = alive;
     output.buf[7] = calcChecksum(output);
 
-    canHandlerIsolated.sendFrame(output);
+    attachedCANBus->sendFrame(output);
 }
 
 

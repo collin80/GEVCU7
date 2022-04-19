@@ -59,6 +59,9 @@ enum CFG_ENTRY_VAR_TYPE
     FLOAT
 };
 
+//Definition of the array is in DeviceManager.cpp
+extern const char *CFG_VAR_TYPE_NAMES[7];
+
 /*
 ConfigEntry records store configuration options that a given device would like to expose to the world
 so that they can be edited either on the serial console or the webpage (or any other way, CAN, etc).
@@ -76,6 +79,73 @@ struct ConfigEntry
     float maxValue; //maximum acceptable value
     uint8_t precision; //number of decimal places to display. Obv. 0 for integers
     DescribeValue descFunc; //if this function pointer is non-null it'll be used to turn values into strings.
+};
+
+/*StatusEntry records a data item that the device would like to expose to the world. This is different
+from ConfigEntry in that you cannot edit these values. Instead these values are only updated by the device
+itself. The format here is a little bit weird but for reasons of making life easier on device developers.
+Since there is a pointer to the actual variable the device developer doesn't need to worry about updating
+these. All the developer needs to do is register these entries. Thinking to create a StatusManager
+class that has all these StatusEntry records in it. That one class would then periodically check
+for new data and update as needed. This would then show which items were changed and they could 
+be updated. But, the StatusManager would not be doing the updating. It should allow other devices
+to register callbacks that would happen when a status entry is updated. In this way something like the
+esp32 could receive a callback only when things update and thus updates would only happen when necessary.
+*/
+struct StatusEntry
+{
+    String statusName;
+    void *varPtr;
+    CFG_ENTRY_VAR_TYPE varType;
+    double lastValue;
+    Device *device;
+
+    double getValueAsDouble()
+    {
+        double out;
+        if (varType == BYTE)
+        {
+            uint8_t v = *((uint8_t*)varPtr);
+            out = (double)v;
+            return out;
+        }
+        if (varType == STRING) //this one is special. Sum all characters to give a numeric result
+        {
+            char *str = (char *)varPtr;
+            while (str) out += *str++;
+            return out;
+        }
+        if (varType == INT16)
+        {
+            int16_t v = *((int16_t*)varPtr);
+            out = (double)v;
+            return out;
+        }
+        if (varType == UINT16)
+        {
+            uint16_t v = *((uint16_t*)varPtr);
+            out = (double)v;
+            return out;
+        }
+        if (varType == INT32)
+        {
+            int32_t v = *((int32_t*)varPtr);
+            out = (double)v;
+            return out;
+        }
+        if (varType == UINT32)
+        {
+            uint32_t v = *((uint32_t*)varPtr);
+            out = (double)v;
+            return out;
+        }
+        if (varType == FLOAT)
+        {
+            float v = *((float*)varPtr);
+            out = (double)v;
+            return out;
+        }
+    }
 };
 
 /*

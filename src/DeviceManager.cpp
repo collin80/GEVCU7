@@ -37,6 +37,8 @@
 
 #include "DeviceManager.h"
 
+const char *CFG_VAR_TYPE_NAMES[7] = {"BYTE","STRING","INT16","UINT16","INT32","UINT32","FLOAT"};
+
 DeviceManager::DeviceManager() {
     throttle = nullptr;
     brake = nullptr;
@@ -149,15 +151,111 @@ void DeviceManager::sendMessage(DeviceType devType, DeviceId devId, uint32_t msg
     }
 }
 
-void DeviceManager::setParameter(DeviceType deviceType, DeviceId deviceId, uint32_t msgType, char *key, char *value) {
-    char *params[] = { key, value };
-    sendMessage(deviceType, deviceId, msgType, params);
+void DeviceManager::addStatusEntry(StatusEntry entry)
+{
+    statusEntries.push_back(entry);
 }
 
-void DeviceManager::setParameter(DeviceType deviceType, DeviceId deviceId, uint32_t msgType, char *key, uint32_t value) {
-    char buffer[15];
-    sprintf(buffer, "%lu", value);
-    setParameter(deviceType, deviceId, msgType, key, buffer);
+//Since entries are put into the vector by copy we can't just search for this entry. We have to search for
+//the name of the status entry instead.
+void DeviceManager::removeStatusEntry(StatusEntry entry)
+{
+    removeStatusEntry(entry.statusName);
+}
+
+void DeviceManager::removeStatusEntry(String statusName)
+{
+    for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ) {
+        if (it->statusName == statusName) statusEntries.erase(it);
+        else ++it;
+    }
+}
+
+//if a device is unloaded it'd be necessary to remove all entries it added. We do that here.
+void DeviceManager::removeAllEntriesForDevice(Device *dev)
+{
+    for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ) {
+        if (it->device == dev) statusEntries.erase(it);
+        else ++it;
+    }
+}
+
+void DeviceManager::printAllStatusEntries()
+{
+    Device *dev;
+    Logger::console("All status entries:");
+    for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
+    {
+        dev = (Device *)it->device;
+        Logger::console("Name: %s Type: %s   dev: %s", it->statusName.c_str(), CFG_VAR_TYPE_NAMES[it->varType], dev->getShortName());
+    }
+}
+
+bool DeviceManager::addStatusObserver(Device *dev)
+{
+    for (int i = 0; i < CFG_STATUS_NUM_OBSERVERS; i++)
+    {
+        if (!statusObservers[i] || (statusObservers[i] == dev) )
+        {
+            statusObservers[i] = dev;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool DeviceManager::removeStatusObserver(Device *dev)
+{
+    for (int i = 0; i < CFG_STATUS_NUM_OBSERVERS; i++)
+    {
+        if (statusObservers[i] == dev)
+        {
+            statusObservers[i] = nullptr;
+            return true;
+        }
+    }
+    return false;
+}
+
+void DeviceManager::dispatchToObservers(const StatusEntry &entry)
+{
+    for (int i = 0; i < CFG_STATUS_NUM_OBSERVERS; i++)
+        if (statusObservers[i]) statusObservers[i]->handleMessage(MSG_CONFIG_CHANGE, &entry);
+}
+
+/*
+  Every tick we go through the entire list of status entries and see if there value has changed. 
+  If it has we need to issue a message to registered listeners. It may bear consideration that 
+  the observer callbacks should be done via a queue and not all at once instantly. This processor
+  is extremely fast but some entries are going to update all of the time and thus we could end up
+  with a huge number of calls here.
+*/
+void DeviceManager::handleTick()
+{
+    double currVal;
+    for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
+    {
+        currVal = it->getValueAsDouble();
+        if ( fabs(currVal - it->lastValue) > 0.001) //has the value changed?
+        {
+            Logger::avalanche("Value of %s has changed", it->statusName.c_str());
+            dispatchToObservers(*it);
+            it->lastValue = currVal;
+        }
+    }
+}
+
+void DeviceManager::setup()
+{
+    tickHandler.detach(this);
+
+    Logger::info("Adding tick handler for Device Manager");
+
+    tickHandler.attach(this, 100000ul); //10 times per second
+
+    //this should be large enough that you don't cause it to have to enlarge but not so large
+    //that all RAM is taken up needlessly. So, tweak it in use to be big enough but not much more biggerer
+    statusEntries.reserve(200);
 }
 
 uint8_t DeviceManager::getNumThrottles() {

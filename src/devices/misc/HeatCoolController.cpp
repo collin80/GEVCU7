@@ -59,6 +59,8 @@ void HeatCoolController::setup() {
     cfgEntries.reserve(8 + 4 * COOL_ZONES);
 
     ConfigEntry entry;
+    StatusEntry stat;
+
     entry = {"HEATONTEMP", "Temperature at which to enable heater (C)", &config->heatOnTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, -10.0f, 100.0f, 1, nullptr};
     cfgEntries.push_back(entry);
     entry = {"HEATOFFTEMP", "Temperature at which to cease heating", &config->heatOffTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, -10.0f, 100.0f, 1, nullptr};
@@ -89,7 +91,16 @@ void HeatCoolController::setup() {
         snprintf(buff, 30, "COOLPIN%u", i);
         entry = {buff, "Output used for this zone (255=Disabled)", &config->coolPins[i], CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
         cfgEntries.push_back(entry);
+
+        snprintf(buff, 30, "HC_CoolOn%u", i);
+        stat = {buff, &isCoolOn[i], CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+        deviceManager.addStatusEntry(stat);
     }
+
+    stat = {"HC_HeatOn", &isHeatOn, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"HC_PumpOn", &isPumpOn, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);    
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_HEATCOOL);
 }

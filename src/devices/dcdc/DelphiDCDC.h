@@ -1,9 +1,9 @@
 /*
- * DCDCController.h
+ * DelphiDCDC.h
  *
  *
  *
- Copyright (c) 2014 Jack Rickard
+ Copyright (c) 2022 Collin Kidder
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -26,8 +26,8 @@
 
  */
 
-#ifndef DCDC_H_
-#define DCDC_H_
+#ifndef DDCDC_H_
+#define DDCDC_H_
 
 #include <Arduino.h>
 #include "../../config.h"
@@ -35,40 +35,41 @@
 #include "../../sys_io.h"
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
+#include "DCDCController.h"
+
+#define DELPHI_DCDC 0x1050
+#define CFG_TICK_INTERVAL_DCDC                      200000
 
 /*
- * Class for DCDC specific configuration parameters
+ * Class for Delphi DCDC specific configuration parameters
  */
-class DCDCConfiguration : public DeviceConfiguration {
+class DelphiDCDCConfiguration : public DCDCConfiguration {
 public:
-    float targetLowVoltage;
-    uint8_t requireHVReady; //if set only enable DC/DC if HV seems ready. Would have to query BMS or Precharge device for that.
-    uint8_t enablePin; //if DC/DC requires an enable pin then it can be set here
 };
 
-class DCDCController: public Device {
+class DelphiDCDCController: public DCDCController, CanObserver {
 public:
     virtual void handleTick();
+    virtual void handleCanFrame(const CAN_message_t &frame);
     virtual void setup();
+    virtual void earlyInit();
 
-    DCDCController();
+    DelphiDCDCController();
     void timestamp();
-    DeviceType getType();
-    float getOutputVoltage();
-    float getOutputCurrent();
-    float getTemperature();
+    DeviceId getId();
+    uint32_t getTickInterval();
 
     virtual void loadConfiguration();
     virtual void saveConfiguration();
 
-protected:
-    float outputVoltage;
-    float outputCurrent;
-    float deviceTemperature;
-    bool isEnabled;
-    bool isFaulted;
+private:
+    int milliseconds;
+    int seconds;
+    int minutes;
+    int hours;
+    void sendCmd();
 };
 
-#endif /* DCDC_H_ */
+#endif /* DDCDC_H_ */
 
 

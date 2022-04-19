@@ -313,6 +313,7 @@ void setup() {
     canHandlerBus2.setup();
     //canHandlerBus0.setSWMode(SW_NORMAL); //you can't do this unless you do hardware mods.
 	Logger::info("SYSIO init ok");
+    deviceManager.setup();
 
 	initializeDevices();
     Logger::debug("Initialized all devices successfully!");
@@ -326,6 +327,7 @@ void setup() {
     //just for testing obviously. Don't leave these uncommented.
     sendTestCANFrames();
     //testGEVCUHardware();
+    deviceManager.printAllStatusEntries();
 }
 
 //there really isn't much in the loop here. Most everything is done via interrupts and timer ticks. If you have

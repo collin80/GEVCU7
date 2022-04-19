@@ -85,11 +85,11 @@ void TestMotorController::handleTick() {
     else
     {
         if (selectedGear == DRIVE)
-            torqueRequested = (((long) throttleRequested * (long) config->torqueMax) / 100.0f);
+            torqueRequested = (((long) throttleRequested * (long) config->torqueMax) / 1000.0f);
         if (selectedGear == REVERSE)
-            torqueRequested = (((long) throttleRequested * -1 *(long) config->torqueMax) / 100.0f);
+            torqueRequested = (((long) throttleRequested * -1 *(long) config->torqueMax) / 1000.0f);
         
-        torqueActual = ((torqueActual * 7) + (torqueRequested * 3));
+        torqueActual = ((torqueActual * 7) + (torqueRequested * 3)) / 10.0;
         speedActual = torqueActual * 2;
         if (speedActual < 0) speedActual = 0;
         
@@ -119,8 +119,8 @@ void TestMotorController::handleTick() {
     temperatureSystem = (temperatureInverter + temperatureMotor) / 2;
     
     Logger::debug(TESTINVERTER, "PowerMode: %i, Gear: %i", powerMode, selectedGear);
-    Logger::debug(TESTINVERTER, "TorqueReq: %i, SpeedReq: %i", torqueRequested, speedRequested);
-    Logger::debug(TESTINVERTER, "dcCurrent: %i, mechPower: %i", dcCurrent, mechanicalPower);
+    Logger::debug(TESTINVERTER, "TorqueReq: %f, SpeedReq: %i", torqueRequested, speedRequested);
+    Logger::debug(TESTINVERTER, "dcCurrent: %f, mechPower: %f", dcCurrent, mechanicalPower);
     
 }
 

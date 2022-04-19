@@ -39,16 +39,20 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class MotorController; // cyclic reference between MotorController and DeviceManager
 
-class DeviceManager {
+class DeviceManager: public TickObserver {
 public:
     DeviceManager();    // private constructor
     void addDevice(Device *device);
     void removeDevice(Device *device);
-//	void addTickObserver(TickObserver *observer, uint32_t frequency);
-//	void addCanObserver(CanObserver *observer, uint32_t id, uint32_t mask, bool extended, CanHandler::CanBusNode canBus);
+    void addStatusEntry(StatusEntry entry);
+    void removeStatusEntry(StatusEntry entry);
+    void removeStatusEntry(String statusName);
+    void removeAllEntriesForDevice(Device *dev);
+    void printAllStatusEntries();
     void sendMessage(DeviceType deviceType, DeviceId deviceId, uint32_t msgType, void* message);
-    void setParameter(DeviceType deviceType, DeviceId deviceId, uint32_t msgType, char *key, char *value);
-    void setParameter(DeviceType deviceType, DeviceId deviceId, uint32_t msgType, char *key, uint32_t value);
+    void dispatchToObservers(const StatusEntry &entry);
+    bool addStatusObserver(Device *dev);
+    bool removeStatusObserver(Device *dev);
     uint8_t getNumThrottles();
     uint8_t getNumControllers();
     uint8_t getNumBMS();
@@ -64,14 +68,20 @@ public:
     void updateWifi();
     Device *updateWifiByID(DeviceId);
     const ConfigEntry* findConfigEntry(const char *settingName, Device **matchingDevice);
+    void handleTick();
+    void setup();
 
 protected:
 
 private:
     Device *devices[CFG_DEV_MGR_MAX_DEVICES];
+    Device *statusObservers[CFG_STATUS_NUM_OBSERVERS];
+
     Throttle *throttle;
     Throttle *brake;
     MotorController *motorController;
+
+    std::vector<StatusEntry> statusEntries;
 
     int8_t findDevice(Device *device);
     uint8_t countDeviceType(DeviceType deviceType);

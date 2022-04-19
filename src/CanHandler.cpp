@@ -1146,6 +1146,25 @@ CanObserver::CanObserver()
 {
     canOpenMode = false;
     nodeID = 0x7F;
+    attachedCANBus = &canHandlerBus1;
+}
+
+void CanObserver::setAttachedCANBus(int bus)
+{
+    switch (bus)
+    {
+    case 0:
+        attachedCANBus = &canHandlerBus0;
+        break;
+    case 1:
+        attachedCANBus = &canHandlerBus1;
+        break;
+    case 2:
+        attachedCANBus = &canHandlerBus2;
+        break;
+    default:
+        attachedCANBus = &canHandlerBus1;
+    }
 }
 
 //setting can open mode causes the can handler to run its own handleCanFrame system where things are sorted out

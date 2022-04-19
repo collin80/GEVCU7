@@ -29,91 +29,49 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "DCDCController.h"
+#include "../../DeviceManager.h"
+
 template<class T> inline Print &operator <<(Print &obj, T arg) {
     obj.print(arg);
     return obj;
 }
 
-
-
 DCDCController::DCDCController() : Device()
 {
-    commonName = "Delphi DC-DC Converter";
-    shortName = "DelphiDCDC";
-}
-
-
-
-void DCDCController::handleCanFrame(const CAN_message_t &frame)
-{
-    Logger::debug("DCDC msg: %X", frame.id);
-    Logger::debug("DCDC data: %X%X%X%X%X%X%X%X", frame.buf[0],frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
-}
-
-void DCDCController::earlyInit()
-{
-    prefsHandler = new PrefHandler(DCDC);
+    outputVoltage = 0.0f;
+    outputCurrent = 0.0f;
+    deviceTemperature = 0.0f;
+    isEnabled = false;
+    isFaulted = false;
 }
 
 void DCDCController::setup()
 {
-    //prefsHandler->setEnabledStatus(true);
-    tickHandler.detach(this);
+    DCDCConfiguration *config = (DCDCConfiguration *)getConfiguration();
 
-    loadConfiguration();
     Device::setup(); // run the parent class version of this function
 
-    canHandlerBus1.attach(this, 0x1D5, 0x7ff, false);
-    //Watch for 0x1D5 messages from Delphi converter
-    tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
+    ConfigEntry entry;
+    entry = {"DC-TARGETV", "Target output voltage for DC/DC", &config->targetLowVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, 0.0f, 1000.0f, 2, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"DC-REQHVREADY", "Enable DC/DC only when HV is ready? (0=No, 1=Yes)", &config->requireHVReady, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"DC-ENABLEPIN", "Output pin to use to enable DC/DC (255 if not needed)", &config->enablePin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    cfgEntries.push_back(entry);
+
+    StatusEntry stat;
+    //        name              var         type                  prevVal  obj
+    stat = {"DC_OutputV", &outputVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"DC_OutputC", &outputCurrent, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"DC_Temperature", &deviceTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
 }
 
-
-void DCDCController::handleTick() {
-
-    Device::handleTick(); //kick the ball up to papa
-
-    sendCmd();   //Send our Delphi voltage control command
-
-}
-
-
-/*
-1D7 08 80 77 00 00 00 00 00 00
-For 13.0 vdc output.
-
-1D7 08 80 8E 00 00 00 00 00 00
-For 13.5 vdc output.
-
-To request 14.0 vdc, the message was:
-1D7 08 80 A5 00 00 00 00 00 00
-*/
-
-void DCDCController::sendCmd()
+void DCDCController::handleTick() 
 {
-    //DCDCConfiguration *config = (DCDCConfiguration *)getConfiguration();
-
-    CAN_message_t output;
-    output.len = 8;
-    output.id = 0x1D7;
-    output.flags.extended = 0; //standard frame
-    output.buf[0] = 0x80;
-    output.buf[1] = 0x8E;
-    output.buf[2] = 0;
-    output.buf[3] = 0;
-    output.buf[4] = 0;
-    output.buf[5] = 0;
-    output.buf[6] = 0;
-    output.buf[7] = 0x00;
-
-    canHandlerBus1.sendFrame(output);
-    timestamp();
-    Logger::debug("Delphi DC-DC cmd: %X %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
-}
-
-DeviceId DCDCController::getId() {
-    return (DCDC);
+    Device::handleTick(); //kick the ball up to papa
 }
 
 DeviceType DCDCController::getType()
@@ -121,12 +79,23 @@ DeviceType DCDCController::getType()
     return (DeviceType::DEVICE_DCDC);
 }
 
-uint32_t DCDCController::getTickInterval()
+float DCDCController::getOutputVoltage()
 {
-    return CFG_TICK_INTERVAL_DCDC;
+    return outputVoltage;
 }
 
-void DCDCController::loadConfiguration() {
+float DCDCController::getOutputCurrent()
+{
+    return outputCurrent;
+}
+
+float DCDCController::getTemperature()
+{
+    return deviceTemperature;
+}
+
+void DCDCController::loadConfiguration()
+{
     DCDCConfiguration *config = (DCDCConfiguration *)getConfiguration();
 
     if (!config) {
@@ -135,18 +104,22 @@ void DCDCController::loadConfiguration() {
     }
 
     Device::loadConfiguration(); // call parent
+
+    prefsHandler->read("TargetVoltage", &config->targetLowVoltage, 13.5f);
+    prefsHandler->read("ReqHVReady", &config->requireHVReady, 1);
+    prefsHandler->read("EnablePin", &config->enablePin, 255);
 }
 
-void DCDCController::saveConfiguration() {
-    Device::saveConfiguration();
-}
-
-void DCDCController::timestamp()
+void DCDCController::saveConfiguration()
 {
-    milliseconds = (int) (millis()/1) %1000 ;
-    seconds = (int) (millis() / 1000) % 60 ;
-    minutes = (int) ((millis() / (1000*60)) % 60);
-    hours   = (int) ((millis() / (1000*60*60)) % 24);
+    DCDCConfiguration *config = (DCDCConfiguration *)getConfiguration();
+
+    Device::saveConfiguration();
+
+    prefsHandler->write("TargetVoltage", config->targetLowVoltage);
+    prefsHandler->write("ReqHVReady", config->requireHVReady);
+    prefsHandler->write("EnablePin", config->enablePin);    
+
+    prefsHandler->saveChecksum();
 }
 
-DCDCController dcdc;

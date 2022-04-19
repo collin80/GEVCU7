@@ -89,6 +89,49 @@ void MotorController::setup() {
 
     statusBitfield.bitfield = 0;
 
+    StatusEntry stat;
+    //        name       var         type              prevVal  obj
+    stat = {"MC_Ready", &ready, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_Running", &running, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_Faulted", &faulted, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_Warning", &warning, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_Gear", &selectedGear, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_PowerMode", &powerMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_OpState", &operationState, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_ThrottleReq", &throttleRequested, CFG_ENTRY_VAR_TYPE::INT16, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_SpeedReq", &speedRequested, CFG_ENTRY_VAR_TYPE::INT16, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_SpeedAct", &speedActual, CFG_ENTRY_VAR_TYPE::INT16, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_TorqueReq", &torqueRequested, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_TorqueAct", &torqueActual, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_TorqueMax", &torqueAvailable, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_DCVoltage", &dcVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_DCCurrent", &dcCurrent, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_ACCurrent", &acCurrent, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_MechPower", &mechanicalPower, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_MotorTemp", &temperatureMotor, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_InverterTemp", &temperatureInverter, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"MC_SysTemp", &temperatureSystem, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+
     Device::setup();
 }
 

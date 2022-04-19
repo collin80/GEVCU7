@@ -83,6 +83,7 @@ private:
     PRECHARGE_STATE state;
     uint32_t prechargeBeginTime;
     uint16_t targetVoltage;
+    bool isPrecharged;
 };
 
 #endif
