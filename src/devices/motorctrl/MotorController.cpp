@@ -404,7 +404,7 @@ void MotorController::saveConfiguration() {
     
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
-    loadConfiguration();
+    //loadConfiguration();
 }
 
 

@@ -44,6 +44,7 @@
  */
 class DmocMotorControllerConfiguration : public MotorControllerConfiguration {
 public:
+    uint8_t canbusNum;
 };
 
 class DmocMotorController: public MotorController, CanObserver {

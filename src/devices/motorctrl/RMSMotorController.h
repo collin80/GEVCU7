@@ -42,6 +42,7 @@
  */
 class RMSMotorControllerConfiguration : public MotorControllerConfiguration {
 public:
+    uint8_t canbusNum;
 };
 
 class RMSMotorController: public MotorController, CanObserver {

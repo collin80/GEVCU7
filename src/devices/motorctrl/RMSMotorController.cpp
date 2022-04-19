@@ -61,8 +61,17 @@ void RMSMotorController::setup()
 
     MotorController::setup(); // run the parent class version of this function
 
+    RMSMotorControllerConfiguration *config = (RMSMotorControllerConfiguration *)getConfiguration();
+
+    ConfigEntry entry;
+    //        cfgName          helpText                              variable ref        Type                   Min Max Precision Funct
+    entry = {"RMS-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+
+    setAttachedCANBus(config->canbusNum);
+
     //allow through 0xA0 through 0xAF	
-    canHandlerIsolated.attach(this, 0x0A0, 0x7f0, false);
+    attachedCANBus->attach(this, 0x0A0, 0x7f0, false);
 
     operationState = ENABLE;
     selectedGear = NEUTRAL;
@@ -553,14 +562,15 @@ void RMSMotorController::sendCmdFrame()
     output.buf[1] = (torqueCommand & 0xFF00) >> 8;  //Stow torque command in bytes 0 and 1.
     output.buf[0] = (torqueCommand & 0x00FF);
     
-    canHandlerIsolated.sendFrame(output);  //Mail it.
+    attachedCANBus->sendFrame(output);  //Mail it.
 
     Logger::debug("CAN Command Frame: %X  %X  %X  %X  %X  %X  %X  %X",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],
 				  output.buf[5],output.buf[6],output.buf[7]);
 }
 
-DeviceId RMSMotorController::getId() {
+DeviceId RMSMotorController::getId()
+{
     return (RINEHARTINV);
 }
 
@@ -569,7 +579,8 @@ uint32_t RMSMotorController::getTickInterval()
     return CFG_TICK_INTERVAL_MOTOR_CONTROLLER;
 }
 
-void RMSMotorController::loadConfiguration() {
+void RMSMotorController::loadConfiguration()
+{
     RMSMotorControllerConfiguration *config = (RMSMotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
@@ -578,9 +589,16 @@ void RMSMotorController::loadConfiguration() {
     }
 
     MotorController::loadConfiguration(); // call parent
+
+    prefsHandler->read("CanbusNum", &config->canbusNum, 1);
 }
 
-void RMSMotorController::saveConfiguration() {
+void RMSMotorController::saveConfiguration()
+{
+    RMSMotorControllerConfiguration *config = (RMSMotorControllerConfiguration *)getConfiguration();
+    
+    prefsHandler->write("CanbusNum", config->canbusNum);
+
     MotorController::saveConfiguration();
 }
 

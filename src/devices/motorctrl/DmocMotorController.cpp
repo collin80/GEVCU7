@@ -72,6 +72,13 @@ void DmocMotorController::setup() {
     loadConfiguration();
     MotorController::setup(); // run the parent class version of this function
 
+    DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
+
+    ConfigEntry entry;
+    //        cfgName          helpText                               variable ref        Type                   Min Max Precision Funct
+    entry = {"DMOC-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+
     StatusEntry stat;
     //        name       var         type              prevVal  obj
     stat = {"MC_ActualState", &actualState, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
@@ -80,6 +87,8 @@ void DmocMotorController::setup() {
     deviceManager.addStatusEntry(stat);
     stat = {"MC_torqueCmd", &torqueCommand, CFG_ENTRY_VAR_TYPE::UINT16, 0, this};
     deviceManager.addStatusEntry(stat);
+
+    setAttachedCANBus(config->canbusNum);
 
     // register ourselves as observer of 0x23x and 0x65x can frames
     attachedCANBus->attach(this, 0x230, 0x7f0, false);
@@ -473,9 +482,20 @@ void DmocMotorController::loadConfiguration() {
     }
 
     MotorController::loadConfiguration(); // call parent
+
+    prefsHandler->read("CanbusNum", &config->canbusNum, 1);
 }
 
 void DmocMotorController::saveConfiguration() {
+    DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
+
+    if (!config) {
+        config = new DmocMotorControllerConfiguration();
+        setConfiguration(config);
+    }
+
+    prefsHandler->write("CanbusNum", config->canbusNum);
+
     MotorController::saveConfiguration();
 }
 
