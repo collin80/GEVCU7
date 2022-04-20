@@ -51,6 +51,11 @@ namespace LED
 	};
 }
 
+class PowerKPCANIODeviceConfiguration: public CanIODeviceConfiguration
+{
+public:
+};
+
 class PowerkeyPad : public CANIODevice
 {
 public:
@@ -69,6 +74,8 @@ public:
 	void unlockLatch(int which);
 	void sendAutoStart();
 
+    void loadConfiguration();
+    void saveConfiguration();
 	void setup();
     void earlyInit();
 

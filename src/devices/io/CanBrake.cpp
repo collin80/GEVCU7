@@ -52,10 +52,20 @@ void CanBrake::setup() {
     loadConfiguration();
     Throttle::setup();
 
+    CanBrakeConfiguration *config = (CanBrakeConfiguration *)getConfiguration();
+
+    ConfigEntry entry;
+    //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
+    entry = {"CANBRAKE-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"CANBRAKE-CARTYPE", "Set CAN pedal type (1=Volvo S80 Gasoline, 2=Volvo V50 Diesel)", &config->carType, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+
+    setAttachedCANBus(config->canbusNum);
+
     requestFrame.len = 0x08;
     requestFrame.flags.extended = 0x00;
 
-    CanBrakeConfiguration *config = (CanBrakeConfiguration *)getConfiguration();
     switch (config->carType) {
     case Volvo_S80_Gas:
         // Request: dlc=0x8 fid=0x760 id=0x760 ide=0x0 rtr=0x0 data=0x03,0x22,0x2B,0x0D,0x00,0x00,0x00,0x00 (vida: [0x00, 0x00, 0x07, 0x60, 0x22, 0x2B, 0x0D])
@@ -79,7 +89,7 @@ void CanBrake::setup() {
         Logger::error(CANBRAKEPEDAL, "no valid car type defined.");
     }
 
-    canHandlerBus1.attach(this, responseId, responseMask, responseExtended);
+    attachedCANBus->attach(this, responseId, responseMask, responseExtended);
     tickHandler.attach(this, CFG_TICK_INTERVAL_CAN_THROTTLE);
 }
 
@@ -90,7 +100,7 @@ void CanBrake::setup() {
 void CanBrake::handleTick() {
     Throttle::handleTick(); // Call parent handleTick
 
-    canHandlerBus1.sendFrame(requestFrame);
+    attachedCANBus->sendFrame(requestFrame);
 
     if (ticksNoResponse < 255) // make sure it doesn't overflow
         ticksNoResponse++;
@@ -109,7 +119,7 @@ void CanBrake::handleCanFrame(const CAN_message_t &frame) {
             rawSignal.input1 = frame.buf[5];
             break;
         case Volvo_V50_Diesel:
-//				rawSignal.input1 = (frame->data.bytes[5] + 1) * frame->data.bytes[6];
+				rawSignal.input1 = (frame.buf[5] + 1) * frame.buf[6];
             break;
         }
         ticksNoResponse = 0;
@@ -203,6 +213,7 @@ void CanBrake::loadConfiguration() {
         prefsHandler->read("BrakeMin1", &config->minimumLevel1, 2);
         prefsHandler->read("BrakeMax1", &config->maximumLevel1, 255);
         prefsHandler->read("BrakeCarType", &config->carType, Volvo_S80_Gas);
+        prefsHandler->read("CanbusNum", &config->canbusNum, 1);
     Logger::debug(CANBRAKEPEDAL, "T1 MIN: %i MAX: %i Type: %d", config->minimumLevel1, config->maximumLevel1, config->carType);
 }
 
@@ -217,6 +228,7 @@ void CanBrake::saveConfiguration() {
     prefsHandler->write("BrakeMin1", config->minimumLevel1);
     prefsHandler->write("BrakeMax1", config->maximumLevel1);
     prefsHandler->write("BrakeCarType", config->carType);
+    prefsHandler->write("CanbusNum", config->canbusNum);
     prefsHandler->saveChecksum();
 }
 

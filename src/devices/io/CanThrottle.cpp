@@ -52,10 +52,20 @@ void CanThrottle::setup() {
     loadConfiguration();
     Throttle::setup();
 
+    CanThrottleConfiguration *config = (CanThrottleConfiguration *)getConfiguration();
+
+    ConfigEntry entry;
+    //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
+    entry = {"CANTHROT-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"CANTHROT-CARTYPE", "Set CAN pedal type (1=Volvo S80 Gasoline, 2=Volvo V50 Diesel)", &config->carType, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+
+    setAttachedCANBus(config->canbusNum);
+
     requestFrame.len = 0x08;
     requestFrame.flags.extended = 0x00;
 
-    CanThrottleConfiguration *config = (CanThrottleConfiguration *)getConfiguration();
     switch (config->carType) {
     case Volvo_S80_Gas:
         // Request: dlc=0x08 fid=0x7e0 id=0x7e0 ide=0x00 rtr=0x00 data=0x03,0x22,0xEE,0xCB,0x00,0x00,0x00,0x00 (vida: [0x00, 0x00, 0x07, 0xe0, 0x22, 0xee, 0xcb])
@@ -81,7 +91,7 @@ void CanThrottle::setup() {
         Logger::error(CANACCELPEDAL, "no valid car type defined.");
     }
 
-    canHandlerBus1.attach(this, responseId, responseMask, responseExtended);
+    attachedCANBus->attach(this, responseId, responseMask, responseExtended);
     tickHandler.attach(this, CFG_TICK_INTERVAL_CAN_THROTTLE);
 }
 
@@ -92,7 +102,7 @@ void CanThrottle::setup() {
 void CanThrottle::handleTick() {
     Throttle::handleTick(); // Call parent handleTick
 
-    canHandlerBus1.sendFrame(requestFrame);
+    attachedCANBus->sendFrame(requestFrame);
 
     if (ticksNoResponse < 255) // make sure it doesn't overflow
         ticksNoResponse++;
@@ -177,6 +187,7 @@ void CanThrottle::loadConfiguration() {
         prefsHandler->read("ThrottleMin1", &config->minimumLevel1, 400);
         prefsHandler->read("ThrottleMax1", &config->maximumLevel1, 1800);
         prefsHandler->read("ThrottleCarType", &config->carType, Volvo_S80_Gas);
+        prefsHandler->read("CanbusNum", &config->canbusNum, 1);
     Logger::debug(CANACCELPEDAL, "T1 MIN: %i MAX: %i Type: %d", config->minimumLevel1, config->maximumLevel1, config->carType);
 }
 
@@ -191,6 +202,7 @@ void CanThrottle::saveConfiguration() {
     prefsHandler->write("ThrottleMin1", config->minimumLevel1);
     prefsHandler->write("ThrottleMax1", config->maximumLevel1);
     prefsHandler->write("ThrottleCarType", config->carType);
+    prefsHandler->write("CanbusNum", config->canbusNum);
     prefsHandler->saveChecksum();
 }
 

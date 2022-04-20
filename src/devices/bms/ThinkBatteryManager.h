@@ -39,6 +39,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define THINKBMS 0x2000
 #define CFG_TICK_INTERVAL_BMS_THINK                 500000
 
+class ThinkBatteryManagerConfiguration : public BatteryManagerConfiguration
+{
+public:
+    uint8_t canbusNum;
+};
+
 class ThinkBatteryManager : public BatteryManager, CanObserver
 {
 public:
@@ -53,6 +59,10 @@ public:
     bool hasTemperatures();
     bool isChargeOK();
     bool isDischargeOK();
+
+    virtual void loadConfiguration();
+    virtual void saveConfiguration();
+
 protected:
 private:
     void sendKeepAlive();

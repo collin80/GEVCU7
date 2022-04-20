@@ -39,7 +39,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define CFG_TICK_INTERVAL_CAN_THROTTLE              40000
 
 enum CanCarType {
-    unknowkn = 0x00,
+    unknown = 0x00,
     Volvo_S80_Gas = 0x01,
     Volvo_V50_Diesel = 0x02
 };
@@ -47,7 +47,8 @@ enum CanCarType {
 class CanThrottleConfiguration : public ThrottleConfiguration {
 public:
     uint16_t minimumLevel1, maximumLevel1; // values for when the pedal is at its min and max
-    uint16_t carType; // the type of car, so we know how to interpret which bytes
+    uint8_t carType; // the type of car, so we know how to interpret which bytes
+    uint8_t canbusNum;
 };
 
 class CanThrottle: public Throttle, CanObserver {

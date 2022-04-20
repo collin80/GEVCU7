@@ -53,7 +53,6 @@ After the whole thing is buffered in upper flash we get the signal that firmware
 we stop everything and copy the firmware from the buffer to real flash storage then immediately reboot.Since the code
 that does this is RAM resident this should work without crashing anything. 
 
-
 */
 
 //bouncy bounce. Call the member function and that's all.
@@ -204,7 +203,7 @@ void UDSController::setup() {
     cfgEntries.push_back(entry);
     entry = {"UDS_BROADCAST", "Should GEVCU listen on broadcast address? (0=No 1=Yes)", &config->listenBroadcast, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"UDS_BUS", "Listen on which bus? CAN1=1, CAN2=2, CAN3=3", &config->udsBus, CFG_ENTRY_VAR_TYPE::BYTE, 1, 3, 0, nullptr};
+    entry = {"UDS_BUS", "Listen on which bus? CAN0=1, CAN1=1, CAN2=2", &config->udsBus, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
     cfgEntries.push_back(entry);
 
     udsIsoTPTargetted.begin();

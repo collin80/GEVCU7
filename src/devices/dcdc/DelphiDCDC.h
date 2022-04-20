@@ -45,6 +45,7 @@
  */
 class DelphiDCDCConfiguration : public DCDCConfiguration {
 public:
+    uint8_t canbusNum;
 };
 
 class DelphiDCDCController: public DCDCController, CanObserver {

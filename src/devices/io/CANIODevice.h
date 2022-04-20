@@ -34,6 +34,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../DeviceTypes.h"
 #include "../../CanHandler.h"
 
+class CanIODeviceConfiguration : public DeviceConfiguration {
+public:
+    uint8_t canbusNum;
+};
+
 class CANIODevice : public Device, public CanObserver
 {
 public:
@@ -59,6 +64,8 @@ public:
     void tearDown();
     void handleCanFrame(const CAN_message_t &);
     void handleMessage(uint32_t, void*);
+    void loadConfiguration();
+    void saveConfiguration();
     DeviceType getType();    
 
 protected:

@@ -45,10 +45,21 @@ void ThinkBatteryManager::setup() {
 
     Logger::info("add device: Th!nk City BMS (id: %X, %X)", THINKBMS, this);
 
+    loadConfiguration();
+
     BatteryManager::setup(); // run the parent class version of this function
 
+    ThinkBatteryManagerConfiguration *config = (ThinkBatteryManagerConfiguration *)getConfiguration();
+
+    ConfigEntry entry;
+    //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
+    entry = {"THINK-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+
+    setAttachedCANBus(config->canbusNum);
+
     //Relevant BMS messages are 0x300 - 0x30F
-    canHandlerBus0.attach(this, 0x300, 0x7f0, false);
+    attachedCANBus->attach(this, 0x300, 0x7f0, false);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_THINK);
 }
@@ -158,11 +169,11 @@ void ThinkBatteryManager::sendKeepAlive()
     output.id = 0x310;
     output.flags.extended = 0; //standard frame
     for (int i = 0; i < 8; i++) output.buf[i] = 0;
-    canHandlerBus0.sendFrame(output);
+    attachedCANBus->sendFrame(output);
 
     output.id = 0x311;
     output.len = 2;
-    canHandlerBus0.sendFrame(output);
+    attachedCANBus->sendFrame(output);
 }
 
 DeviceId ThinkBatteryManager::getId()
@@ -193,6 +204,30 @@ bool ThinkBatteryManager::isChargeOK()
 bool ThinkBatteryManager::isDischargeOK()
 {
     return allowDischarge;
+}
+
+void ThinkBatteryManager::loadConfiguration() {
+    ThinkBatteryManagerConfiguration *config = (ThinkBatteryManagerConfiguration *)getConfiguration();
+
+    if (!config) {
+        config = new ThinkBatteryManagerConfiguration();
+        setConfiguration(config);
+    }
+
+    BatteryManager::loadConfiguration(); // call parent
+
+    prefsHandler->read("CanbusNum", &config->canbusNum, 1);
+}
+
+void ThinkBatteryManager::saveConfiguration() {
+    ThinkBatteryManagerConfiguration *config = (ThinkBatteryManagerConfiguration *)getConfiguration();
+
+    if (!config) {
+        config = new ThinkBatteryManagerConfiguration();
+        setConfiguration(config);
+    }
+    prefsHandler->write("CanbusNum", config->canbusNum);
+    BatteryManager::saveConfiguration();
 }
 
 ThinkBatteryManager thinkBMS;

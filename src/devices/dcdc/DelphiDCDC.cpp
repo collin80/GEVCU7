@@ -27,18 +27,26 @@ void DelphiDCDCController::setup()
     loadConfiguration();
     DCDCController::setup(); // run the parent class version of this function
 
-    canHandlerBus1.attach(this, 0x1D5, 0x7ff, false);
+    DelphiDCDCConfiguration *config = (DelphiDCDCConfiguration *)getConfiguration();
+
+    ConfigEntry entry;
+    //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
+    entry = {"DELPHIDCDC-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+
+    setAttachedCANBus(config->canbusNum);
+
+    attachedCANBus->attach(this, 0x1D5, 0x7ff, false);
     //Watch for 0x1D5 messages from Delphi converter
     tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
 }
 
 
-void DelphiDCDCController::handleTick() {
-
+void DelphiDCDCController::handleTick()
+{
     DCDCController::handleTick(); //kick the ball up to papa
 
     sendCmd();   //Send our Delphi voltage control command
-
 }
 
 
@@ -74,7 +82,7 @@ void DelphiDCDCController::sendCmd()
     output.buf[6] = 0;
     output.buf[7] = 0x00;
 
-    canHandlerBus1.sendFrame(output);
+    attachedCANBus->sendFrame(output);
     timestamp();
     Logger::debug("Delphi DC-DC cmd: %X %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
@@ -98,9 +106,18 @@ void DelphiDCDCController::loadConfiguration() {
     }
 
     DCDCController::loadConfiguration(); // call parent
+
+    prefsHandler->read("CanbusNum", &config->canbusNum, 1);
 }
 
 void DelphiDCDCController::saveConfiguration() {
+    DelphiDCDCConfiguration *config = (DelphiDCDCConfiguration *)getConfiguration();
+
+    if (!config) {
+        config = new DelphiDCDCConfiguration();
+        setConfiguration(config);
+    }
+    prefsHandler->write("CanbusNum", config->canbusNum);
     DCDCController::saveConfiguration();
 }
 

@@ -35,7 +35,16 @@ void PowerkeyPad::setup()
 
     loadConfiguration();
 
-    canHandlerBus1.attach(this, deviceID, 0x7F, false); //for canopen devices the ID and mask passed don't actually mean a thing
+    PowerKPCANIODeviceConfiguration *config = (PowerKPCANIODeviceConfiguration *)getConfiguration();
+
+    ConfigEntry entry;
+    //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
+    entry = {"THINK-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+
+    setAttachedCANBus(config->canbusNum);
+
+    attachedCANBus->attach(this, deviceID, 0x7F, false); //for canopen devices the ID and mask passed don't actually mean a thing
 	
 	//we inherited these methods from CanObserver - they allow this class to receive messages automatically routed and interpreted as canopen
 	setNodeID(deviceID);
@@ -96,7 +105,6 @@ void PowerkeyPad::handleSDOResponse(SDO_FRAME &frame)
 void PowerkeyPad::handleMessage(uint32_t msgType, void* data)
 {
 	CANIODevice::handleMessage(msgType, data);
-
 }
 
 DeviceId PowerkeyPad::getId()
@@ -123,7 +131,7 @@ void PowerkeyPad::sendAutoStart()
 	autoStartOut.buf[5] = 1;
 	autoStartOut.buf[6] = 0;
 	autoStartOut.buf[7] = 0;
-	canHandlerBus1.sendFrame(autoStartOut);
+	attachedCANBus->sendFrame(autoStartOut);
 }
 
 /*
@@ -234,7 +242,7 @@ void PowerkeyPad::sendLEDBatch()
 		}
 	}
 	Logger::debug("LED Batch: %x %x %x", data[0], data[1], data[2]);
-	canHandlerBus1.sendPDOMessage(0x200 + deviceID, 8, data);
+	attachedCANBus->sendPDOMessage(0x200 + deviceID, 8, data);
 }
 
 LED::LEDTYPE PowerkeyPad::getLEDState(int which)
@@ -243,6 +251,30 @@ LED::LEDTYPE PowerkeyPad::getLEDState(int which)
 	if (which >= numDigitalInputs) return LED::OFF; //there are as many LEDs as there are buttons
 
 	return LEDState[which];
+}
+
+void PowerkeyPad::loadConfiguration() {
+    PowerKPCANIODeviceConfiguration *config = (PowerKPCANIODeviceConfiguration *)getConfiguration();
+
+    if (!config) {
+        config = new PowerKPCANIODeviceConfiguration();
+        setConfiguration(config);
+    }
+
+    CANIODevice::loadConfiguration(); // call parent
+
+    prefsHandler->read("CanbusNum", &config->canbusNum, 1);
+}
+
+void PowerkeyPad::saveConfiguration() {
+    PowerKPCANIODeviceConfiguration *config = (PowerKPCANIODeviceConfiguration *)getConfiguration();
+
+    if (!config) {
+        config = new PowerKPCANIODeviceConfiguration();
+        setConfiguration(config);
+    }
+    prefsHandler->write("CanbusNum", config->canbusNum);
+    CANIODevice::saveConfiguration();
 }
 
 PowerkeyPad powerkey;

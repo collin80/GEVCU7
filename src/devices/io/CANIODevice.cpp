@@ -92,3 +92,28 @@ void CANIODevice::setLatchingMode(int which, LatchModes::LATCHMODE mode)
 void CANIODevice::unlockLatch(int which)
 {
 }
+
+void CANIODevice::loadConfiguration() {
+    CanIODeviceConfiguration *config = (CanIODeviceConfiguration *) getConfiguration();
+
+    if (!config) { // as lowest sub-class make sure we have a config object
+        config = new CanIODeviceConfiguration();
+        setConfiguration(config);
+    }
+
+    Device::loadConfiguration(); // call parent
+
+    prefsHandler->read("CanbusNum", &config->canbusNum, 1);
+}
+
+/*
+ * Store the current configuration to EEPROM
+ */
+void CANIODevice::saveConfiguration() {
+    CanIODeviceConfiguration *config = (CanIODeviceConfiguration *) getConfiguration();
+
+    Device::saveConfiguration(); // call parent
+
+    prefsHandler->write("CanbusNum", config->canbusNum);
+    prefsHandler->saveChecksum();
+}
