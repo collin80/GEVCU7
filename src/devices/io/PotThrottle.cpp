@@ -254,8 +254,8 @@ void PotThrottle::loadConfiguration() {
         Logger::debug(POTACCELPEDAL, Constants::validChecksum);
         prefsHandler->read("ThrottleMin1", (uint16_t *)&config->minimumLevel1, 20);        
         prefsHandler->read("ThrottleMax1", (uint16_t *)&config->maximumLevel1, 3150);
-        prefsHandler->read("ThrottleMin2", (uint16_t *)&config->minimumLevel1, 0);        
-        prefsHandler->read("ThrottleMax2", (uint16_t *)&config->maximumLevel1, 0);
+        prefsHandler->read("ThrottleMin2", (uint16_t *)&config->minimumLevel2, 0);        
+        prefsHandler->read("ThrottleMax2", (uint16_t *)&config->maximumLevel2, 0);
         prefsHandler->read("NumThrottles", &config->numberPotMeters, 1);
         prefsHandler->read("ThrottleType", &config->throttleSubType, 1);
         prefsHandler->read("ADC1", &config->AdcPin1, 0);
