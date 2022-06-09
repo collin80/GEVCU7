@@ -283,8 +283,8 @@ boolean Logger::isDebug() {
  *
  */
 void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list args) {
-    //lastLogTime = millis();
-    lastLogTime = micros();
+    lastLogTime = millis();
+    uint32_t thisTime = micros();
     String outputString;// = String(lastLogTime) + " - ";
 
     switch (level) {
@@ -312,7 +312,7 @@ void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list 
         break;
     }
     char buff[200];
-    snprintf(buff, 200, "(%f) ", lastLogTime / 1000000.0f);
+    snprintf(buff, 200, "(%f) ", thisTime / 1000000.0f);
     outputString += buff;
 
     if (deviceId)
