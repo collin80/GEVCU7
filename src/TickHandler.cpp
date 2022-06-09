@@ -37,16 +37,15 @@ int timer;
 //we're using up to 9 timers and they are defined here so that they can
 //explicitly be set to the various hardware timers. This is used to spread out
 //which timers are used and to allow a wide range of max durations
-Timer t1(GPT1);
-Timer t2(GPT2);
-Timer t3(TMR4);
-Timer t4(TMR4);
-Timer t5(PIT);
-Timer t6(TCK); //these TCK timers can be efficient cycle-wise but
-Timer t7(TCK); //they require that the yield() function is called
-Timer t8(TCK); //which makes them sensitive to long running tasks
-Timer t9(TCK); //on the main execution thread. So, they're used last
-
+PeriodicTimer t1(GPT1); //[178.95697s max interval]
+PeriodicTimer t2(GPT2); //[178.95697s]
+PeriodicTimer t3(TMR4); //[55.922ms]
+PeriodicTimer t4(TMR4); //[55.922ms]
+PeriodicTimer t5(PIT);  //[178.95697s]
+PeriodicTimer t6(TCK);  //[5s] these TCK timers can be efficient cycle-wise but
+PeriodicTimer t7(TCK);  //[5s] they require that the yield() function is called
+PeriodicTimer t8(TCK);  //[5s] which makes them sensitive to long running tasks
+PeriodicTimer t9(TCK);  //[5s] on the main execution thread. So, they're used last
 
 void timerTrampoline(int tim) {
     tickHandler.handleInterrupt(tim);
@@ -82,9 +81,9 @@ void TickHandler::setup()
 {
     for (int i = 0; i < NUM_TIMERS; i++)
     {
-        timers[i]->begin(emptyTimerInt, 100000);
-        timerEntry[i].maxInterval = (long)(timers[i]->getMaxPeriod() * 1000000.0);
-        //Logger::console("Timer %i max interval is: %i", i, timerEntry[i].maxInterval);
+        timers[i]->begin(emptyTimerInt, 100000, false); //the last param false means "don't start it"
+        timerEntry[i].maxInterval = (uint64_t)(timers[i]->getMaxPeriod() * 1000000.0); //getMaxPeriod returns value in seconds
+        //Logger::console("Timer %i max interval is: %lu", i, timerEntry[i].maxInterval);
         timers[i]->stop(); //don't keep idle timers running
     }
 }
@@ -101,7 +100,7 @@ void TickHandler::setup()
 void TickHandler::attach(TickObserver* observer, uint32_t interval) {
     timer = findTimer(interval);
     if (timer == -1) {
-        timer = findTimer(0);	// no timer with given tick interval exist -> look for unused (interval == 0)
+        timer = findFreeTimer(interval);	// no timer with given tick interval exist -> look for unused (interval == 0)
         if (timer == -1) {
             Logger::error("No free timer available for interval=%d", interval);
             return;
@@ -125,34 +124,33 @@ void TickHandler::attach(TickObserver* observer, uint32_t interval) {
     switch (timer)
     {
     case 0:
-        timers[0]->beginPeriodic([]() { timerTrampoline(0); }, interval);
+        timers[0]->begin([]() { timerTrampoline(0); }, interval);
         break;
     case 1:
-        timers[1]->beginPeriodic([]() { timerTrampoline(1); }, interval);
+        timers[1]->begin([]() { timerTrampoline(1); }, interval);
         break;
     case 2:
-        timers[2]->beginPeriodic([]() { timerTrampoline(2); }, interval);
+        timers[2]->begin([]() { timerTrampoline(2); }, interval);
         break;
     case 3:
-        timers[3]->beginPeriodic([]() { timerTrampoline(3); }, interval);
+        timers[3]->begin([]() { timerTrampoline(3); }, interval);
         break;
     case 4:
-        timers[4]->beginPeriodic([]() { timerTrampoline(4); }, interval);
+        timers[4]->begin([]() { timerTrampoline(4); }, interval);
         break;
     case 5:
-        timers[5]->beginPeriodic([]() { timerTrampoline(5); }, interval);
+        timers[5]->begin([]() { timerTrampoline(5); }, interval);
         break;
     case 6:
-        timers[6]->beginPeriodic([]() { timerTrampoline(6); }, interval);
+        timers[6]->begin([]() { timerTrampoline(6); }, interval);
         break;
     case 7:
-        timers[7]->beginPeriodic([]() { timerTrampoline(7); }, interval);
+        timers[7]->begin([]() { timerTrampoline(7); }, interval);
         break;
     case 8:
-        timers[8]->beginPeriodic([]() { timerTrampoline(8); }, interval);
+        timers[8]->begin([]() { timerTrampoline(8); }, interval);
         break;
     }
-    
 }
 
 /**
@@ -174,9 +172,30 @@ void TickHandler::detach(TickObserver* observer) {
  * Find a timer with a specified interval.
  */
 int TickHandler::findTimer(long interval) {
-    for (int i = 0; i < NUM_TIMERS; i++) {
+    for (int i = 0; i < NUM_TIMERS; i++)
+    {
         if (timerEntry[i].interval == interval)
             return i;
+    }
+    return -1;
+}
+
+//find a free slot that supports the requested interval
+//does not currently do anything about potential for a timer
+//to be a crappy resolution for a given interval. For instance,
+//a timer that supports 1000 days is probably not the same timer
+//that would be best to handle a 10ms interval. But, the library
+//doesn't really expose a minimum granularity for each timer...
+int TickHandler::findFreeTimer(long interval)
+{
+    for (int i = 0; i < NUM_TIMERS; i++)
+    {
+        //find empty timer entry
+        if (timerEntry[i].interval == 0)
+        {
+            //check to see if this timer supports the interval length we're asking for
+            if (interval <= timerEntry[i].maxInterval) return i;
+        }
     }
     return -1;
 }

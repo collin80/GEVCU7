@@ -62,7 +62,7 @@ protected:
 private:
     struct TimerEntry {
         long interval; // interval of timer in microseconds
-        long maxInterval; //maximum achieveable interval for this timer
+        uint64_t maxInterval; //maximum achieveable interval for this timer (in microseconds)
         TickObserver *observer[CFG_TIMER_NUM_OBSERVERS]; // array of pointers to observers with this interval
     };
     TimerEntry timerEntry[NUM_TIMERS]; // array of timer entries
@@ -72,9 +72,10 @@ private:
 #endif
     
     int findTimer(long interval);
+    int findFreeTimer(long interval);
     int findObserver(int timerNumber, TickObserver *observer);
 
-    Timer* timers[NUM_TIMERS];
+    PeriodicTimer* timers[NUM_TIMERS];
 };
 
 extern TickHandler tickHandler;
