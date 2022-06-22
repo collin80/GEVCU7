@@ -39,13 +39,16 @@ int timer;
 //which timers are used and to allow a wide range of max durations
 PeriodicTimer t1(GPT1); //[178.95697s max interval]
 PeriodicTimer t2(GPT2); //[178.95697s]
-PeriodicTimer t3(TMR4); //[55.922ms]
-PeriodicTimer t4(TMR4); //[55.922ms]
-PeriodicTimer t5(PIT);  //[178.95697s]
-PeriodicTimer t6(TCK);  //[5s] these TCK timers can be efficient cycle-wise but
-PeriodicTimer t7(TCK);  //[5s] they require that the yield() function is called
-PeriodicTimer t8(TCK);  //[5s] which makes them sensitive to long running tasks
-PeriodicTimer t9(TCK);  //[5s] on the main execution thread. So, they're used last
+PeriodicTimer t3(TMR4); //[55.922ms] - First three timers have PWM pins on them
+PeriodicTimer t4(TMR4); //[55.922ms] - However, GEVCU7 doesn't really do PWM so it might be OK if necessary
+PeriodicTimer t5(PIT);  //[178.95697s] - technically PIT has 4 channels but they all share an interrupt.
+PeriodicTimer t6(PIT);  //[178.95697s] - But that's handled in the library. We can actually register
+PeriodicTimer t7(PIT);  //[178.95697s] - different handlers for each timer.
+PeriodicTimer t8(PIT);  //[178.95697s]
+PeriodicTimer t9(TCK);  //[5s] these TCK timers can be efficient cycle-wise but
+PeriodicTimer t10(TCK);  //[5s] they require that the yield() function is called
+PeriodicTimer t11(TCK);  //[5s] which makes them sensitive to long running tasks
+PeriodicTimer t12(TCK);  //[5s] on the main execution thread. So, they're used last
 
 void timerTrampoline(int tim) {
     tickHandler.handleInterrupt(tim);
@@ -66,6 +69,10 @@ TickHandler::TickHandler() {
     timers[6] = &t7;
     timers[7] = &t8;
     timers[8] = &t9;
+    timers[9] = &t10;
+    timers[10] = &t11;
+    timers[11] = &t12;
+
     for (int i = 0; i < NUM_TIMERS; i++) {
         timerEntry[i].interval = 0;
         for (int j = 0; j < CFG_TIMER_NUM_OBSERVERS; j++) {
@@ -149,6 +156,15 @@ void TickHandler::attach(TickObserver* observer, uint32_t interval) {
         break;
     case 8:
         timers[8]->begin([]() { timerTrampoline(8); }, interval);
+        break;
+    case 9:
+        timers[9]->begin([]() { timerTrampoline(9); }, interval);
+        break;
+    case 10:
+        timers[10]->begin([]() { timerTrampoline(10); }, interval);
+        break;
+    case 11:
+        timers[11]->begin([]() { timerTrampoline(11); }, interval);
         break;
     }
 }

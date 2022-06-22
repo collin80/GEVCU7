@@ -102,7 +102,7 @@ void Logger::loop()
  * 
  */
 void Logger::avalanche(const char *message, ...) {
-    if (sysConfig->logLevel > Avalanche)
+    if (sysConfig && (sysConfig->logLevel > Avalanche) )
         return;
     va_list args;
     va_start(args, message);
@@ -115,7 +115,7 @@ void Logger::avalanche(const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::avalanche(DeviceId deviceId, const char *message, ...) {
-    if (sysConfig->logLevel > Avalanche)
+    if (sysConfig && (sysConfig->logLevel > Avalanche) )
         return;
     va_list args;
     va_start(args, message);
@@ -129,7 +129,7 @@ void Logger::avalanche(DeviceId deviceId, const char *message, ...) {
  *
  */
 void Logger::debug(const char *message, ...) {
-    if (sysConfig->logLevel > Debug)
+    if (sysConfig && (sysConfig->logLevel > Debug) )
         return;
     va_list args;
     va_start(args, message);
@@ -142,7 +142,7 @@ void Logger::debug(const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::debug(DeviceId deviceId, const char *message, ...) {
-    if (sysConfig->logLevel > Debug)
+    if (sysConfig && (sysConfig->logLevel > Debug) )
         return;
     va_list args;
     va_start(args, message);
@@ -155,7 +155,7 @@ void Logger::debug(DeviceId deviceId, const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::info(const char *message, ...) {
-    if (sysConfig->logLevel > Info)
+    if (sysConfig && (sysConfig->logLevel > Info) )
         return;
     va_list args;
     va_start(args, message);
@@ -168,7 +168,7 @@ void Logger::info(const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::info(DeviceId deviceId, const char *message, ...) {
-    if (sysConfig->logLevel > Info)
+    if (sysConfig && (sysConfig->logLevel > Info) )
         return;
     va_list args;
     va_start(args, message);
@@ -181,7 +181,7 @@ void Logger::info(DeviceId deviceId, const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::warn(const char *message, ...) {
-    if (sysConfig->logLevel > Warn)
+    if (sysConfig && (sysConfig->logLevel > Warn) )
         return;
     va_list args;
     va_start(args, message);
@@ -194,7 +194,7 @@ void Logger::warn(const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::warn(DeviceId deviceId, const char *message, ...) {
-    if (sysConfig->logLevel > Warn)
+    if (sysConfig && (sysConfig->logLevel > Warn) )
         return;
     va_list args;
     va_start(args, message);
@@ -207,7 +207,7 @@ void Logger::warn(DeviceId deviceId, const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::error(const char *message, ...) {
-    if (sysConfig->logLevel > Error)
+    if (sysConfig && (sysConfig->logLevel > Error) )
         return;
     va_list args;
     va_start(args, message);
@@ -220,7 +220,7 @@ void Logger::error(const char *message, ...) {
  * printf() style, see Logger::log()
  */
 void Logger::error(DeviceId deviceId, const char *message, ...) {
-    if (sysConfig->logLevel > Error)
+    if (sysConfig && (sysConfig->logLevel > Error) )
         return;
     va_list args;
     va_start(args, message);
@@ -245,6 +245,7 @@ void Logger::console(const char *message, ...) {
  * Set the log level. Any output below the specified log level will be omitted.
  */
 void Logger::setLoglevel(LogLevel level) {
+    if (!sysConfig) return;
     sysConfig->logLevel = (int)level;
 }
 
@@ -252,6 +253,7 @@ void Logger::setLoglevel(LogLevel level) {
  * Retrieve the current log level.
  */
 Logger::LogLevel Logger::getLogLevel() {
+    if (!sysConfig) return Logger::Debug;
     return (Logger::LogLevel)(sysConfig->logLevel);
 }
 
@@ -273,6 +275,7 @@ uint32_t Logger::getLastLogTime() {
  * }
  */
 boolean Logger::isDebug() {
+    if (!sysConfig) return true;
     return (sysConfig->logLevel == Debug);
 }
 

@@ -36,8 +36,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using namespace TeensyTimerTool;
 
-//there are really 20 but setting a lower limit so we don't use them all up just for ticking
-#define NUM_TIMERS 9
+//its technically possible to register even more timers but the higher you go the more likely
+//you are to clobber timers being used by other things.
+#define NUM_TIMERS 12
 
 class TickObserver {
 public:
