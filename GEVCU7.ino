@@ -268,11 +268,11 @@ void setup() {
         //and flash them to the appropriate places if they exist.
         FsFile file;
         if (!file.open("GEVCU7.hex", O_READ)) {
-            Logger::debug("No teensy firmware to flash. Skipping.");
+            Serial.println("No teensy firmware to flash. Skipping.");
         }
         else
         {
-            Logger::info("Found teensy firmware. Flashing it");
+            Serial.println("Found teensy firmware. Flashing it");
             setup_flasherx();
             start_upgrade(&file);
             file.close();
