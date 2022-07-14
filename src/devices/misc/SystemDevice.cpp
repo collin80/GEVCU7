@@ -48,17 +48,12 @@ void SystemDevice::earlyInit()
 void SystemDevice::setup() {
     if (sysConfig != nullptr) return;
     Logger::info("add device: System (id: %X, %X)", SYSTEM, this);
-    delay(100);
 
     loadConfiguration();
     
-    delay(100);
-
     Device::setup(); //call base class
 
     SystemConfiguration *config = (SystemConfiguration *)getConfiguration();
-
-    delay(100);
 
     cfgEntries.reserve(25);
     char buff[20];

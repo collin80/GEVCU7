@@ -42,6 +42,46 @@ all three buses to SavvyCAN for debugging and analysis.
 D0 in documentation is Teensy Pin 4 and is connected to DIG_INT (interrupt from 16 way I/O expander)
 D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card is inserted when line is low)
 
+
+
+I'm thinking to convert the tick interface to instead run each device as a thread using TeensyThreads which comes
+with the TeensyDuino install. These threads can then be preempted if necessary which keeps device latency more 
+predictable as then no device can tie up the system for too long. But, threads are only going to really work with
+normal functions not member functions of classes. This might still work if the TickHandler class has a trampoline 
+function that takes a pointer to an object whose class derives from Device. Then the handleTick function can be called 
+appropriately. This would necessitate that actually there be a function (still not in a class) that does nothing but 
+wait for a specific amount of time then calls handleTick. Likewise, the message passing could be done this same basic 
+way by having a function that spins waiting for a message then dispatches it. But, TeensyThreads doesn't really 
+support that so it may be a poor choice.
+
+Another advantage of this idea is the ability for the system to have more threads that monitor things,
+do logging, etc. But, having multiple threads that can preempt means that a lot of things would need to be thread safe
+which currently are not. So, this might be a pretty big and daunting change to make.
+
+The currently existing scheme is basically cooperative multi-tasking as there's a timer tick queue and it is 
+dispatched in order and so devices get callbacks at interval and CAN data can more or less be immediately
+sent to the CAN handler for a given device. There also is already existing a message passing system. Nothing
+in the whole system has any sort of sychronization but since most everything is cooperatively tasked
+that may be OK. Even the CAN messages are really only dispatched by the events calls in the main loop. So, really
+nothing that a device driver would do should ever step on other code. It's a bit "icky" that everything is
+cooperatively tasked but we're talking about a 600MHz processor running pretty basic code. Your device driver should
+not be taking that many cycles. The only thing to really watch out for is to never use wait loops like the "delay"
+function. Don't delay for 500ms, come back later.
+
+There should be a way for the system to signal it wants to shut down and either stay down or reboot. In those cases,
+it should be possible for devices to render things safe. For instance, a motor controller driver would probably
+want to set the gear to neutral or park (as applicable. Obviously don't go into park when going 80MPH), a BMS
+might want to open contactors safely, etc. But, there is some level of priority here. First off, the inverter
+should shut down and quit trying to draw or source current. Also, DC/DC should stop working, then when as much
+current as possible is stopped we can open contactors. Then settings can be saved to EEPROM. But, this also brings
+up the question of shutdown type. Turning the key off is much different from crashing into a propane truck.
+This can also pave the way for allowing GEVCU7 to be on constantly and control the rest of the system intelligently.
+If it's always on then it could do safe shutdown then sleep and wake up when the key is turned back to on.
+But, what sort of sleep current could the board get to? It can turn off the ESP32 and the digital I/O chip doesn't
+really take much power. The CAN tranceivers will not turn off. Testing seems to suggest it can idle around 40ma
+and running it is 100ma or more. If a normal car battery is about 40ah then a 40ma draw will drain the battery
+dead in 1000 hours or about 41 days. It's probably not ideal to leave GEVCU7 running but still some support should
+exist because it overlaps with the need to safety shut down for other reasons.
 */
 
 #include "GEVCU.h"
@@ -59,6 +99,7 @@ D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card i
 #include "src/devices/esp32/gevcu_port.h"
 #include "src/FlasherX.h"
 #include "src/devices/misc/SystemDevice.h"
+#include "src/CrashHandler.h"
 
 // Use Teensy SDIO - SDIO is four bit and direct in hardware - it should be plenty fast
 #define SD_CONFIG  SdioConfig(FIFO_SDIO)
@@ -142,6 +183,7 @@ void sendTestCANFrames()
     output.id = 0x678;
     canHandlerBus2.sendFrame(output);
 
+/*
     delayMicroseconds(200);
 
     //now try sending a CAN-FD frame
@@ -155,6 +197,7 @@ void sendTestCANFrames()
     fd_out.len = 16;
     for (int l = 0; l < 16; l++) fd_out.buf[l] = l * 3;
     canHandlerBus2.sendFrameFD(fd_out);
+*/
 }
 
 void testGEVCUHardware()
@@ -231,6 +274,12 @@ void setup() {
 	digitalWrite(BLINK_LED, LOW);
     Serial.begin(1000000);
     SerialUSB1.begin(1000000);
+
+    //pretty early in boot we want to know if the previous try crashed
+    crashHandler.analyzeCrashDataOnStartup();
+
+    crashHandler.addBreadcrumb(ENCODE_BREAD("START"));
+
 	Serial.println(CFG_VERSION);
 	Serial.print("Build number: ");
 	Serial.println(CFG_BUILD_NUM);
@@ -315,19 +364,31 @@ void setup() {
 	Logger::info("SYSIO init ok");
     deviceManager.setup();
 
-	initializeDevices();
-    Logger::debug("Initialized all devices successfully!");
+    //if we crashed then do not initialize any of the devices this time around.
+    //This may not be the ideal solution but for testing it's OK right now.
+    //if (!crashHandler.bCrashed())
+    //{
+	    initializeDevices();
+    //    Logger::debug("Initialized all devices successfully!");
+    //}
+    //else
+   // {
+    //    Logger::warn("Enabled devices were not loaded because last boot crashed.");
+   // }
+
     serialConsole = new SerialConsole(memCache, heartbeat);
 	serialConsole->printMenu();
 	//btDevice = static_cast<ADAFRUITBLE *>(deviceManager.getDeviceByID(ADABLUE));
     //deviceManager.sendMessage(DEVICE_WIFI, ADABLUE, MSG_CONFIG_CHANGE, NULL); //Load config into BLE interface
 
 	Logger::info("System Ready");
+    crashHandler.addBreadcrumb(ENCODE_BREAD("BOOTD"));
 
     //just for testing obviously. Don't leave these uncommented.
-    sendTestCANFrames();
+    //sendTestCANFrames();
     //testGEVCUHardware();
-    deviceManager.printAllStatusEntries();
+    //deviceManager.printAllStatusEntries();
+    //*(volatile uint32_t *)0x30000000 = 0; // causes Data_Access_Violation if you uncomment it. Only for testing crash handler
 }
 
 //there really isn't much in the loop here. Most everything is done via interrupts and timer ticks. If you have
@@ -360,7 +421,12 @@ void loop() {
     wdt.feed(); //must feed the watchdog every so often or it'll get angry
 
     //obviously only for hardware testing. Disable for normal builds.
-    //sendTestCANFrames();
+    static uint32_t lastSentTest=0;
+    if (millis() - 1000 > lastSentTest)
+    {
+        sendTestCANFrames();
+        lastSentTest = millis();
+    }
     //testGEVCUHardware();
 }
 

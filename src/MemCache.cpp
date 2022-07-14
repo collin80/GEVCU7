@@ -444,6 +444,11 @@ void MemCache::nukeFromOrbit()
         delay(11);
         wdt.feed();
     }
+    //system should be forceably rebooted here to ensure nothing tries to write to eeprom
+    //or access anything.
+    //TODO: this is rather violent. In most cases there should be a soft shutdown where we try to signal everyone
+    //that the ship is about to sink.
+    REBOOT;
 }
 
 

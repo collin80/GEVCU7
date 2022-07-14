@@ -43,6 +43,7 @@ void PotThrottle::earlyInit()
  * Setup the device.
  */
 void PotThrottle::setup() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PTTHR") + 0);
     tickHandler.detach(this); // unregister from TickHandler first
 
     Logger::info("add device: PotThrottle (id: %X, %X)", POTACCELPEDAL, this);
@@ -81,6 +82,7 @@ void PotThrottle::setup() {
  * Process a timer event.
  */
 void PotThrottle::handleTick() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PTTHR") + 1);
     Throttle::handleTick(); // Call parent which controls the workflow
 }
 

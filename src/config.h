@@ -35,12 +35,16 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <FlexCAN_T4.h>
 
-#define CFG_BUILD_NUM	1072      //increment this every time a git commit is done. 
-#define CFG_VERSION "GEVCU 2021-12-02"
+#define CFG_BUILD_NUM	1080      //increment this every time a git commit is done. 
+#define CFG_VERSION "GEVCU 2022-07-08"
 
 #define portMEMORY_BARRIER()     __asm volatile ( "dmb" ::: "memory" )
 #define portDATA_SYNC_BARRIER()  __asm volatile ( "dsb" ::: "memory" )
 #define portINSTR_SYNC_BARRIER() __asm volatile ( "isb" )
+#define CPU_RESTART_ADDR	((uint32_t *)0xE000ED0C)
+#define CPU_RESTART_VAL		(0x5FA0004)
+#define REBOOT			(*CPU_RESTART_ADDR = CPU_RESTART_VAL)
+
 
 /*
  * SERIAL CONFIGURATION

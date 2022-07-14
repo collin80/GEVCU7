@@ -29,6 +29,7 @@ void PowerkeyPad::earlyInit()
 
 void PowerkeyPad::setup()
 {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PWRKY") + 0);
 	CANIODevice::setup();
 
 	Logger::debug(POWERKEYPRO, "Now setting up.");
@@ -39,7 +40,7 @@ void PowerkeyPad::setup()
 
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
-    entry = {"THINK-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    entry = {"POWERKEY-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
     cfgEntries.push_back(entry);
 
     setAttachedCANBus(config->canbusNum);
@@ -65,6 +66,7 @@ void PowerkeyPad::handleCanFrame(const CAN_message_t &)
 
 void PowerkeyPad::handlePDOFrame(CAN_message_t &frame)
 {	
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PWRKY") + 1);
 	if (frame.id == (0x180 + deviceID))
 	{
 		for (int bit = 0; bit < numDigitalInputs; bit++)
@@ -156,6 +158,7 @@ from the other powerkeypro library:
 */
 void PowerkeyPad::setAnalogOutput(int which, int value)
 {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PWRKY") + 2);
     Logger::debug("AnalogOut %i with value %i", which, value);
 	if (which == 0 && value == 1000)
 	{
@@ -226,6 +229,7 @@ void PowerkeyPad::setLEDState(int which, LED::LEDTYPE state)
 
 void PowerkeyPad::sendLEDBatch()
 {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PWRKY") + 3);
 	uint8_t data[8];
 	for (int i = 0; i < 8; i++) data[i] = 0;
 	for (int i = 0; i < 12; i++)

@@ -62,12 +62,14 @@ void ThinkBatteryManager::setup() {
     attachedCANBus->attach(this, 0x300, 0x7f0, false);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_THINK);
+    crashHandler.addBreadcrumb(ENCODE_BREAD("THBMS") + 0);
 }
 
 /*For all multibyte integers the format is MSB first, LSB last
 */
 void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
     int temp;
+    crashHandler.addBreadcrumb(ENCODE_BREAD("THBMS") + 1);
     switch (frame.id) {
     case 0x300: //Start up message
         //we're not really interested in much here except whether init worked.
@@ -152,6 +154,7 @@ void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
         	case 0x30B: //Serial # part 2
         */
     }
+    crashHandler.addBreadcrumb(ENCODE_BREAD("THBMS") + 2);
 }
 
 void ThinkBatteryManager::handleTick() {
@@ -174,6 +177,7 @@ void ThinkBatteryManager::sendKeepAlive()
     output.id = 0x311;
     output.len = 2;
     attachedCANBus->sendFrame(output);
+    crashHandler.addBreadcrumb(ENCODE_BREAD("THBMS") + 3);
 }
 
 DeviceId ThinkBatteryManager::getId()

@@ -46,6 +46,7 @@ void HeatCoolController::earlyInit()
  * Setup the device.
  */
 void HeatCoolController::setup() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("HVACC") + 0);
     tickHandler.detach(this); // unregister from TickHandler first
 
     Logger::info("add device: HeatCoolControl (id: %X, %X)", HEATCOOL, this);
@@ -109,6 +110,7 @@ void HeatCoolController::setup() {
  * Process a timer event. This is where you should be doing checks and updates. 
  */
 void HeatCoolController::handleTick() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("HVACC") + 1);
     Device::handleTick(); // Call parent which controls the workflow
     Logger::avalanche("HeatCool Tick Handler");
 

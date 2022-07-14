@@ -230,16 +230,19 @@ void ESP32Driver::setup()
     //the timing can be relaxed. It may be useful to directly catch the serial interrupt callback but then
     //code could be executing at any time. It's all around safer to have deterministic timing via the tick handler
     tickHandler.attach(this, 40000);
+    crashHandler.addBreadcrumb(ENCODE_BREAD("ESPTT") + 0);
 }
 
 void ESP32Driver::handleTick() {
 
     Device::handleTick(); //kick the ball up to papa
+    crashHandler.addBreadcrumb(ENCODE_BREAD("ESPTT") + 1);
 
     if (currState == ESP32NS::RESET)
     {
         if (desiredState == ESP32NS::NORMAL)
         {
+            //TODO: this is naughty code! No delays allowed! Refactor this to remove the delays (use state machine?)
             digitalWrite(ESP32_BOOT, HIGH);
             digitalWrite(ESP32_ENABLE, LOW);
             delay(40);
@@ -249,7 +252,7 @@ void ESP32Driver::handleTick() {
             currState = ESP32NS::NORMAL;
         }
     }
-
+    crashHandler.updateBreadcrumb(2); //nothing above would add a breadcrumb so update the existing one
 }
 
 //the serial callback is not actually interrupt driven but is called from yield()

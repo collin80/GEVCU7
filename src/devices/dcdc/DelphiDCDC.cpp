@@ -39,6 +39,7 @@ void DelphiDCDCController::setup()
     attachedCANBus->attach(this, 0x1D5, 0x7ff, false);
     //Watch for 0x1D5 messages from Delphi converter
     tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
+    crashHandler.addBreadcrumb(ENCODE_BREAD("DELPH") + 0);
 }
 
 
@@ -86,6 +87,7 @@ void DelphiDCDCController::sendCmd()
     timestamp();
     Logger::debug("Delphi DC-DC cmd: %X %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
+    crashHandler.addBreadcrumb(ENCODE_BREAD("DELPH") + 1);
 }
 
 DeviceId DelphiDCDCController::getId() {

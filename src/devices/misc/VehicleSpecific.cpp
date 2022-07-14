@@ -58,6 +58,7 @@ void VehicleSpecific::earlyInit()
  * Setup the device.
  */
 void VehicleSpecific::setup() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("VEHCL") + 0);
     tickHandler.detach(this); // unregister from TickHandler first
 
     Logger::info("add device: VehicleSpecific (id: %X, %X)", VEHICLESPECIFIC, this);
@@ -75,6 +76,7 @@ void VehicleSpecific::setup() {
  * function is called 10 times per second.
  */
 void VehicleSpecific::handleTick() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("VEHCL") + 1);
     Device::handleTick(); // Call parent which controls the workflow
     //Logger::avalanche("VS Tick Handler");
 

@@ -35,6 +35,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../PrefHandler.h"
 #include "../Sys_Messages.h"
 #include "../FaultHandler.h"
+#include "../CrashHandler.h"
 
 /*
  * A abstract class to hold device configuration. It is to be accessed

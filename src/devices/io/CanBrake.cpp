@@ -45,6 +45,7 @@ void CanBrake::earlyInit()
 }
 
 void CanBrake::setup() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("CNBRK") + 0);
     tickHandler.detach(this);
 
     Logger::info("add device: CanBrake (id: %X, %X)", CANBRAKEPEDAL, this);
@@ -98,12 +99,13 @@ void CanBrake::setup() {
  *
  */
 void CanBrake::handleTick() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("CNBRK") + 1);
     Throttle::handleTick(); // Call parent handleTick
 
     attachedCANBus->sendFrame(requestFrame);
 
     if (ticksNoResponse < 255) // make sure it doesn't overflow
-        ticksNoResponse++;
+        ticksNoResponse++;    
 }
 
 /*
@@ -111,6 +113,7 @@ void CanBrake::handleTick() {
  *
  */
 void CanBrake::handleCanFrame(const CAN_message_t &frame) {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("CNBRK") + 2);
     CanBrakeConfiguration *config = (CanBrakeConfiguration *)getConfiguration();
 
     if (frame.id == responseId) {

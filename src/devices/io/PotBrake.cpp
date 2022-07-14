@@ -44,6 +44,7 @@ void PotBrake::earlyInit()
  * Setup the device.
  */
 void PotBrake::setup() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PTBRK") + 0);
     tickHandler.detach(this); // unregister from TickHandler first
 
     Logger::info("add device: PotBrake (id: %X, %X)", POTBRAKEPEDAL, this);
@@ -75,6 +76,7 @@ void PotBrake::setup() {
  * Process a timer event.
  */
 void PotBrake::handleTick() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PTBRK") + 1);
     Throttle::handleTick(); // Call parent which controls the workflow
 }
 

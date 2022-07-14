@@ -46,6 +46,7 @@ void Precharger::earlyInit()
  * Setup the device.
  */
 void Precharger::setup() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PRECR") + 0);
     tickHandler.detach(this); // unregister from TickHandler first
 
     Logger::info("add device: Precharger (id: %X, %X)", PRECHARGER, this);
@@ -90,6 +91,7 @@ old status bitfield stuff from motorcontroller class. Should find a way to integ
  * Process a timer event. This is where you should be doing checks and updates. 
  */
 void Precharger::handleTick() {
+    crashHandler.addBreadcrumb(ENCODE_BREAD("PRECR") + 1);
     Device::handleTick(); // Call parent which controls the workflow
     //Logger::avalanche("Precharge Tick Handler");
 
