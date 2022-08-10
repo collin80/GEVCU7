@@ -105,7 +105,8 @@ exist because it overlaps with the need to safety shut down for other reasons.
 #define SD_CONFIG  SdioConfig(FIFO_SDIO)
 
 //if this is defined there is a large start up delay so you can see the start up messages. NOT for production!
-#define DEBUG_STARTUP_DELAY
+//#define DEBUG_STARTUP_DELAY
+
 //If this is defined then we will ignore the hardware sd inserted signal and just claim it's inserted. Required for first prototype.
 //Probably don't enable this on more recent hardware. Starting at the 2nd prototype the sdcard can properly be detected.
 //#define ASSUME_SDCARD_INSERTED
@@ -139,8 +140,6 @@ be necessary to switch the device handler to a singleton and have it automatical
 create itself on first access.
 So far, so good. It seems this functionality is working properly.
 */
-
-
 void initializeDevices() {
     //heartbeat is always enabled now
     heartbeat = new Heartbeat();
@@ -262,18 +261,16 @@ void setup() {
     digitalWrite(ESP32_ENABLE, LOW);
     digitalWrite(ESP32_BOOT, HIGH);
 
-#ifdef DEBUG_STARTUP_DELAY
-    for (int c = 0; c < 200; c++) {
-        delay(25);  //This delay lets you see startup.  But it breaks DMOC645 really badly.  You have to have comm quickly upon start up
-        wdt.feed();
-    }
-#endif
-
     Logger::setLoglevel((Logger::LogLevel)0); //force debugging logging on during early start up
        
 	digitalWrite(BLINK_LED, LOW);
+    //Serial.begin will cause the stack to wait until things are initialized (or 2 seconds)
+    //whichever is shorter. This basically gives you a 2 second delay upon start up but means
+    //you will see the early program output.
+#ifdef DEBUG_STARTUP_DELAY
     Serial.begin(1000000);
     SerialUSB1.begin(1000000);
+#endif
 
     //pretty early in boot we want to know if the previous try crashed
     crashHandler.analyzeCrashDataOnStartup();
@@ -421,12 +418,13 @@ void loop() {
     wdt.feed(); //must feed the watchdog every so often or it'll get angry
 
     //obviously only for hardware testing. Disable for normal builds.
+    /*
     static uint32_t lastSentTest=0;
     if (millis() - 1000 > lastSentTest)
     {
         sendTestCANFrames();
         lastSentTest = millis();
-    }
+    }*/
     //testGEVCUHardware();
 }
 
