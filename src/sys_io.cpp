@@ -53,6 +53,8 @@ SystemIO::SystemIO()
     numAnaOut = 0;
     pcaDigitalOutputCache = 0; //all outputs off by default
     adcMuxSelect = 0;
+
+    adc = new ADC(); // adc object;
 }
 
 void SystemIO::setup_ADC_params()
@@ -100,8 +102,20 @@ void SystemIO::setup() {
         digitalWrite(6, LOW); //both off by default to select mux 0
     }
 
-
     initDigitalMultiplexor(); //set I/O direction for all pins, polarity, etc.
+
+    pinMode(A0, INPUT);
+    pinMode(A1, INPUT);
+
+    adc->adc0->setAveraging(4);                                             // set number of averages
+    adc->adc0->setResolution(12);                                           // set bits of resolution
+    adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::HIGH_SPEED );       // change the conversion speed
+    adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::HIGH_SPEED );           // change the sampling speed
+    ////// ADC1 /////
+    adc->adc1->setAveraging(4);                                             // set number of averages
+    adc->adc1->setResolution(12);                                           // set bits of resolution
+    adc->adc1->setConversionSpeed(ADC_CONVERSION_SPEED::HIGH_SPEED);       // change the conversion speed
+    adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::HIGH_SPEED );           // change the sampling speed
 }
 
 void SystemIO::installExtendedIO(CANIODevice *device)
@@ -248,7 +262,10 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
     int neededMux = which % 4;
     if (neededMux != adcMuxSelect) //must change mux to read this
     {
-        if (sysConfig->systemType != GEVCU7B) digitalWrite(2, (neededMux & 2) ? HIGH : LOW);
+        if (sysConfig->systemType != GEVCU7B)
+        {
+            digitalWrite(2, (neededMux & 2) ? HIGH : LOW);
+        }
         else 
         {
             digitalWrite(6, (neededMux & 2) ? HIGH : LOW);
@@ -266,16 +283,20 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
         //but give it at least a few microseconds for everything to switch and the new value to
         //settle at the Teensy ADC pin.
         delayMicroseconds(5);
+        //delay(6); //really long delay!
+
     }
     //Analog inputs 0-3 are always on ADC0, 4-7 are on ADC1
     if (which < 4) 
     {
-        valu = analogRead(0);
+        //valu = analogRead(0);
+        valu = adc->adc0->analogRead(0);
         //Logger::debug("AREAD0: %u", valu);
     }
     else 
     {
-        valu = analogRead(1);
+        //valu = analogRead(1);
+        valu = adc->adc1->analogRead(1);
         //Logger::debug("AREAD1: %u", valu);
     }
     return valu;

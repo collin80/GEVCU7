@@ -73,7 +73,7 @@ private:
 #endif
     
     int findTimer(long interval);
-    int findFreeTimer(long interval);
+    int findFreeTimer(uint64_t interval);
     int findObserver(int timerNumber, TickObserver *observer);
 
     PeriodicTimer* timers[NUM_TIMERS];

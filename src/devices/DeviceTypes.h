@@ -62,6 +62,13 @@ enum CFG_ENTRY_VAR_TYPE
 //Definition of the array is in DeviceManager.cpp
 extern const char *CFG_VAR_TYPE_NAMES[7];
 
+union minMaxType
+{
+    uint64_t u_int;
+    int64_t s_int;
+    float floating;
+};
+
 /*
 ConfigEntry records store configuration options that a given device would like to expose to the world
 so that they can be edited either on the serial console or the webpage (or any other way, CAN, etc).
@@ -75,8 +82,8 @@ struct ConfigEntry
     String helpText; //also shown on serial console to explain the configuration option
     void *varPtr; //pointer to the variable whose value we'd like to get or set
     CFG_ENTRY_VAR_TYPE varType; //what sort of variable were we pointing to?
-    float minValue; //minimum acceptable value
-    float maxValue; //maximum acceptable value
+    minMaxType minValue; //minimum acceptable value
+    minMaxType maxValue; //maximum acceptable value
     uint8_t precision; //number of decimal places to display. Obv. 0 for integers
     DescribeValue descFunc; //if this function pointer is non-null it'll be used to turn values into strings.
 };
@@ -145,6 +152,8 @@ struct StatusEntry
             out = (double)v;
             return out;
         }
+        out = 0.0;
+        return out;
     }
 };
 

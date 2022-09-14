@@ -101,6 +101,11 @@ exist because it overlaps with the need to safety shut down for other reasons.
 #include "src/devices/misc/SystemDevice.h"
 #include "src/CrashHandler.h"
 
+//These can be editted to get into the program faster
+//but changing them too low isn't likely to be of much use
+#define TEENSY_INIT_USB_DELAY_BEFORE 20
+#define TEENSY_INIT_USB_DELAY_AFTER 100
+
 // Use Teensy SDIO - SDIO is four bit and direct in hardware - it should be plenty fast
 #define SD_CONFIG  SdioConfig(FIFO_SDIO)
 

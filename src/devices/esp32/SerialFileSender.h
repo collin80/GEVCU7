@@ -45,7 +45,7 @@ private:
     uint8_t packet[512];
     int bytePos;
     uint16_t expectedCRC;
-    char fname[128];
+    char fname[130];
     uint32_t lastComm;
     FileSenderState state;
     bool active;

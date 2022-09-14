@@ -202,7 +202,7 @@ int TickHandler::findTimer(long interval) {
 //a timer that supports 1000 days is probably not the same timer
 //that would be best to handle a 10ms interval. But, the library
 //doesn't really expose a minimum granularity for each timer...
-int TickHandler::findFreeTimer(long interval)
+int TickHandler::findFreeTimer(uint64_t interval)
 {
     for (int i = 0; i < NUM_TIMERS; i++)
     {

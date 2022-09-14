@@ -378,6 +378,10 @@ void ESP32Driver::sendDeviceList()
         case DeviceType::DEVICE_DCDC:
             doc["DeviceList"][i]["DeviceType"] = "DCDC";
             break;
+        case DeviceType::DEVICE_ANY:
+        case DeviceType::DEVICE_NONE:
+            doc["DeviceList"][i]["DeviceType"] = "ERR";
+            break;
         }
     }
     //serializeJson(doc, Serial2);
@@ -400,49 +404,61 @@ void ESP32Driver::sendDeviceDetails(uint16_t deviceID)
     int i = 0;
 
     const std::vector<ConfigEntry> *entries = dev->getConfigEntries();
-    for (const ConfigEntry ent : *entries)
+    for (const ConfigEntry &ent : *entries)
     {
         
         doc["DeviceDetails"][i]["CfgName"] = ent.cfgName;
         doc["DeviceDetails"][i]["HelpTxt"] = ent.helpText;
-        doc["DeviceDetails"][i]["MinValue"] = ent.minValue;
-        doc["DeviceDetails"][i]["MaxValue"] = ent.maxValue;
         doc["DeviceDetails"][i]["Precision"] = ent.precision;
         switch (ent.varType)
         {
         case CFG_ENTRY_VAR_TYPE::BYTE:
             doc["DeviceDetails"][i]["Valu"] =  *((uint8_t *)(ent.varPtr));
             doc["DeviceDetails"][i]["ValType"] = "BYTE";
+            doc["DeviceDetails"][i]["MinValue"] = ent.minValue.u_int;
+            doc["DeviceDetails"][i]["MaxValue"] = ent.maxValue.u_int;
             break;
         case CFG_ENTRY_VAR_TYPE::STRING:
             doc["DeviceDetails"][i]["Valu"] = (char *)(ent.varPtr);
             doc["DeviceDetails"][i]["ValType"] = "STR";
+            doc["DeviceDetails"][i]["MinValue"] = 0;
+            doc["DeviceDetails"][i]["MaxValue"] = 0;
             break;
         case CFG_ENTRY_VAR_TYPE::INT16:
             doc["DeviceDetails"][i]["Valu"] =  *((int16_t *)(ent.varPtr));
             doc["DeviceDetails"][i]["ValType"] = "INT16";
+            doc["DeviceDetails"][i]["MinValue"] = ent.minValue.s_int;
+            doc["DeviceDetails"][i]["MaxValue"] = ent.maxValue.s_int;
             break;
         case CFG_ENTRY_VAR_TYPE::UINT16:
             doc["DeviceDetails"][i]["Valu"] =  *((uint16_t *)(ent.varPtr));
             doc["DeviceDetails"][i]["ValType"] = "UINT16";
+            doc["DeviceDetails"][i]["MinValue"] = ent.minValue.u_int;
+            doc["DeviceDetails"][i]["MaxValue"] = ent.maxValue.u_int;
             break;
         case CFG_ENTRY_VAR_TYPE::INT32:
             doc["DeviceDetails"][i]["Valu"] =  *((int32_t *)(ent.varPtr));
             doc["DeviceDetails"][i]["ValType"] = "INT32";
+            doc["DeviceDetails"][i]["MinValue"] = ent.minValue.s_int;
+            doc["DeviceDetails"][i]["MaxValue"] = ent.maxValue.s_int;
             break;
         case CFG_ENTRY_VAR_TYPE::UINT32:
             doc["DeviceDetails"][i]["Valu"] =  *((uint32_t *)(ent.varPtr));
             doc["DeviceDetails"][i]["ValType"] = "UINT32";
+            doc["DeviceDetails"][i]["MinValue"] = ent.minValue.u_int;
+            doc["DeviceDetails"][i]["MaxValue"] = ent.maxValue.u_int;
             break;
         case CFG_ENTRY_VAR_TYPE::FLOAT:
             doc["DeviceDetails"][i]["Valu"] =  *((float *)(ent.varPtr));
             doc["DeviceDetails"][i]["ValType"] = "FLOAT";
+            doc["DeviceDetails"][i]["MinValue"] = ent.minValue.floating;
+            doc["DeviceDetails"][i]["MaxValue"] = ent.maxValue.floating;
             break;
         }
         i++;
     }
 
-    void *varPtr; //pointer to the variable whose value we'd like to get or set
+    //void *varPtr; //pointer to the variable whose value we'd like to get or set
     
     //serializeJson(doc, Serial2);
     //Serial2.println();
@@ -493,9 +509,9 @@ void ESP32Driver::saveConfiguration() {
 
     ESP32Configuration *config = (ESP32Configuration *)getConfiguration();
 
-    prefsHandler->write("SSID", config->ssid, 64);
-    prefsHandler->write("WIFIPW", config->ssid_pw, 64);
-    prefsHandler->write("HostName", config->hostName, 64);
+    prefsHandler->write("SSID", (const char *)config->ssid, 64);
+    prefsHandler->write("WIFIPW", (const char *)config->ssid_pw, 64);
+    prefsHandler->write("HostName", (const char *)config->hostName, 64);
     prefsHandler->write("WiFiMode", config->esp32_mode);
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();

@@ -36,6 +36,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "eeprom_layout.h"
 #include "PrefHandler.h"
 #include "Logger.h"
+#include <ADC.h> //better ADC library compared to the built-in ADC functions
 
 class CANIODevice;
 
@@ -103,6 +104,8 @@ private:
     void _pSetDigitalOutput(int pin, int state);
     int _pGetDigitalOutput(int pin);
     int16_t _pGetAnalogRaw(uint8_t which);
+
+    ADC *adc;
 
     SystemType sysType;
 

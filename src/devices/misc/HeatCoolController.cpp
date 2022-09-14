@@ -62,9 +62,9 @@ void HeatCoolController::setup() {
     ConfigEntry entry;
     StatusEntry stat;
 
-    entry = {"HEATONTEMP", "Temperature at which to enable heater (C)", &config->heatOnTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, -10.0f, 100.0f, 1, nullptr};
+    entry = {"HEATONTEMP", "Temperature at which to enable heater (C)", &config->heatOnTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0f}, {.floating = 100.0f}, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"HEATOFFTEMP", "Temperature at which to cease heating", &config->heatOffTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, -10.0f, 100.0f, 1, nullptr};
+    entry = {"HEATOFFTEMP", "Temperature at which to cease heating", &config->heatOffTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0f}, {.floating = 100.0f}, 1, nullptr};
     cfgEntries.push_back(entry);
     entry = {"HEATPIN", "Output used to trigger heating (255=Disabled)", &config->heatEnablePin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
@@ -81,10 +81,10 @@ void HeatCoolController::setup() {
     for (int i = 0; i < COOL_ZONES; i++)
     {
         snprintf(buff, 30, "COOLONTEMP%u", i);
-        entry = {buff, "Temperature at which zone cooling is turned on", &config->coolOnTemperature[i], CFG_ENTRY_VAR_TYPE::FLOAT, -10.0f, 200.0f, 1, nullptr};
+        entry = {buff, "Temperature at which zone cooling is turned on", &config->coolOnTemperature[i], CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0f}, {.floating = 200.0f}, 1, nullptr};
         cfgEntries.push_back(entry);
         snprintf(buff, 30, "COOLOFFTEMP%u", i);
-        entry = {buff, "Temperature at which zone cooling is turned off", &config->coolOffTemperature[i], CFG_ENTRY_VAR_TYPE::FLOAT, -10.0f, 200.0f, 1, nullptr};
+        entry = {buff, "Temperature at which zone cooling is turned off", &config->coolOffTemperature[i], CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0f}, {.floating = 200.0f}, 1, nullptr};
         cfgEntries.push_back(entry);
         snprintf(buff, 30, "COOLZONETYPE%u", i);
         entry = {buff, "Where does this zone get temperature from (0=MotorCtrl, 1=BMS, 2=DCDC)", &config->coolZoneType[i], CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};

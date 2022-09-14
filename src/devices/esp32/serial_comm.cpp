@@ -149,7 +149,7 @@ static esp_loader_error_t SLIP_send_delimiter(void)
 static esp_loader_error_t send_cmd(const void *cmd_data, uint32_t size, uint32_t *reg_value)
 {
     response_t response;
-    command_t command = ((command_common_t *)cmd_data)->command;
+    command_t command = (command_t)((command_common_t *)cmd_data)->command;
 
     RETURN_ON_ERROR( SLIP_send_delimiter() );
     RETURN_ON_ERROR( SLIP_send((const uint8_t *)cmd_data, size) );
@@ -163,11 +163,11 @@ static esp_loader_error_t send_cmd_with_data(const void *cmd_data, size_t cmd_si
                                              const void *data, size_t data_size)
 {
     response_t response;
-    command_t command = ((command_common_t *)cmd_data)->command;
+    command_t command = (command_t)((command_common_t *)cmd_data)->command;
 
     RETURN_ON_ERROR( SLIP_send_delimiter() );
     RETURN_ON_ERROR( SLIP_send((const uint8_t *)cmd_data, cmd_size) );
-    RETURN_ON_ERROR( SLIP_send(data, data_size) );
+    RETURN_ON_ERROR( SLIP_send((const uint8_t *)data, data_size) );
     RETURN_ON_ERROR( SLIP_send_delimiter() );
 
     return check_response(command, NULL, &response, sizeof(response));
@@ -177,7 +177,7 @@ static esp_loader_error_t send_cmd_with_data(const void *cmd_data, size_t cmd_si
 static esp_loader_error_t send_cmd_md5(const void *cmd_data, size_t cmd_size, uint8_t md5_out[MD5_SIZE])
 {
     rom_md5_response_t response;
-    command_t command = ((command_common_t *)cmd_data)->command;
+    command_t command = (command_t)((command_common_t *)cmd_data)->command;
 
     RETURN_ON_ERROR( SLIP_send_delimiter() );
     RETURN_ON_ERROR( SLIP_send((const uint8_t *)cmd_data, cmd_size) );
@@ -216,7 +216,7 @@ static esp_loader_error_t check_response(command_t cmd, uint32_t *reg_value, voi
     common_response_t *response = (common_response_t *)resp;
 
     do {
-        err = SLIP_receive_packet(resp, resp_size);
+        err = SLIP_receive_packet((uint8_t *)resp, resp_size);
         if (err != ESP_LOADER_SUCCESS) {
             return err;
         }
@@ -225,7 +225,7 @@ static esp_loader_error_t check_response(command_t cmd, uint32_t *reg_value, voi
     response_status_t *status = (response_status_t *)((uint8_t *)resp + resp_size - sizeof(response_status_t));
 
     if (status->failed) {
-        log_loader_internal_error(status->error);
+        log_loader_internal_error((error_code_t)status->error);
         return ESP_LOADER_ERROR_INVALID_RESPONSE;
     }
 
@@ -256,7 +256,7 @@ esp_loader_error_t loader_flash_begin_cmd(uint32_t offset,
         .common = {
             .direction = WRITE_DIRECTION,
             .command = FLASH_BEGIN,
-            .size = CMD_SIZE(begin_cmd) - encryption_size,
+            .size = (uint16_t)(CMD_SIZE(begin_cmd) - encryption_size),
             .checksum = 0
         },
         .erase_size = erase_size,
@@ -278,7 +278,7 @@ esp_loader_error_t loader_flash_data_cmd(const uint8_t *data, uint32_t size)
         .common = {
             .direction = WRITE_DIRECTION,
             .command = FLASH_DATA,
-            .size = CMD_SIZE(data_cmd) + size,
+            .size = (uint16_t)(CMD_SIZE(data_cmd) + size),
             .checksum = compute_checksum(data, size)
         },
         .data_size = size,

@@ -168,7 +168,7 @@ void SerialConsole::getConfigEntriesForDevice(Device *dev)
 {
     Logger::console("\n\n%s Configuration", dev->getCommonName());
     const std::vector<ConfigEntry> *entries = dev->getConfigEntries();
-    for (const ConfigEntry ent : *entries)
+    for (const ConfigEntry &ent : *entries)
     {
         printConfigEntry(dev, ent);
     }
@@ -200,26 +200,26 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
     {
     case CFG_ENTRY_VAR_TYPE::BYTE:
         ui8 = (uint8_t)strtol(valu, NULL, 0);
-        if (ui8 < entry->minValue) result = 1;
-        else if (ui8 > entry->maxValue) result = 2;
+        if (ui8 < entry->minValue.u_int) result = 1;
+        else if (ui8 > entry->maxValue.u_int) result = 2;
         else *(uint8_t *)entry->varPtr = ui8;
         break;
     case CFG_ENTRY_VAR_TYPE::FLOAT:
         fl = strtof(valu, NULL);
-        if (fl < entry->minValue) result = 1;
-        else if (fl > entry->maxValue) result = 2;
+        if (fl < entry->minValue.floating) result = 1;
+        else if (fl > entry->maxValue.floating) result = 2;
         else *(float *)entry->varPtr = fl;
         break;
     case CFG_ENTRY_VAR_TYPE::INT16:
         i16 = (int16_t)strtol(valu, NULL, 0);
-        if (i16 < entry->minValue) result = 1;
-        else if (i16 > entry->maxValue) result = 2;
+        if (i16 < entry->minValue.s_int) result = 1;
+        else if (i16 > entry->maxValue.s_int) result = 2;
         else *(int16_t *)entry->varPtr = i16;
         break;
     case CFG_ENTRY_VAR_TYPE::INT32:
         i32 = (int32_t)strtol(valu, NULL, 0);
-        if (i32 < entry->minValue) result = 1;
-        else if (i32 > entry->maxValue) result = 2;
+        if (i32 < entry->minValue.s_int) result = 1;
+        else if (i32 > entry->maxValue.s_int) result = 2;
         else *(int32_t *)entry->varPtr = i32;
         break;
     case CFG_ENTRY_VAR_TYPE::STRING:
@@ -231,16 +231,16 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
         break;
     case CFG_ENTRY_VAR_TYPE::UINT16:
         ui16 = (uint16_t)strtol(valu, NULL, 0);
-        if (ui16 < entry->minValue) result = 1;
-        else if (ui16 > entry->maxValue) result = 2;
+        if (ui16 < entry->minValue.u_int) result = 1;
+        else if (ui16 > entry->maxValue.u_int) result = 2;
         else *(uint16_t *)entry->varPtr = ui16;
         break;
     case CFG_ENTRY_VAR_TYPE::UINT32:
         ui32 = (uint32_t)strtol(valu, NULL, 0);
-        if (ui32 < entry->minValue) result = 1;
-        else if (ui32 > entry->maxValue) result = 2;
+        if (ui32 < entry->minValue.u_int) result = 1;
+        else if (ui32 > entry->maxValue.u_int) result = 2;
         else *(uint32_t *)entry->varPtr = ui32;
-        break;    
+        break;
     }
     if (result == 0) //value was stored
     {

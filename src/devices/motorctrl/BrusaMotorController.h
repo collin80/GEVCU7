@@ -180,11 +180,11 @@ private:
     void sendControl2();
     void sendLimits();
     void prepareOutputFrame(uint32_t);
-    void processStatus(uint8_t data[]);
-    void processActualValues(uint8_t data[]);
-    void processErrors(uint8_t data[]);
-    void processTorqueLimit(uint8_t data[]);
-    void processTemperature(uint8_t data[]);
+    void processStatus(const uint8_t data[]);
+    void processActualValues(const uint8_t data[]);
+    void processErrors(const uint8_t data[]);
+    void processTorqueLimit(const uint8_t data[]);
+    void processTemperature(const uint8_t data[]);
 };
 
 #endif /* BRUSAMOTORCONTROLLER_H_ */

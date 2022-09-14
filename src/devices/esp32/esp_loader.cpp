@@ -281,7 +281,7 @@ static esp_loader_error_t spi_flash_command(spi_flash_cmd_t cmd, void *data_tx, 
         return ESP_LOADER_ERROR_TIMEOUT;
     }
 
-    RETURN_ON_ERROR( esp_loader_read_register(s_reg->w0, data_rx) );
+    RETURN_ON_ERROR( esp_loader_read_register(s_reg->w0, (uint32_t *)data_rx) );
 
     // Restore SPI configuration
     RETURN_ON_ERROR( esp_loader_write_register(s_reg->usr, old_spi_usr) );
@@ -340,7 +340,7 @@ esp_loader_error_t esp_loader_flash_write(void *payload, uint32_t size)
         data[padding_index++] = PADDING_PATTERN;
     }
 
-    md5_update(payload, (size + 3) & ~3);
+    md5_update((const uint8_t *)payload, (size + 3) & ~3);
 
     loader_port_start_timer(DEFAULT_TIMEOUT);
 

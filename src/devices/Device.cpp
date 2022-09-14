@@ -65,7 +65,7 @@ bool Device::isEnabled() {
     return prefsHandler->isEnabled();
 }
 
-void Device::handleMessage(uint32_t msgType, void* message) {
+void Device::handleMessage(uint32_t msgType, const void* message) {
     switch (msgType) {
     case MSG_STARTUP:
         this->earlyInit();

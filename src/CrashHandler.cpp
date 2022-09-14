@@ -86,7 +86,7 @@ void CrashHandler::decodeBreadcrumbToString(uint32_t val, char* buffer)
   buffer[2] = ((val >> 17) & 0x1f) + 0x40;
   buffer[3] = ((val >> 12) & 0x1f) + 0x40;
   buffer[4] = ((val >> 7) & 0x1f) + 0x40;
-  sprintf(&buffer[5], "%02x", val & 0x7F);
+  sprintf(&buffer[5], "%02lx", val & 0x7F);
 }
 
 //cycles all breadcrumbs one forward and adds this to the end. This allows the latest

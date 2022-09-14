@@ -248,7 +248,7 @@ void BrusaMotorController::handleCanFrame( const CAN_message_t &frame) {
  * This message provides the general status of the controller as well as
  * available and current torque and speed.
  */
-void BrusaMotorController::processStatus(uint8_t data[]) {
+void BrusaMotorController::processStatus(const uint8_t data[]) {
     uint32_t brusaStatus = (uint32_t)(data[1] | (data[0] << 8));
     torqueAvailable = (int16_t)(data[3] | (data[2] << 8)) / 100.0f;
     torqueActual = (int16_t)(data[5] | (data[4] << 8)) / 100.0f;
@@ -269,7 +269,7 @@ void BrusaMotorController::processStatus(uint8_t data[]) {
  * This message provides information about current electrical conditions and
  * applied mechanical power.
  */
-void BrusaMotorController::processActualValues(uint8_t data[]) {
+void BrusaMotorController::processActualValues(const uint8_t data[]) {
     dcVoltage = (data[1] | (data[0] << 8));
     dcCurrent = (int16_t)(data[3] | (data[2] << 8)) / 1.0f;
     acCurrent = (data[5] | (data[4] << 8)) / 2.5f;
@@ -286,7 +286,7 @@ void BrusaMotorController::processActualValues(uint8_t data[]) {
  * The bitfield is not processed here but it is made available for other components
  * (e.g. the webserver to display the various status flags)
  */
-void BrusaMotorController::processErrors(uint8_t data[]) {
+void BrusaMotorController::processErrors(const uint8_t data[]) {
     //statusBitfield3 = (uint32_t)(data[1] | (data[0] << 8) | (data[5] << 16) | (data[4] << 24));
     //statusBitfield2 = (uint32_t)(data[7] | (data[6] << 8));
 
@@ -299,7 +299,7 @@ void BrusaMotorController::processErrors(uint8_t data[]) {
  *
  * This message provides information about available torque.
  */
-void BrusaMotorController::processTorqueLimit(uint8_t data[]) {
+void BrusaMotorController::processTorqueLimit(const uint8_t data[]) {
     maxPositiveTorque = (int16_t)(data[1] | (data[0] << 8)) / 100.0f;
     minNegativeTorque = (int16_t)(data[3] | (data[2] << 8)) / 100.0f;
     limiterStateNumber = (uint8_t)data[4];
@@ -313,7 +313,7 @@ void BrusaMotorController::processTorqueLimit(uint8_t data[]) {
  *
  * This message provides information about motor and inverter temperatures.
  */
-void BrusaMotorController::processTemperature(uint8_t data[]) {
+void BrusaMotorController::processTemperature(const uint8_t data[]) {
     temperatureInverter = (int16_t)(data[1] | (data[0] << 8)) * 0.5f;
     temperatureMotor = (int16_t)(data[3] | (data[2] << 8)) * 0.5f;
     temperatureSystem = (int16_t)(data[4] - 50) * 1.0f;
@@ -363,7 +363,7 @@ void BrusaMotorController::loadConfiguration() {
         prefsHandler->read("dcVoltLimRegen", &config->dcVoltLimitRegen, 0);
         prefsHandler->read("dcCurrLimMotor", &config->dcCurrentLimitMotor, 0);
         prefsHandler->read("dcCurrLimRegen", &config->dcCurrentLimitRegen, 0);
-        prefsHandler->read("enableOscLim", (uint8_t)&config->enableOscillationLimiter, (uint8_t)0);
+        prefsHandler->read("enableOscLim", (uint8_t *)&config->enableOscillationLimiter, (uint8_t)0);
     //}
     Logger::debug(BRUSA_DMC5, "Max mech power motor: %f kW, max mech power regen: %f ", config->maxMechanicalPowerMotor, config->maxMechanicalPowerRegen);
     Logger::debug(BRUSA_DMC5, "DC limit motor: %f Volt, DC limit regen: %f Volt", config->dcVoltLimitMotor, config->dcVoltLimitRegen);

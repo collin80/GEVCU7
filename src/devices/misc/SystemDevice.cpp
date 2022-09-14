@@ -61,7 +61,7 @@ void SystemDevice::setup() {
     ConfigEntry entry;
     entry = {"SYSTYPE", "Set board revision level (0=7-A, 1=7-B, 2=7-C", &config->systemType  , CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"LOGLEVEL", "Set system logging level (0=Debug, 1=Info, 2=Warn, 3=Error 4=Off)", &config->logLevel, CFG_ENTRY_VAR_TYPE::INT16, -1, 4, 0, nullptr};
+    entry = {"LOGLEVEL", "Set system logging level (0=Debug, 1=Info, 2=Warn, 3=Error 4=Off)", &config->logLevel, CFG_ENTRY_VAR_TYPE::INT16, {.s_int = -1}, 4, 0, nullptr};
     cfgEntries.push_back(entry);
     for (int i = 0; i < NUM_ANALOG; i++)
     {

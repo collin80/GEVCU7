@@ -232,7 +232,7 @@ void DeviceManager::dispatchToObservers(const StatusEntry &entry)
 */
 void DeviceManager::handleTick()
 {
-    double currVal;
+    double currVal = 0.0;
     for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
     {
         currVal = it->getValueAsDouble();

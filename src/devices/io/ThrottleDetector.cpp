@@ -250,11 +250,11 @@ void ThrottleDetector::detectMaxCalibrate() {
             }
         }
 
-        char *type = "UNKNOWN";
+        char type[] = "UNKNOWN";
         if (throttleSubType == 1) {
-            type = "Linear";
+            strcpy(type, "Linear");
         } else if (throttleSubType == 2) {
-            type = "Inverse";
+            strcpy(type, "Inverse");
         }
 
         if ( Logger::isDebug()) {
