@@ -67,11 +67,14 @@ private:
     byte alive;
     int activityCount;
     uint16_t torqueCommand;
+    uint16_t maxAllowedTorque;
     uint32_t ms;
     bool prechargeComplete;
+    bool allowedToOperate;
     void timestamp();
 
-    void sendCmd();
+    void sendCmdUS();
+    void sendCmdCanada();
 };
 
 #endif /* C300_H_ */
