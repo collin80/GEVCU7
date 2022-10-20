@@ -68,9 +68,9 @@ void MotorController::setup() {
     cfgEntries.reserve(20);
 
     ConfigEntry entry;
-    entry = {"TORQ", "Set torque upper limit (tenths of a Nm)", &config->torqueMax, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating = 5000.0f}, 1, nullptr};
+    entry = {"TORQ", "Set torque upper limit (tenths of a Nm)", &config->torqueMax, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 5000.0}, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TORQSLEW", "Torque slew rate (per second, tenths of a Nm)", &config->torqueSlewRate, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating = 50000.0f}, 1, nullptr};
+    entry = {"TORQSLEW", "Torque slew rate (per second, tenths of a Nm)", &config->torqueSlewRate, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 50000.0}, 1, nullptr};
     cfgEntries.push_back(entry);
     entry = {"RPM", "Set maximum RPM", &config->speedMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 30000, 0, nullptr};
     cfgEntries.push_back(entry);

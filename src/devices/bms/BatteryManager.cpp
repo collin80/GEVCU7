@@ -52,21 +52,21 @@ void BatteryManager::setup() {
     BatteryManagerConfiguration *config = (BatteryManagerConfiguration *) getConfiguration();
 
     ConfigEntry entry;
-    entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating = 100000.0f}, 2, nullptr};
+    entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 100000.0}, 2, nullptr};
     cfgEntries.push_back(entry);
     //entry = {"AHLEFT", "Number of amp hours remaining in pack in tenths ampere-hours", &config->packAHRemaining / 100000, CFG_ENTRY_VAR_TYPE::INT32, 0, 1000000, 0, nullptr};
     //cfgEntries.push_back(entry);
-    entry = {"VOLTLIMHI", "High limit for pack voltage in volts", &config->highVoltLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating = 800.0f}, 1, nullptr};
+    entry = {"VOLTLIMHI", "High limit for pack voltage in volts", &config->highVoltLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 800.0}, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"VOLTLIMLO", "Low limit for pack voltage in volts", &config->lowVoltLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating = 800.0f}, 1, nullptr};
+    entry = {"VOLTLIMLO", "Low limit for pack voltage in volts", &config->lowVoltLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 800.0}, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"CELLLIMHI", "High limit for cell voltage in volts", &config->highCellLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating = 5.0f}, 3, nullptr};
+    entry = {"CELLLIMHI", "High limit for cell voltage in volts", &config->highCellLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 5.0}, 3, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"CELLLIMLO", "Low limit for cell voltage in hundredths of a volt", &config->lowCellLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating = 5.0f}, 3, nullptr};
+    entry = {"CELLLIMLO", "Low limit for cell voltage in hundredths of a volt", &config->lowCellLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 5.0}, 3, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TEMPLIMHI", "High limit for pack and cell temperature in degrees C", &config->highTempLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating = 255.0f}, 1, nullptr};
+    entry = {"TEMPLIMHI", "High limit for pack and cell temperature in degrees C", &config->highTempLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 255.0}, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TEMPLIMLO", "Low limit for pack and cell temperature in degrees C", &config->lowTempLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -255.0f}, {.floating = 255.0f}, 1, nullptr};
+    entry = {"TEMPLIMLO", "Low limit for pack and cell temperature in degrees C", &config->lowTempLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -255.0}, {.floating = 255.0}, 1, nullptr};
     cfgEntries.push_back(entry);
 
 #ifndef USE_HARD_CODED

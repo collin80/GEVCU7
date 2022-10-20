@@ -1,8 +1,6 @@
 /*
- * Delphi DC-DC Converter Controller.cpp
- *
- * CAN Interface to the Delphi DC-DC converter - Handles sending of commands and reception of status frames to drive the DC-DC converter and set its output voltage.  SB following.
- *
+ * Base class for DC/DC converters.
+ 
 Copyright (c) 2014 Jack Rickard
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -52,7 +50,7 @@ void DCDCController::setup()
     Device::setup(); // run the parent class version of this function
 
     ConfigEntry entry;
-    entry = {"DC-TARGETV", "Target output voltage for DC/DC", &config->targetLowVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating = 1000.0f}, 2, nullptr};
+    entry = {"DC-TARGETV", "Target output voltage for DC/DC", &config->targetLowVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1000.0}, 2, nullptr};
     cfgEntries.push_back(entry);
     entry = {"DC-REQHVREADY", "Enable DC/DC only when HV is ready? (0=No, 1=Yes)", &config->requireHVReady, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
     cfgEntries.push_back(entry);

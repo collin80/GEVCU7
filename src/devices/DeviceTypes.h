@@ -62,11 +62,12 @@ enum CFG_ENTRY_VAR_TYPE
 //Definition of the array is in DeviceManager.cpp
 extern const char *CFG_VAR_TYPE_NAMES[7];
 
+//all of these should be 64 bit on this hardware
 union minMaxType
 {
     uint64_t u_int;
     int64_t s_int;
-    float floating;
+    double floating;
 };
 
 /*
@@ -106,6 +107,24 @@ struct StatusEntry
     CFG_ENTRY_VAR_TYPE varType;
     double lastValue;
     Device *device;
+
+    StatusEntry()
+    {
+        statusName = String();
+        varPtr = nullptr;
+        varType = CFG_ENTRY_VAR_TYPE::BYTE;
+        lastValue = 0.0;
+        device = nullptr;
+    }
+
+    StatusEntry(String name, void *ptr, CFG_ENTRY_VAR_TYPE type, double val, Device *dev)
+    {
+        statusName = name;
+        varPtr = ptr;
+        varType = type;
+        lastValue = val;
+        device = dev;
+    }
 
     double getValueAsDouble()
     {
