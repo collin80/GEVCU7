@@ -82,6 +82,18 @@ really take much power. The CAN tranceivers will not turn off. Testing seems to 
 and running it is 100ma or more. If a normal car battery is about 40ah then a 40ma draw will drain the battery
 dead in 1000 hours or about 41 days. It's probably not ideal to leave GEVCU7 running but still some support should
 exist because it overlaps with the need to safety shut down for other reasons.
+
+To support the above, it would be necessary to wire GEVCU7 to a dedicated power wire that always has power and then
+designate a different digital input pin to be the key on signal. When key is on we turn on everything we can and enable
+the system. When the key is turned off we ask everyone to stop what they're doing, save EEPROM, and go into the lowest power
+mode possible. But, this would probably require that GEVCU could also control a contactor or something to actually cut 12V power
+to the rest of the car. Then you're hoping that GEVCU7 is stable enough to really be controlling the power for the whole car.
+Otherwise nothing works at all. Though, if GEVCU7 dies nothing is really going to work that great in any event. If it is
+controlling the inverter then you aren't going unless it's working. SO, this might be viable. 
+
+It should be possible to save the entire EEPROM chip contents to the sdcard and also possible to restore the entire EEPROM
+from sdcard. This would allow for settings backup and restoration. In the past GEVCU6 would sometimes eat certain settings
+but no one quite knew why. Haven't seen that with this board but still having backups does not hurt.
 */
 
 #include "GEVCU.h"
@@ -110,7 +122,7 @@ exist because it overlaps with the need to safety shut down for other reasons.
 #define SD_CONFIG  SdioConfig(FIFO_SDIO)
 
 //if this is defined there is a large start up delay so you can see the start up messages. NOT for production!
-//#define DEBUG_STARTUP_DELAY
+#define DEBUG_STARTUP_DELAY
 
 //If this is defined then we will ignore the hardware sd inserted signal and just claim it's inserted. Required for first prototype.
 //Probably don't enable this on more recent hardware. Starting at the 2nd prototype the sdcard can properly be detected.
@@ -282,9 +294,12 @@ void setup() {
 
     crashHandler.addBreadcrumb(ENCODE_BREAD("START"));
 
-	Serial.println(CFG_VERSION);
-	Serial.print("Build number: ");
-	Serial.println(CFG_BUILD_NUM);
+    Serial.print("Build number: ");
+    Serial.println(CFG_BUILD_NUM);
+    Serial.print("Build Date: ");
+    Serial.print(__DATE__);
+    Serial.print(" at ");
+    Serial.println(__TIME__);
 
 #ifndef ASSUME_SDCARD_INSERTED
     if (digitalRead(SD_DETECT) == 0)

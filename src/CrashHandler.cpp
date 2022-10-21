@@ -58,7 +58,7 @@ void CrashHandler::analyzeCrashDataOnStartup()
     }
     else
     {
-        Serial.println("No prior crash detected Good news!");
+        Serial.println("No prior crash detected, Good news!");
         for (int i = 0; i < 6; i++) storedCrumbs[i] = 0;
         lastBootCrashed = false;
     }
@@ -92,16 +92,20 @@ void CrashHandler::decodeBreadcrumbToString(uint32_t val, char* buffer)
 //cycles all breadcrumbs one forward and adds this to the end. This allows the latest
 //6 breadcrumbs to always be stored. This routine will take about 100 cycles to run
 //so don't call it all of the time but it's OK to sprinkle it around in areas where
-//crashes are suspected to happen.
+//crashes are suspected to happen. Note that the processor runs at 600MHz so 100
+//cycles is 1/6th of a microsecond. If you add 6 calls to your function you will
+//cause a phantom 1us delay which you will have to be OK with. This overhead likely
+//less than using serial writes to the USB port though.
 void CrashHandler::addBreadcrumb(uint32_t crumb)
 {
+    //these are pipelined and cached and almost instant.
     bc->value[0] = bc->value[1];
     bc->value[1] = bc->value[2];
     bc->value[2] = bc->value[3];
     bc->value[3] = bc->value[4];
     bc->value[4] = bc->value[5];
     bc->value[5] = crumb;
-    //have to flush to RAM or it will stay in cache
+    //have to flush to RAM or it will stay in cache. Here is where our delay really triggers
     arm_dcache_flush((void *)bc, sizeof(struct crashreport_breadcrumbs_struct));
 }
 
@@ -110,6 +114,7 @@ void CrashHandler::addBreadcrumb(uint32_t crumb)
 //to see how far into a function it got. Note, however, that you can only do this if you have not
 //called any other functions that might drop their own breadcrumb. This makes the utility
 //somewhat limited but might be useful when debugging to annotate progress.
+//note that this still calls dcache flush and so still causes a healthy processing delay
 void CrashHandler::updateBreadcrumb(uint8_t crumb)
 {
     bc->value[5] = (bc->value[5] & 0xFFFFFFF8) + (crumb & 0x7F);

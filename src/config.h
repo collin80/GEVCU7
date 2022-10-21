@@ -36,7 +36,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <FlexCAN_T4.h>
 
 #define CFG_BUILD_NUM	1080      //increment this every time a git commit is done. 
-#define CFG_VERSION "GEVCU 2022-07-08"
 
 #define portMEMORY_BARRIER()     __asm volatile ( "dmb" ::: "memory" )
 #define portDATA_SYNC_BARRIER()  __asm volatile ( "dsb" ::: "memory" )
@@ -63,9 +62,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * These values should normally not be changed.
  */
 #define CFG_DEV_MGR_MAX_DEVICES     60 // the maximum number of devices supported by the DeviceManager
-#define CFG_CAN_NUM_OBSERVERS	    12 // maximum number of device subscriptions per CAN bus
+#define CFG_CAN_NUM_OBSERVERS	    16 // maximum number of device subscriptions per CAN bus
 #define CFG_STATUS_NUM_OBSERVERS    4 //How many devices can register to get StatusEntry updates. Use sparingly!
-#define CFG_TIMER_NUM_OBSERVERS	    12 // the maximum number of supported observers per timer
+#define CFG_TIMER_NUM_OBSERVERS	    16 // the maximum number of supported observers per timer
 #define CFG_TIMER_USE_QUEUING	    // if defined, TickHandler uses a queuing buffer instead of direct calls from interrupts - MUCH safer!
 #define CFG_TIMER_BUFFER_SIZE	    100 // the size of the queuing buffer for TickHandler
 #define CFG_FAULT_HISTORY_SIZE	    50 //number of faults to store in eeprom. A circular buffer so the last 50 faults are always stored.
