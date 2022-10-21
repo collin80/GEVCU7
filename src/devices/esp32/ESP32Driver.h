@@ -32,6 +32,7 @@ public:
     virtual void handleTick();
     virtual void setup();
     void earlyInit();
+    void disableDevice();
     ESP32Driver();
     void processSerial();
 

@@ -157,6 +157,7 @@ public:
     void setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed);
     void attach(CanObserver *observer, uint32_t id, uint32_t mask, bool extended);
     void detach(CanObserver *observer, uint32_t id, uint32_t mask);
+    void detachAll(CanObserver *observer);
     void process(const CAN_message_t &msg);
     void process(const CANFD_message_t &msg_fd);
     void prepareOutputFrame(CAN_message_t &frame, uint32_t id);

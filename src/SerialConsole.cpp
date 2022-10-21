@@ -388,7 +388,9 @@ void SerialConsole::handleConfigCmd() {
 /*} else */if (cmdString == String("ENABLE")) {
         if (PrefHandler::setDeviceStatus(newValue, true)) {
             memCache->FlushAllPages();
-            Logger::console("Successfully enabled device.(%X, %d) Power cycle to activate.", newValue, newValue);
+            Logger::console("Successfully enabled device.(%X, %d) Trying to start it immediately!", newValue, newValue);
+            Device *dev = deviceManager.getDeviceByID(newValue);
+            if (dev) dev->setup();
         }
         else {
             Logger::console("Invalid device ID (%X, %d)", newValue, newValue);
@@ -396,7 +398,9 @@ void SerialConsole::handleConfigCmd() {
     } else if (cmdString == String("DISABLE")) {
         if (PrefHandler::setDeviceStatus(newValue, false)) {
             memCache->FlushAllPages();
-            Logger::console("Successfully disabled device. Power cycle to deactivate.");
+            Logger::console("Successfully disabled device. Trying to stop it immediately.");
+            Device *dev = deviceManager.getDeviceByID(newValue);
+            if (dev) dev->disableDevice();
         }
         else {
             Logger::console("Invalid device ID (%X, %d)", newValue, newValue);

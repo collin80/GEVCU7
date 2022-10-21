@@ -233,6 +233,16 @@ void ESP32Driver::setup()
     crashHandler.addBreadcrumb(ENCODE_BREAD("ESPTT") + 0);
 }
 
+void ESP32Driver::disableDevice()
+{
+    Device::disableDevice(); //do the common stuff first
+    digitalWrite(ESP32_ENABLE, LOW); //put the esp32 into reset
+    digitalWrite(ESP32_BOOT, HIGH); //use normal mode
+    Serial2.end();
+    delete fileSender;
+    fileSender = nullptr;
+}
+
 void ESP32Driver::handleTick() {
 
     Device::handleTick(); //kick the ball up to papa

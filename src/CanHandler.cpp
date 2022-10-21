@@ -707,6 +707,20 @@ void CanHandler::detach(CanObserver* observer, uint32_t id, uint32_t mask)
     }
 }
 
+/* Detaches all CAN observers for a given object
+ * \param observer - observer object to detach
+*/
+void CanHandler::detachAll(CanObserver *observer)
+{
+    for (int i = 0; i < CFG_CAN_NUM_OBSERVERS; i++) {
+        if (observerData[i].observer == observer)
+        {
+            observerData[i].observer = NULL;
+            //TODO: if no more observers on same mailbox, disable its interrupt, reset mailbox
+        }
+    }
+}
+
 /*
  * Logs the content of a received can frame
  *

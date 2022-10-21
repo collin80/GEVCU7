@@ -45,6 +45,24 @@ void Device::earlyInit() {
 
 }
 
+//when called this will unregister the device so it quits getting updates
+//declared virtual in case any devices need to do more teardown.
+void Device::disableDevice()
+{
+    tickHandler.detach(this); //no longer receive ticks
+
+    //technically this should be a dynamic cast to see if the object really is a CAN observer
+    //but no-rtti is enabled so I can't do that. It should be OK anyway as nothing from the actual
+    //CanObserver class is being called. The memory address is all we need
+    CanObserver *obs = (CanObserver *)(this);
+    if (obs) //if this device was a can observer then cancel those too.
+    {
+        canHandlerBus0.detachAll(obs);
+        canHandlerBus1.detachAll(obs);
+        canHandlerBus2.detachAll(obs);
+    }
+}
+
 const char* Device::getCommonName() {
     return commonName;
 }

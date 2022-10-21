@@ -55,6 +55,7 @@ public:
     virtual void setup();
     virtual void earlyInit();
     virtual void handleMessage(uint32_t, const void* );
+    virtual void disableDevice();
     virtual DeviceType getType();
     virtual DeviceId getId();
     void handleTick();
