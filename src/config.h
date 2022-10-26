@@ -86,7 +86,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //or on the main configuration screen.
 #define AUTO_ENABLE_DEV1    0x1000 //DMOC645
 #define AUTO_ENABLE_DEV2    0x1031 //pot throttle
-#define AUTO_ENABLE_DEV3    0xFFFF 
+#define AUTO_ENABLE_DEV3    0x7100 //system controller. You need this one!
 #define AUTO_ENABLE_DEV4    0xFFFF 
 #define AUTO_ENABLE_DEV5    0xFFFF
 #define AUTO_ENABLE_DEV6    0xFFFF

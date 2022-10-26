@@ -27,21 +27,35 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
  
 /*
-Notes on GEVCU7 conversion - Quite far into the conversion process. it compiles
+Notes on GEVCU7 conversion. This is somewhat a stream of consciousness but covers
+the state of the code and where I plan to take it.
+
+
+Quite far into the conversion process. it compiles
 now and most stuff should work. There have been two prototypes so far. The first
-one wasn't so good but the second is useable with minor hardware fixes.
+one wasn't so good but the second is useable with minor hardware fixes. Then we made
+a third revision which is what is current. This revision does not have any required
+board level bodges to get it working. The one remaining thing is that some voltage
+bleeds through the 5V regulator and turns on the 12v light but a little bit dimly.
+
+
 Both the onboard ESP32 and the MicroMod adapter itself can be updated
 via files on the sdcard. Code to log to sdcard is done. It appears that sometimes
 the sdcard log file gets corrupted. This might have been due to a previous problem
 in the TeensyDuino files themselves. Need to test again to see if sdcard is more
-stable now. The board now presents as two serial ports. The first one is the standard
+stable now. Testing has seemed to show that logging is stable now. I haven't seen
+the logging be corrupted any longer.
+
+
+The board now presents as two serial ports. The first one is the standard
 serial console where settings can be changed. The second port is a GVRET compatible
 binary protocol port for use with SavvyCAN. This port will forward all traffic on
-all three buses to SavvyCAN for debugging and analysis.
+all three buses to SavvyCAN for debugging and analysis. It should be possible to
+send traffic down any of the three buses from SavvyCAN as well.
  
+
 D0 in documentation is Teensy Pin 4 and is connected to DIG_INT (interrupt from 16 way I/O expander)
 D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card is inserted when line is low)
-
 
 
 I'm thinking to convert the tick interface to instead run each device as a thread using TeensyThreads which comes
@@ -56,7 +70,10 @@ support that so it may be a poor choice.
 
 Another advantage of this idea is the ability for the system to have more threads that monitor things,
 do logging, etc. But, having multiple threads that can preempt means that a lot of things would need to be thread safe
-which currently are not. So, this might be a pretty big and daunting change to make.
+which currently are not. So, this might be a pretty big and daunting change to make. But, generally an ECU will run
+an RTOS (real time operating system) for the explicit reason that it tends to be necessary to have dependable timing
+constraints for things in an ECU. So, don't discount this idea just yet. It may be something that happens. If it does
+happen it'll be mostly transparent to the actual drivers so nobody should have to worry about this except for me.
 
 The currently existing scheme is basically cooperative multi-tasking as there's a timer tick queue and it is 
 dispatched in order and so devices get callbacks at interval and CAN data can more or less be immediately
@@ -66,7 +83,8 @@ that may be OK. Even the CAN messages are really only dispatched by the events c
 nothing that a device driver would do should ever step on other code. It's a bit "icky" that everything is
 cooperatively tasked but we're talking about a 600MHz processor running pretty basic code. Your device driver should
 not be taking that many cycles. The only thing to really watch out for is to never use wait loops like the "delay"
-function. Don't delay for 500ms, come back later.
+function. Don't delay for 500ms, come back later. 
+
 
 There should be a way for the system to signal it wants to shut down and either stay down or reboot. In those cases,
 it should be possible for devices to render things safe. For instance, a motor controller driver would probably
@@ -89,11 +107,18 @@ the system. When the key is turned off we ask everyone to stop what they're doin
 mode possible. But, this would probably require that GEVCU could also control a contactor or something to actually cut 12V power
 to the rest of the car. Then you're hoping that GEVCU7 is stable enough to really be controlling the power for the whole car.
 Otherwise nothing works at all. Though, if GEVCU7 dies nothing is really going to work that great in any event. If it is
-controlling the inverter then you aren't going unless it's working. SO, this might be viable. 
+controlling the inverter then you aren't going unless it's working. So, this might be viable. 
+
 
 It should be possible to save the entire EEPROM chip contents to the sdcard and also possible to restore the entire EEPROM
 from sdcard. This would allow for settings backup and restoration. In the past GEVCU6 would sometimes eat certain settings
-but no one quite knew why. Haven't seen that with this board but still having backups does not hurt.
+but no one quite knew why. Haven't seen that with this board but still having backups does not hurt.This would also allow
+for a different way to edit parameters and would allow people to send someone like me their config so I could see if 
+anything is misconfigured. So, this really is a priority to get working. Actually, make two different EEPROM i/o
+schemes - the whole EEPROM as a binary file and the eeprom as seen as a json file. To get the json data we'll need to
+interrogate the config system. It knows nice names for all the settings and their type. This would allow for generating
+a json view of each device that is enabled (disabled devices probably don't have anything stored in EEPROM yet and don't
+create config entries)
 */
 
 #include "GEVCU.h"
@@ -112,21 +137,10 @@ but no one quite knew why. Haven't seen that with this board but still having ba
 #include "src/FlasherX.h"
 #include "src/devices/misc/SystemDevice.h"
 #include "src/CrashHandler.h"
-
-//These can be editted to get into the program faster
-//but changing them too low isn't likely to be of much use
-#define TEENSY_INIT_USB_DELAY_BEFORE 20
-#define TEENSY_INIT_USB_DELAY_AFTER 100
+#include "localconfig.h"
 
 // Use Teensy SDIO - SDIO is four bit and direct in hardware - it should be plenty fast
 #define SD_CONFIG  SdioConfig(FIFO_SDIO)
-
-//if this is defined there is a large start up delay so you can see the start up messages. NOT for production!
-#define DEBUG_STARTUP_DELAY
-
-//If this is defined then we will ignore the hardware sd inserted signal and just claim it's inserted. Required for first prototype.
-//Probably don't enable this on more recent hardware. Starting at the 2nd prototype the sdcard can properly be detected.
-//#define ASSUME_SDCARD_INSERTED
 
 //Evil, global variables
 MemCache *memCache;
@@ -365,12 +379,14 @@ void setup() {
 	memCache = new MemCache();
 	Logger::info("add MemCache (id: %X, %X)", MEMCACHE, memCache);
 	memCache->setup();
+
     //force the system device to be set enabled. ALWAYS. It would not be good if it weren't enabled!
-	PrefHandler::setDeviceStatus(SYSTEM, true);
-    //Also, the system device has to be initialized a bit early.
     Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
     sysDev->earlyInit();
+	PrefHandler::setDeviceStatus(SYSTEM, true);
+    //Also, the system device has to be initialized a bit early.    
     sysDev->setup();
+
     Logger::console("LogLevel: %i", sysConfig->logLevel);
 	//Logger::setLoglevel((Logger::LogLevel)sysConfig->logLevel);
 	systemIO.setup();
