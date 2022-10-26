@@ -59,7 +59,7 @@ void MemCache::handleTick()
     }
 }
 
-//this function flushes the first dirty page it finds. It should try to wait until enough time as elapsed since
+//this function flushes the first dirty page it finds. It should try to wait until enough time has elapsed since
 //a previous page has been written. Remember that page writes take about 7ms.
 void MemCache::FlushSinglePage()
 {
@@ -69,6 +69,7 @@ void MemCache::FlushSinglePage()
             cache_writepage(c);
             pages[c].dirty = false;
             pages[c].age = 0; //freshly flushed!
+            delay(10); //naughty! But, for testing we'll allow it. TODO: switch to non-blocking wait
             return;
         }
     }
@@ -95,6 +96,7 @@ void MemCache::FlushPage(uint8_t page) {
         cache_writepage(page);
         pages[page].dirty = false;
         pages[page].age = 0; //freshly flushed!
+        delay(10);
     }
 }
 
@@ -114,6 +116,7 @@ void MemCache::InvalidatePage(uint8_t page)
     if (page > NUM_CACHED_PAGES - 1) return; //invalid page, buddy!
     if (pages[page].dirty) {
         cache_writepage(page);
+        delay(10);
     }
     pages[page].dirty = false;
     pages[page].address = 0xFFFFFF;
