@@ -31,6 +31,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "config.h"
 #include "Heartbeat.h"
 #include "MemCache.h"
+#include "SdFat.h"
 #include "eeprom_layout.h"
 #include "sys_io.h"
 #include "devices/io/PotThrottle.h"
@@ -63,7 +64,7 @@ private:
     int state;
     int loopcount;
     bool cancel;
-
+    FsFile file;
 
     void init();
     void serialEvent();
@@ -75,6 +76,10 @@ private:
     void printConfigEntry(const Device *dev, const ConfigEntry &entry);
     void getConfigEntriesForDevice(Device *dev);
     void updateSetting(const char *settingName, char *valu);
+    void generateEEPROMBinary();
+    void loadEEPROMBinary();
+    void generateEEPROMJSON();
+    void loadEEPROMJSON();
 };
 
 #endif /* SERIALCONSOLE_H_ */

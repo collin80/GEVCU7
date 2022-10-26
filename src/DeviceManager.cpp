@@ -409,6 +409,146 @@ const ConfigEntry* DeviceManager::findConfigEntry(const char *settingName, Devic
     return nullptr;
 }
 
+//caller preallocates the json document and we fill it out
+//send only details for given deviceID
+//might need it to be enabled to actually get the details?
+void DeviceManager::createJsonConfigDocForID(DynamicJsonDocument &doc, DeviceId id)
+{
+    Device *dev = getDeviceByID(id);
+    if (dev)
+    {
+        __populateJsonEntry(doc, dev);
+    }
+}
+
+//caller preallocates the json document and we fill it out
+//send all enabled devices
+void DeviceManager::createJsonConfigDoc(DynamicJsonDocument &doc)
+{
+    for (int j = 0; j < CFG_DEV_MGR_MAX_DEVICES; j++)
+    {
+        Device *dev = getDeviceByIdx(j);
+        if (dev)
+        {
+            if (dev->isEnabled())
+            {
+                __populateJsonEntry(doc, dev);
+            }
+        }
+    }
+}
+
+void DeviceManager::__populateJsonEntry(DynamicJsonDocument &doc, Device *dev)
+{
+    JsonObject devArr = doc.createNestedObject(dev->getShortName());
+    devArr["DevID"] = dev->getId();
+    const std::vector<ConfigEntry> *entries = dev->getConfigEntries();
+    for (const ConfigEntry &ent : *entries)
+    {
+        JsonObject devEntry = devArr.createNestedObject(ent.cfgName.c_str());
+        //Logger::console("%s", ent.cfgName.c_str());
+        //devEntry["CfgName"] = ent.cfgName.c_str();
+        devEntry["HelpTxt"] = ent.helpText.c_str();
+        devEntry["Precision"] = ent.precision;
+        switch (ent.varType)
+        {
+        case CFG_ENTRY_VAR_TYPE::BYTE:
+            devEntry["Valu"] =  *((uint8_t *)(ent.varPtr));
+            devEntry["ValType"] = "BYTE";
+            devEntry["MinValue"] = ent.minValue.u_int;
+            devEntry["MaxValue"] = ent.maxValue.u_int;
+            break;
+        case CFG_ENTRY_VAR_TYPE::STRING:
+            devEntry["Valu"] = (char *)(ent.varPtr);
+            devEntry["ValType"] = "STR";
+            devEntry["MinValue"] = 0;
+            devEntry["MaxValue"] = 0;
+            break;
+        case CFG_ENTRY_VAR_TYPE::INT16:
+            devEntry["Valu"] =  *((int16_t *)(ent.varPtr));
+            devEntry["ValType"] = "INT16";
+            devEntry["MinValue"] = ent.minValue.s_int;
+            devEntry["MaxValue"] = ent.maxValue.s_int;
+            break;
+        case CFG_ENTRY_VAR_TYPE::UINT16:
+            devEntry["Valu"] =  *((uint16_t *)(ent.varPtr));
+            devEntry["ValType"] = "UINT16";
+            devEntry["MinValue"] = ent.minValue.u_int;
+            devEntry["MaxValue"] = ent.maxValue.u_int;
+            break;
+        case CFG_ENTRY_VAR_TYPE::INT32:
+            devEntry["Valu"] =  *((int32_t *)(ent.varPtr));
+            devEntry["ValType"] = "INT32";
+            devEntry["MinValue"] = ent.minValue.s_int;
+            devEntry["MaxValue"] = ent.maxValue.s_int;
+            break;
+        case CFG_ENTRY_VAR_TYPE::UINT32:
+            devEntry["Valu"] =  *((uint32_t *)(ent.varPtr));
+            devEntry["ValType"] = "UINT32";
+            devEntry["MinValue"] = ent.minValue.u_int;
+            devEntry["MaxValue"] = ent.maxValue.u_int;
+            break;
+        case CFG_ENTRY_VAR_TYPE::FLOAT:
+            devEntry["Valu"] =  *((float *)(ent.varPtr));
+            devEntry["ValType"] = "FLOAT";
+            devEntry["MinValue"] = ent.minValue.floating;
+            devEntry["MaxValue"] = ent.maxValue.floating;
+            break;
+        }
+    }
+}
+
+void DeviceManager::createJsonDeviceList(DynamicJsonDocument &doc)
+{
+    Device *dev;
+    for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++)
+    {
+        dev = getDeviceByIdx(i);
+        if (!dev) break;
+        JsonObject devEntry = doc.createNestedObject(dev->getShortName());
+        devEntry["DeviceID"] = (uint16_t)dev->getId();
+        devEntry["DeviceName"] = dev->getCommonName();
+        devEntry["DeviceEnabled"] = dev->isEnabled();
+        switch (dev->getType())
+        {
+        case DeviceType::DEVICE_BMS:
+            devEntry["DeviceType"] = "BMS";
+            break;
+        case DeviceType::DEVICE_MOTORCTRL:
+            devEntry["DeviceType"] = "MOTORCTRL";
+            break;
+        case DeviceType::DEVICE_CHARGER:
+            devEntry["DeviceType"] = "CHARGER";
+            break;
+        case DeviceType::DEVICE_DISPLAY:
+            devEntry["DeviceType"] = "DISPLAY";
+            break;
+        case DeviceType::DEVICE_THROTTLE:
+            devEntry["DeviceType"] = "THROTTLE";
+            break;
+        case DeviceType::DEVICE_BRAKE:
+            devEntry["DeviceType"] = "BRAKE";
+            break;
+        case DeviceType::DEVICE_MISC:
+            devEntry["DeviceType"] = "MISC";
+            break;
+        case DeviceType::DEVICE_WIFI:
+            devEntry["DeviceType"] = "WIFI";
+            break;
+        case DeviceType::DEVICE_IO:
+            devEntry["DeviceType"] = "IO";
+            break;
+        case DeviceType::DEVICE_DCDC:
+            devEntry["DeviceType"] = "DCDC";
+            break;
+        case DeviceType::DEVICE_ANY:
+        case DeviceType::DEVICE_NONE:
+            devEntry["DeviceType"] = "ERR";
+            break;
+        }
+    }
+}
+
 void DeviceManager::printDeviceList() {
     Logger::console("\n  ENABLED devices: (DISABLE=0xFFFF to disable where FFFF is device number)\n");
     for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++) {

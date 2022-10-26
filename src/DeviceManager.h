@@ -27,6 +27,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define DEVICEMGR_H_
 
 #include <vector>
+#include "ArduinoJson.h"
 #include "config.h"
 #include "devices/io/Throttle.h"
 #include "devices/motorctrl/MotorController.h"
@@ -70,7 +71,9 @@ public:
     const ConfigEntry* findConfigEntry(const char *settingName, Device **matchingDevice);
     void handleTick();
     void setup();
-
+    void createJsonConfigDoc(DynamicJsonDocument &doc);
+    void createJsonConfigDocForID(DynamicJsonDocument &doc, DeviceId id);
+    void createJsonDeviceList(DynamicJsonDocument &doc);
 protected:
 
 private:
@@ -85,6 +88,7 @@ private:
 
     int8_t findDevice(Device *device);
     uint8_t countDeviceType(DeviceType deviceType);
+    void __populateJsonEntry(DynamicJsonDocument &doc, Device *dev);
 };
 
 extern DeviceManager deviceManager;

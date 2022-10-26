@@ -25,9 +25,13 @@
  */
 
 #include "SerialConsole.h"
+#include <ArduinoJson.h>
+
 template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Lets us stream SerialUSB
 
 extern std::vector<ConfigEntry> sysCfgEntries;
+extern SdFs sdCard;
+extern bool sdCardPresent;
 
 uint8_t systype;
 
@@ -274,14 +278,12 @@ void SerialConsole::printMenu() {
     Logger::console("Enable line endings of some sort (LF, CR, CRLF)");
     Logger::console("Most commands case sensitive\n");
     Logger::console("GENERAL SYSTEM CONFIGURATION\n");
-    Logger::console("   E = dump system EEPROM values");
     Logger::console("   h = help (displays this message)");
-  
-    Logger::console("\nDEVICE SELECTION AND ACTIVATION\n");
-    Logger::console("     q = Dump Device Table");
-    Logger::console("     Q = Reinitialize device table");
-    Logger::console("     S = show possible device IDs");
-    Logger::console("     NUKE=1 - Resets all device settings in EEPROM. You have been warned.");
+    Logger::console("   DUMP=1 - Dump entire EEPROM to sdcard");
+    Logger::console("   RESTORE=1 - Read eeprom backup from sdcard and flash it to EEPROM");
+    Logger::console("   JSONDUMP=1 - Read config of every enabled device and store it in JSON format to sdcard");
+    Logger::console("   JSONREAD=1 - Read JSON file from sdCard and update all devices accordingly");
+    Logger::console("   NUKE=1 - Resets all device settings in EEPROM. You have been warned.");
 
     deviceManager.printDeviceList();
 
@@ -303,17 +305,16 @@ void SerialConsole::printMenu() {
             }
         }
     }
-      
+
     Logger::console("\nANALOG AND DIGITAL IO\n");
     Logger::console("   A = Autocompensate ADC inputs");
     Logger::console("   J = set all digital outputs low");
     Logger::console("   K = set all digital outputs high");
- 
+
     if (heartbeat != NULL) {
         Logger::console("   L = show raw analog/digital input/output values (toggle)");
     }
     Logger::console("   OUTPUT=<0-7> - toggles state of specified digital output");
-   
 }
 
 /*	There is a help menu (press H or h or ?)
@@ -441,11 +442,28 @@ void SerialConsole::handleConfigCmd() {
             memCache->nukeFromOrbit(); //then completely erase EEPROM
             Logger::console("Device settings have been nuked. Reboot to reload default settings");
         }
+    } else if (cmdString == String("DUMP")) {
+        if (newValue == 1) {
+            generateEEPROMBinary();
+        }
+    } else if (cmdString == String("RESTORE")) {
+        if (newValue == 1) {
+            loadEEPROMBinary();
+        }
+    } else if (cmdString == String("JSONDUMP")) {
+        if (newValue == 1) {
+            generateEEPROMJSON();
+        }
+    } else if (cmdString == String("JSONREAD")) {
+        if (newValue == 1) {
+            loadEEPROMJSON();
+        }
     } else {
         //Logger::console("Unknown command");
         updateSetting(cmdString.c_str(), strVal);
         updateWifi = false;
     }
+
     // send updates to ichip wifi
     if (updateWifi) 
     {
@@ -475,13 +493,6 @@ void SerialConsole::handleShortCmd() {
             } else {
                 Logger::console("Cease raw throttle output");
             }
-        }
-        break;
-    case 'E':
-        Logger::console("Reading System EEPROM values");
-        for (int i = 0; i < 256; i++) {
-            memCache->Read(EE_SYSTEM_START + i, &val);
-            Logger::console("%d: %d", i, val);
         }
         break;
     case 'K': //set all outputs high
@@ -526,13 +537,6 @@ void SerialConsole::handleShortCmd() {
     case 'a':
         //deviceManager.sendMessage(DEVICE_ANY, ADABLUE, 0xDEADBEEF, nullptr);
         break;
-    case 'S': //generate a list of devices.
-        deviceManager.printDeviceList();        
-        break;
-    
-    case 'X':
-        setup(); //this is probably a bad idea. Do not do this while connected to anything you care about - only for debugging in safety!
-        break;
     case 'q':
         PrefHandler::dumpDeviceTable();
         break;
@@ -540,6 +544,118 @@ void SerialConsole::handleShortCmd() {
         PrefHandler::initDevTable();
         break;
     }
+}
+
+void SerialConsole::generateEEPROMBinary()
+{
+    // Open or create file - truncate existing file.
+    if (!file.open("eeprom.bin", O_RDWR | O_CREAT | O_TRUNC)) {
+        Logger::error("Could not create the eeprom binary file! Aborting!");
+        return;
+    }
+    Logger::console("Reading from EEPROM and saving to SDCard.");
+    uint8_t buffer[130];
+    int x = 0;
+    for (int i = 0; i < (1024 * 256); i = i + 128)
+    {
+        if (memCache->Read(i, buffer, 128))
+        {
+            file.write(buffer, 128);
+        }
+        else 
+        {
+            Logger::error("Error reading EEPROM. Aborting!");
+            file.close();
+            return;
+        }
+        x++;
+        if (x == 256)
+        {
+            x = 0;
+            Logger::console("Still working...");
+        }
+    }
+    file.flush();
+    file.close();
+    Logger::console("Successfully saved EEPROM to sdcard.");
+}
+
+void SerialConsole::loadEEPROMBinary()
+{
+    // Open or create file - truncate existing file.
+    if (!file.open("eeprom.bin", O_RDWR)) {
+        Logger::error("Could not open the eeprom binary file! Aborting!");
+        return;
+    }
+    Logger::console("Reading from sdCard and writing to EEPROM");
+    uint8_t buffer[130];
+    int x = 0;
+    for (int i = 0; i < (1024 * 256); i = i + 128)
+    {
+        if (file.read(buffer, 128))
+        {
+            if (!memCache->Write(i, buffer, 128))
+            {
+                Logger::error("Error writing to EEPROM. Aborting!");
+                file.close();
+                return;
+            }
+        }
+        else 
+        {
+            Logger::error("Error reading from sdCard. Aborting!");
+            file.close();
+            return;
+        }
+        x++;
+        if (x == 256)
+        {
+            x = 0;
+            Logger::console("Still working...");
+        }
+    }
+    file.close();
+    Logger::console("Flushing all eeprom caches.");
+    memCache->InvalidateAll();
+    Logger::console("Successfully updated EEPROM from sdCard. Please reboot now.");
+}
+
+void SerialConsole::generateEEPROMJSON()
+{
+    if (!file.open("gevcu7_settings.json", O_RDWR | O_CREAT | O_TRUNC)) {
+        Logger::error("Could not create a json file on the sdcard. Aborting.");
+        return;
+    }
+    Logger::console("Creating json settings document on sdcard.");
+
+    DynamicJsonDocument doc(20000);
+
+    //make call to DeviceManager to get the json
+    deviceManager.createJsonConfigDoc(doc);
+
+    //can send it to screen for debugging but don't leave that on
+    //serializeJsonPretty(doc, Serial);
+    //Serial.println();
+
+    //can remove the Pretty part of the function call to get a minified version. But, sdcards are large and this version
+    //is much easier to read by human beings
+    serializeJsonPretty(doc, file);
+    file.println();
+    file.flush();
+    file.close();
+
+    Logger::console("Done saving json settings file.");
+}
+
+void SerialConsole::loadEEPROMJSON()
+{
+    DynamicJsonDocument doc(10000);
+
+    deviceManager.createJsonDeviceList(doc);
+
+    //shall we send it to the serial console for debugging?
+    serializeJsonPretty(doc, Serial);
+    Serial.println();
 }
 
 
