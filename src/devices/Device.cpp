@@ -128,5 +128,19 @@ void Device::zapConfiguration()
     loadConfiguration(); //then try to reload configuration to bring it back to defaults
 }
 
+const ConfigEntry* Device::findConfigEntry(const char *settingName)
+{
+    for (size_t idx = 0; idx < cfgEntries.size(); idx++)
+    {
+        //Serial.printf("%s %s\n", settingName, ent.cfgName.c_str());
+        if (!strcmp(settingName, cfgEntries.at(idx).cfgName.c_str()))
+        {
+            //Serial.printf("Found it. Address is %x\n", &entries->at(idx));
+            return &cfgEntries.at(idx);
+        }
+    }
+    return nullptr;
+}
+
 
 

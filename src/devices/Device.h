@@ -70,6 +70,7 @@ public:
     void zapConfiguration();
     void setConfiguration(DeviceConfiguration *);
     const std::vector<ConfigEntry> *getConfigEntries();
+    const ConfigEntry* findConfigEntry(const char *settingName);
 
 protected:
     PrefHandler *prefsHandler;

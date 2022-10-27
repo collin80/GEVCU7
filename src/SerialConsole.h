@@ -47,6 +47,7 @@ public:
     SerialConsole(MemCache* memCache);
     SerialConsole(MemCache* memCache, Heartbeat* heartbeat);
     void loop();
+    void setup();
     void printMenu();
 
 protected:

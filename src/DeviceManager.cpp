@@ -393,17 +393,12 @@ const ConfigEntry* DeviceManager::findConfigEntry(const char *settingName, Devic
     for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++) {
         if (devices[i] && devices[i]->isEnabled()) 
         {
-            const std::vector<ConfigEntry> *entries = devices[i]->getConfigEntries();
-            for (size_t idx = 0; idx < entries->size(); idx++)
+            const ConfigEntry *cfg = devices[i]->findConfigEntry(settingName);
+            if (cfg)
             {
-                //Serial.printf("%s %s\n", settingName, ent.cfgName.c_str());
-                if (!strcmp(settingName, entries->at(idx).cfgName.c_str()))
-                {
-                    //Serial.printf("Found it. Address is %x\n", &entries->at(idx));
-                    if (matchingDevice) *matchingDevice = devices[i];
-                    return &entries->at(idx);
-                }
-            }    
+                if (matchingDevice) *matchingDevice = devices[i];
+                return cfg;
+            }
         }
     }
     return nullptr;

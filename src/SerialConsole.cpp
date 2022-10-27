@@ -45,6 +45,12 @@ SerialConsole::SerialConsole(MemCache* memCache, Heartbeat* heartbeat) :
     init();
 }
 
+void SerialConsole::setup()
+{
+    init();
+    Serial.flush();
+}
+
 void SerialConsole::init() {
     handlingEvent = false;
 
@@ -58,7 +64,7 @@ void SerialConsole::init() {
 void SerialConsole::loop() {
   
     if (handlingEvent == false) {
-        while (SerialUSB.available()) {
+        while (Serial.available()) {
             serialEvent();
         }
     }
@@ -583,7 +589,7 @@ void SerialConsole::generateEEPROMBinary()
 void SerialConsole::loadEEPROMBinary()
 {
     // Open or create file - truncate existing file.
-    if (!file.open("eeprom.bin", O_RDWR)) {
+    if (!file.open("eeprom.bin", O_READ)) {
         Logger::error("Could not open the eeprom binary file! Aborting!");
         return;
     }
@@ -649,13 +655,66 @@ void SerialConsole::generateEEPROMJSON()
 
 void SerialConsole::loadEEPROMJSON()
 {
-    DynamicJsonDocument doc(10000);
+    DynamicJsonDocument doc(20000);
 
-    deviceManager.createJsonDeviceList(doc);
+    // Open or create file - truncate existing file.
+    if (!file.open("gevcu7_settings.json", O_READ)) {
+        Logger::error("Could not open the json file! Aborting!");
+        return;
+    }
+    Logger::console("Reading json from SDCard and writing settings to EEPROM");
 
-    //shall we send it to the serial console for debugging?
-    serializeJsonPretty(doc, Serial);
-    Serial.println();
+    deserializeJson(doc, file);
+
+    //serializeJsonPretty(doc, Serial);
+    //Serial.println();
+
+    JsonObject docObjs = doc.as<JsonObject>();
+
+    for (auto obj: docObjs) //get each device in the json file
+    {
+        JsonObject devObjs = obj.value().as<JsonObject>();
+        uint16_t id = devObjs["DevID"];
+        Serial.printf("Name: %s ID: %x\n", obj.key().c_str(), id);
+        for (auto devObj: devObjs) //get all the paramaters of the current device
+        {
+            Device *dev = deviceManager.getDeviceByID(id);
+            if (dev)
+            {
+                const ConfigEntry *cfgEntry = dev->findConfigEntry(devObj.key().c_str());
+                //careful, each entry in the json is itself an object. You want "Valu" to get the set value
+                if (cfgEntry)
+                {
+                    Serial.printf("\tSetting parameter %s\n", devObj.key().c_str());
+                    switch (cfgEntry->varType)
+                    {
+                    case CFG_ENTRY_VAR_TYPE::BYTE:
+                        *(uint8_t *)cfgEntry->varPtr = devObj.value()["Valu"].as<uint8_t>();
+                        break;
+                    case CFG_ENTRY_VAR_TYPE::FLOAT:
+                        *(float *)cfgEntry->varPtr = devObj.value()["Valu"].as<float>();
+                        break;
+                    case CFG_ENTRY_VAR_TYPE::INT16:
+                        *(int16_t *)cfgEntry->varPtr = devObj.value()["Valu"].as<int16_t>();
+                        break;
+                    case CFG_ENTRY_VAR_TYPE::INT32:
+                        *(int32_t *)cfgEntry->varPtr = devObj.value()["Valu"].as<int32_t>();
+                        break;
+                    case CFG_ENTRY_VAR_TYPE::STRING:
+                        strcpy((char *)cfgEntry->varPtr, devObj.value()["Valu"].as<char *>());
+                        break;
+                    case CFG_ENTRY_VAR_TYPE::UINT16:
+                        *(uint16_t *)cfgEntry->varPtr = devObj.value()["Valu"].as<uint16_t>();
+                        break;
+                    case CFG_ENTRY_VAR_TYPE::UINT32:
+                        *(uint32_t *)cfgEntry->varPtr = devObj.value()["Valu"].as<uint32_t>();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    Logger::console("Finished importing settings from JSON");
 }
 
 

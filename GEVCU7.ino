@@ -410,6 +410,7 @@ void setup() {
    // }
 
     serialConsole = new SerialConsole(memCache, heartbeat);
+    serialConsole->setup();
 	serialConsole->printMenu();
 	//btDevice = static_cast<ADAFRUITBLE *>(deviceManager.getDeviceByID(ADABLUE));
     //deviceManager.sendMessage(DEVICE_WIFI, ADABLUE, MSG_CONFIG_CHANGE, NULL); //Load config into BLE interface
