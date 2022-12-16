@@ -52,6 +52,14 @@ serial console where settings can be changed. The second port is a GVRET compati
 binary protocol port for use with SavvyCAN. This port will forward all traffic on
 all three buses to SavvyCAN for debugging and analysis. It should be possible to
 send traffic down any of the three buses from SavvyCAN as well.
+
+I'm considering dropping the secord serial port and consolidating that functionality
+to the first one on a trigger (probably 0xE7 like what puts GVRET into binary mode)
+as character 0xE7 should not normally be sent by text traffic. This gives room to
+set up as "MTP + Serial" which would allow for accessing the SDCard over USB without having
+to remove it. However, while testing has shown that this can work, it seems kind of touchy,
+the files get returned a little corrupted (maybe?) and changes won't really show up properly.
+It might be interesting but it seems to have its fair share of problems.
  
 
 D0 in documentation is Teensy Pin 4 and is connected to DIG_INT (interrupt from 16 way I/O expander)
@@ -110,15 +118,8 @@ Otherwise nothing works at all. Though, if GEVCU7 dies nothing is really going t
 controlling the inverter then you aren't going unless it's working. So, this might be viable. 
 
 
-It should be possible to save the entire EEPROM chip contents to the sdcard and also possible to restore the entire EEPROM
-from sdcard. This would allow for settings backup and restoration. In the past GEVCU6 would sometimes eat certain settings
-but no one quite knew why. Haven't seen that with this board but still having backups does not hurt.This would also allow
-for a different way to edit parameters and would allow people to send someone like me their config so I could see if 
-anything is misconfigured. So, this really is a priority to get working. Actually, make two different EEPROM i/o
-schemes - the whole EEPROM as a binary file and the eeprom as seen as a json file. To get the json data we'll need to
-interrogate the config system. It knows nice names for all the settings and their type. This would allow for generating
-a json view of each device that is enabled (disabled devices probably don't have anything stored in EEPROM yet and don't
-create config entries)
+It is now possible to dump and load the entire EEPROM to/from SDCard. It's also possible to get both directions
+in JSON instead. This is much easier to work with.
 */
 
 #include "GEVCU.h"
@@ -130,7 +131,7 @@ create config entries)
 #include <TeensyTimerTool.h>
 #include "src/i2c_driver_wire.h"
 #include <SPI.h>
-#include "SdFat.h"
+#include "SD.h"
 #include "Watchdog_t4.h"
 #include "src/devices/esp32/esp_loader.h"
 #include "src/devices/esp32/gevcu_port.h"
@@ -149,8 +150,6 @@ SerialConsole *serialConsole;
 template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Lets us stream SerialUSB
 
 byte i = 0;
-
-SdFs sdCard;
 
 bool sdCardPresent;
 
@@ -321,7 +320,7 @@ void setup() {
 #endif
         Serial.print("Attempting to mount sdCard ");
 	    //init SD card early so we can use it for logging everything else if needed.
-	    if (!sdCard.begin(SD_CONFIG))
+        if (!SD.sdfs.begin(SdioConfig(FIFO_SDIO)))
 	    {
     	    //sdCard.initErrorHalt(&Serial);
             Serial.println("- Could not initialize sdCard");
@@ -347,7 +346,8 @@ void setup() {
         //here, directly after trying to find the SDCard is the best place to check the sdcard for firmware files
         //and flash them to the appropriate places if they exist.
         FsFile file;
-        if (!file.open("GEVCU7.hex", O_READ)) {
+        file = SD.sdfs.open("GEVCU7.hex", O_READ);
+        if (!file) {
             Serial.println("No teensy firmware to flash. Skipping.");
         }
         else

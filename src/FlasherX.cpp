@@ -48,8 +48,6 @@
 #include "FlashTxx.h"		// TLC/T3x/T4x/TMM flash primitives
 #include "FlasherX.h"
 
-extern SdFs sdCard;
-
 const int ledPin = 13;		// LED
 Stream *serial = &Serial;	// Serial (USB) or Serial1, Serial2, etc. (UART)
 
@@ -184,7 +182,7 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
     char filename[40];
     file->getName(filename, 40);
     file->close();
-    sdCard.remove(filename);
+    SD.sdfs.remove(filename);
 
   // move new program from buffer to flash, free buffer, and reboot
   flash_move( FLASH_BASE_ADDR, buffer_addr, hex.max-hex.min );

@@ -24,8 +24,6 @@
 #include "../../Logger.h"
 #include "gevcu_port.h"
 
-extern SdFs sdCard;
-
 #ifndef MAX
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
 #endif
@@ -144,7 +142,7 @@ bool flashESP32(const char *filename, uint32_t address)
         if (flash_esp32_binary(&file, address) == ESP_LOADER_SUCCESS)
         {
             loader_port_reset_target();
-            sdCard.remove(filename);
+            SD.sdfs.remove(filename);
             return true;
         }
         file.close();        

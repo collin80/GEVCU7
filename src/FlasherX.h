@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "SdFat.h"
+#include "SD.h"
 
 //******************************************************************************
 // hex_info_t	struct for hex record and hex file info

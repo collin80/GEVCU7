@@ -17,7 +17,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "SdFat.h"
+#include "SD.h"
 
 #ifdef __cplusplus
 extern "C" {

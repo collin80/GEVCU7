@@ -25,21 +25,20 @@
  */
 
 #include "Logger.h"
-#include "SdFat.h"
+#include "SD.h"
 #include "RingBuf.h"
 #include "DeviceManager.h"
 #include "devices/misc/SystemDevice.h"
 
-extern SdFs sdCard;
 extern bool sdCardPresent;
-FsFile file;
+FsFile logFile;
 
 // For efficiency the log has to be preallocated for a certain amount of space.
 //going to try not to do this. We don't need super high throughput for logging
 //and the log file could grow arbitrarily large
 #define LOG_FILE_SIZE 1000000  // 1M bytes.
 
-#define RING_BUF_CAPACITY 65535
+#define RING_BUF_CAPACITY 16 * 1024
 #define LOG_FILENAME "GevcuLog.txt"
 #define CFG_TICK_INTERVAL_SDLOGGING                 40000
 
@@ -51,7 +50,8 @@ uint32_t Logger::lastLogTime = 0;
 void Logger::initializeFile()
 {
     // Open or create file - truncate existing file.
-    if (!file.open(LOG_FILENAME, O_RDWR | O_CREAT | O_TRUNC)) {
+    logFile = SD.sdfs.open(LOG_FILENAME, O_RDWR | O_CREAT | O_TRUNC);
+    if (!logFile) {
         Serial.println("open failed\n");
         return;
     }
@@ -68,7 +68,7 @@ void Logger::initializeFile()
     */
     
     // initialize the RingBuf.
-    rb.begin(&file);
+    rb.begin(&logFile);
     Serial.println("Initialized RingBuff");
 }
 
@@ -81,17 +81,17 @@ void Logger::loop()
     int ret = 0;
     //Serial.println(n);
     //delay(100);
-    if ( ( (n >= 512) || ((millis() - lastWriteTime) > 1000) ) && !file.isBusy()) {
+    if ( ( (n >= 512) || ((millis() - lastWriteTime) > 1000) ) && !logFile.isBusy()) {
       // Not busy only allows one sector before possible busy wait.
       // Write one sector from RingBuf to file.
       int writeBytes = min(n, 512u);
       ret = rb.writeOut(writeBytes);
       if (writeBytes != ret) {
         Serial.printf("Writeout failed. Want to write %u bytes but wrote %u\n", writeBytes, ret);
-        file.close();
+        logFile.close();
         return;
       }
-      else file.flush(); //make sure it is updated on disk
+      else logFile.flush(); //make sure it is updated on disk
       lastWriteTime = millis();
     }
 }
