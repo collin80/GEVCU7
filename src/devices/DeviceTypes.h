@@ -45,6 +45,7 @@ enum DeviceType {
     DEVICE_WIFI,
     DEVICE_IO,
     DEVICE_DCDC,
+    DEVICE_HVAC,
     DEVICE_NONE
 };
 

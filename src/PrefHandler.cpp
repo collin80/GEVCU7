@@ -352,6 +352,25 @@ bool PrefHandler::write(const char *key, float val) {
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
+bool PrefHandler::write(const char *key, double val) {
+    uint32_t address = keyToAddress(key, true);
+    uint8_t len;
+    memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
+    if (len == 0)
+    {
+        len = 8;
+        memCache->Write((uint32_t)address + base_address + lkg_address - 1, len);
+    }
+    else if (len != 8)
+    {
+        Logger::error("Attempt to write improper length to variable %s!", key);
+        return false;
+    }
+    //then return whether we could write the value into the memory cache    
+    return memCache->Write((uint32_t)address + base_address + lkg_address, val);
+}
+
+
 bool PrefHandler::write(const char *key, const char *val, size_t maxlen) {
     uint32_t address = keyToAddress(key, true);    
     uint8_t len;
@@ -404,6 +423,16 @@ bool PrefHandler::read(const char *key, uint32_t *val, uint32_t defval) {
 }
 
 bool PrefHandler::read(const char *key, float *val, float defval) {
+    uint32_t address = keyToAddress(key, false);
+    if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
+    else 
+    {
+        *val = defval;
+        return true;
+    }
+}
+
+bool PrefHandler::read(const char *key, double *val, double defval) {
     uint32_t address = keyToAddress(key, false);
     if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
     else 

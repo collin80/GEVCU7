@@ -209,6 +209,13 @@ boolean MemCache::Write(uint32_t address, float valu)
     return result;
 }
 
+boolean MemCache::Write(uint32_t address, double valu)
+{
+    boolean result;
+    result = Write(address, &valu, 8);
+    return result;
+}
+
 boolean MemCache::Write(uint32_t address, const void* data, uint16_t len)
 {
     uint32_t addr;
@@ -274,6 +281,13 @@ boolean MemCache::Read(uint32_t address, float* valu)
 {
     boolean result;
     result = Read(address, valu, 4);
+    return result;
+}
+
+boolean MemCache::Read(uint32_t address, double* valu)
+{
+    boolean result;
+    result = Read(address, valu, 8);
     return result;
 }
 

@@ -57,11 +57,13 @@ public:
     bool write(const char *key, uint16_t val);
     bool write(const char *key, uint32_t val);
     bool write(const char *key, float val);
+    bool write(const char *key, double val);
     bool write(const char *key, const char *val, size_t maxlen);
     bool read(const char *key, uint8_t *val, uint8_t defval);
     bool read(const char *key, uint16_t *val, uint16_t defval);
     bool read(const char *key, uint32_t *val, uint32_t defval);
     bool read(const char *key, float *val, float defval);
+    bool read(const char *key, double *val, double defval);
     bool read(const char *key, char *val, const char* defval);
 
     uint8_t calcChecksum();

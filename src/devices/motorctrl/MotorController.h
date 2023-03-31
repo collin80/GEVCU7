@@ -189,9 +189,9 @@ protected:
     float torqueActual; // in Nm
     float torqueAvailable; // the maximum available torque in Nm
 
-    float dcVoltage; // DC voltage in 0.1 Volts
-    float dcCurrent; // DC current in 0.1 Amps
-    float acCurrent; // AC current in 0.1 Amps
+    float dcVoltage; // DC voltage in Volts
+    float dcCurrent; // DC current in Amps
+    float acCurrent; // AC current in Amps
     float mechanicalPower; // mechanical power of the motor kW
     float temperatureMotor; // temperature of motor in degree C
     float temperatureInverter; // temperature of inverter power stage in degree C
