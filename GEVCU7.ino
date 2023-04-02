@@ -418,6 +418,9 @@ void setup() {
 	Logger::info("System Ready");
     crashHandler.addBreadcrumb(ENCODE_BREAD("BOOTD"));
 
+    //just for testing. Don't uncomment for production roms
+    //systemIO.setDigitalOutputPWM(0, 5, 400);
+
     //just for testing obviously. Don't leave these uncommented.
     //sendTestCANFrames();
     //testGEVCUHardware();

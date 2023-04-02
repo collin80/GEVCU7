@@ -37,6 +37,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PrefHandler.h"
 #include "Logger.h"
 #include <ADC.h> //better ADC library compared to the built-in ADC functions
+#include "TickHandler.h"
 
 class CANIODevice;
 
@@ -68,7 +69,15 @@ public:
 #define PCA_WRITE       0
 #define PCA_READ        1
 
-class SystemIO
+struct PWM_SPECS
+{
+    uint32_t freqInterval;
+    uint32_t triggerPoint;
+    bool pwmActive;
+    uint32_t progress;
+};
+
+class SystemIO: public TickObserver
 {
 public:
     SystemIO();
@@ -81,18 +90,23 @@ public:
     int32_t getAnalogOut(uint8_t which);
     boolean getDigitalIn(uint8_t which); //get value of one of the 4 digital inputs
     void setDigitalOutput(uint8_t which, boolean active); //set output high or not
-    boolean getDigitalOutput(uint8_t which); //get current value of output state (high?)    
-    
+    boolean getDigitalOutput(uint8_t which); //get current value of output state (high?)
+
+    void setDigitalOutputPWM(uint8_t which, uint8_t freq, uint16_t duty);
+    void updateDigitalPWMDuty(uint8_t which, uint16_t duty);
+    void updateDigitalPWMFreq(uint8_t which, uint8_t freq);
+    void handleTick();
+
     void setDigitalInLatchMode(int which, LatchModes::LATCHMODE mode);
     void unlockDigitalInLatch(int which);
-    
+
     void installExtendedIO(CANIODevice *device);
-    
+
     int numDigitalInputs();
     int numDigitalOutputs();
     int numAnalogInputs();
     int numAnalogOutputs();
-    
+
     void setSystemType(SystemType);
     SystemType getSystemType();
     bool calibrateADCOffset(int, bool);
@@ -117,11 +131,14 @@ private:
     int numDigOut;
     int numAnaIn;
     int numAnaOut;
+
+    PWM_SPECS digPWMOutput[NUM_OUTPUT];
+    uint32_t lastMicros;
     
     ExtendedIODev extendedDigitalOut[NUM_EXT_IO];
     ExtendedIODev extendedDigitalIn[NUM_EXT_IO];
     ExtendedIODev extendedAnalogOut[NUM_EXT_IO];
-    ExtendedIODev extendedAnalogIn[NUM_EXT_IO];    
+    ExtendedIODev extendedAnalogIn[NUM_EXT_IO];
 };
 
 extern SystemIO systemIO;

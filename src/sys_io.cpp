@@ -24,10 +24,6 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-some portions based on code credited as:
-Arduino Due ADC->DMA->USB 1MSPS
-by stimmer
-
 */
 
 #include "sys_io.h"
@@ -53,6 +49,14 @@ SystemIO::SystemIO()
     numAnaOut = 0;
     pcaDigitalOutputCache = 0; //all outputs off by default
     adcMuxSelect = 0;
+
+    for (int i = 0; i < NUM_OUTPUT; i++)
+    {
+        digPWMOutput[i].triggerPoint = 0;
+        digPWMOutput[i].progress = 0;
+        digPWMOutput[i].pwmActive = false;
+        digPWMOutput[i].freqInterval = 0;
+    }
 
     adc = new ADC(); // adc object;
 }
@@ -103,6 +107,9 @@ void SystemIO::setup() {
     }
 
     initDigitalMultiplexor(); //set I/O direction for all pins, polarity, etc.
+
+    tickHandler.attach(this, 1000); //interval is set in microseconds. We want 1ms timer
+    lastMicros = micros();
 
     pinMode(A0, INPUT);
     pinMode(A1, INPUT);
@@ -393,6 +400,7 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
     if (which < NUM_OUTPUT)
     {
         _pSetDigitalOutput(which, active);
+        digPWMOutput[which].pwmActive = false;
     }
     else
     {
@@ -417,6 +425,92 @@ boolean SystemIO::getDigitalOutput(uint8_t which) {
         if (dev) return dev->getDigitalOutput(extendedDigitalOut[which - NUM_OUTPUT].localOffset);
     }
     return false;
+}
+
+//Which is 0-7 to specify which output to turn into PWM
+//Freq is 1-255 to set frequency in hertz. Really only works well up to maybe 60Hz
+//Duty is in tenths of a percent 0-1000
+//Calling this function causes the output to become PWM. Calling setDigitalOutput
+//turns off PWM on the given output
+void SystemIO::setDigitalOutputPWM(uint8_t which, uint8_t freq, uint16_t duty)
+{
+    if (which > NUM_OUTPUT) return;
+    if (duty > 1000) return;
+    if (freq == 0) return;
+    digPWMOutput[which].progress = 0;
+    digPWMOutput[which].pwmActive = true;
+    digPWMOutput[which].freqInterval = 1000000ul / freq; //# of uS in each full cycle
+    //now, how far into the progress do we need to get before turning on the output?
+    double prog = duty / 1000.0;
+    digPWMOutput[which].triggerPoint = (uint32_t)(digPWMOutput[which].freqInterval * prog);
+    _pSetDigitalOutput(which, false);//set it low to start
+}
+
+void SystemIO::updateDigitalPWMDuty(uint8_t which, uint16_t duty)
+{
+    if (which > NUM_OUTPUT) return;
+    if (duty > 1000) return;
+    double prog = duty / 1000.0;
+    digPWMOutput[which].triggerPoint = (uint32_t)(digPWMOutput[which].freqInterval * prog);
+}
+
+void SystemIO::updateDigitalPWMFreq(uint8_t which, uint8_t freq)
+{
+    if (which > NUM_OUTPUT) return;
+    if (freq == 0) return;
+    uint32_t newval = 1000000ul / freq;
+    double ratio = (double)newval / (double)digPWMOutput[which].freqInterval;
+    digPWMOutput[which].freqInterval = newval; //# of uS in each full cycle
+    digPWMOutput[which].triggerPoint *= ratio;
+}
+
+/*
+A lot was precalculated to save time here. Just figure out how much time has passed since the last call
+then add that to the progress value of each enabled PWM output. If the result goes over the trigger threshold
+then set the output high, otherwise set it low. This should be pretty stable for any PWM not right near the two
+ends of the spectrum. But, given our crappy resolution, none of this will work great if the PWM frequency is too
+high or the duty is at either end. Frequencies under 40Hz should be OK and duty cycles between 10 and 90 percent
+are probably fine. This is sufficient to drive the PWM of water pumps or the Tesla water heater, probably OK
+for gauges too.
+*/
+void SystemIO::handleTick()
+{
+    uint32_t now = micros();
+    uint32_t interval = now - lastMicros;
+    lastMicros = now;
+    uint8_t outputMask;
+    uint8_t tempCache = pcaDigitalOutputCache;
+
+    for (int i = 0; i < NUM_OUTPUT; i++)
+    {
+        if (!digPWMOutput[i].pwmActive) continue;
+        digPWMOutput[i].progress += interval;
+        Logger::debug("%i: %u %u %u", i, digPWMOutput[i].progress, digPWMOutput[i].freqInterval, digPWMOutput[i].triggerPoint);        
+        if (digPWMOutput[i].progress >= digPWMOutput[i].triggerPoint)
+        {
+            Logger::debug("%i on!", i);
+            pcaDigitalOutputCache |= (1 << i);
+        }
+        else
+        {
+            Logger::debug("%i OFF!", i);
+            outputMask = ~(1 << i);
+            pcaDigitalOutputCache &= outputMask;
+        }
+        //we have to constrain the progress variable to be within the freqInterval value but do so here
+        //after we've already done our output calc because this should yield the closest match to our
+        //desired pulse width. But, still the pulse width is likely to jitter by +/- 1ms
+        if (digPWMOutput[i].progress > digPWMOutput[i].freqInterval) digPWMOutput[i].progress -= digPWMOutput[i].freqInterval;
+    }
+
+    //only update the chip if we actually changed anything
+    if (pcaDigitalOutputCache != tempCache)
+    {
+        Wire.beginTransmission(PCA_ADDR);
+        Wire.write(PCA_WRITE_OUT0);
+        Wire.write(pcaDigitalOutputCache);
+        Wire.endTransmission();
+    }
 }
 
 /*
