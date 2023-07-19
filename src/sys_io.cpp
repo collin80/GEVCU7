@@ -434,7 +434,7 @@ boolean SystemIO::getDigitalOutput(uint8_t which) {
 //turns off PWM on the given output
 void SystemIO::setDigitalOutputPWM(uint8_t which, uint8_t freq, uint16_t duty)
 {
-    if (which > NUM_OUTPUT) return;
+    if (which >= NUM_OUTPUT) return;
     if (duty > 1000) return;
     if (freq == 0) return;
     digPWMOutput[which].progress = 0;
@@ -448,7 +448,7 @@ void SystemIO::setDigitalOutputPWM(uint8_t which, uint8_t freq, uint16_t duty)
 
 void SystemIO::updateDigitalPWMDuty(uint8_t which, uint16_t duty)
 {
-    if (which > NUM_OUTPUT) return;
+    if (which >= NUM_OUTPUT) return;
     if (duty > 1000) return;
     double prog = duty / 1000.0;
     digPWMOutput[which].triggerPoint = (uint32_t)(digPWMOutput[which].freqInterval * prog);
@@ -456,7 +456,7 @@ void SystemIO::updateDigitalPWMDuty(uint8_t which, uint16_t duty)
 
 void SystemIO::updateDigitalPWMFreq(uint8_t which, uint8_t freq)
 {
-    if (which > NUM_OUTPUT) return;
+    if (which >= NUM_OUTPUT) return;
     if (freq == 0) return;
     uint32_t newval = 1000000ul / freq;
     double ratio = (double)newval / (double)digPWMOutput[which].freqInterval;
@@ -485,7 +485,7 @@ void SystemIO::handleTick()
     {
         if (!digPWMOutput[i].pwmActive) continue;
         digPWMOutput[i].progress += interval;
-        Logger::debug("%i: %u %u %u", i, digPWMOutput[i].progress, digPWMOutput[i].freqInterval, digPWMOutput[i].triggerPoint);        
+        //Logger::debug("%i: %u %u %u", i, digPWMOutput[i].progress, digPWMOutput[i].freqInterval, digPWMOutput[i].triggerPoint);        
         if (digPWMOutput[i].progress >= digPWMOutput[i].triggerPoint)
         {
             Logger::debug("%i on!", i);
