@@ -701,7 +701,7 @@ void SerialConsole::loadEEPROMJSON()
                         *(int32_t *)cfgEntry->varPtr = devObj.value()["Valu"].as<int32_t>();
                         break;
                     case CFG_ENTRY_VAR_TYPE::STRING:
-                        strcpy((char *)cfgEntry->varPtr, devObj.value()["Valu"].as<char *>());
+                        strcpy((char *)cfgEntry->varPtr, devObj.value()["Valu"].as<String>().c_str());
                         break;
                     case CFG_ENTRY_VAR_TYPE::UINT16:
                         *(uint16_t *)cfgEntry->varPtr = devObj.value()["Valu"].as<uint16_t>();
