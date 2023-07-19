@@ -331,6 +331,8 @@ void setup() {
             sdCardPresent = true;
             Serial.println(" OK!");
             Logger::initializeFile();
+            //if the system crashed we ought to decode all the breadcrumbs and save them into the logfile.
+            //Maybe within the above function?
         }
 #ifndef ASSUME_SDCARD_INSERTED
     }
@@ -398,7 +400,8 @@ void setup() {
     deviceManager.setup();
 
     //if we crashed then do not initialize any of the devices this time around.
-    //This may not be the ideal solution but for testing it's OK right now.
+    //This may not be the ideal solution. Actually, lots of things were initialized above
+    //anyway so only things derived from Device wouldn't get initialized here.
     //if (!crashHandler.bCrashed())
     //{
 	    initializeDevices();

@@ -34,7 +34,7 @@
 #include "TickHandler.h"
 
 int timer;
-//we're using up to 9 timers and they are defined here so that they can
+//we're using up to 12 timers and they are defined here so that they can
 //explicitly be set to the various hardware timers. This is used to spread out
 //which timers are used and to allow a wide range of max durations
 PeriodicTimer t1(GPT1); //[178.95697s max interval]

@@ -96,6 +96,7 @@ void CrashHandler::decodeBreadcrumbToString(uint32_t val, char* buffer)
 //cycles is 1/6th of a microsecond. If you add 6 calls to your function you will
 //cause a phantom 1us delay which you will have to be OK with. This overhead likely
 //less than using serial writes to the USB port though.
+//Breadcrumbs are 32 bit and there are 6 of them.
 void CrashHandler::addBreadcrumb(uint32_t crumb)
 {
     //these are pipelined and cached and almost instant.
@@ -109,12 +110,12 @@ void CrashHandler::addBreadcrumb(uint32_t crumb)
     arm_dcache_flush((void *)bc, sizeof(struct crashreport_breadcrumbs_struct));
 }
 
-//If you've already dropped a breadcrumb and just want to update the 7 digit number on the end
+//If you've already dropped a breadcrumb and just want to update the 7 bit number on the end
 //then use this function instead. This allows for placing milestones at the end of the breadcrumb
 //to see how far into a function it got. Note, however, that you can only do this if you have not
 //called any other functions that might drop their own breadcrumb. This makes the utility
 //somewhat limited but might be useful when debugging to annotate progress.
-//note that this still calls dcache flush and so still causes a healthy processing delay
+//note that this still calls dcache flush and so still causes a healthy (1/6 of 1uS) processing delay
 void CrashHandler::updateBreadcrumb(uint8_t crumb)
 {
     bc->value[5] = (bc->value[5] & 0xFFFFFFF8) + (crumb & 0x7F);

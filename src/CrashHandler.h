@@ -42,6 +42,17 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 extern MemCache *memCache;
 
+
+/*
+The idea here is this: A breadcrumb is 32 bits long and one can store whatever value they'd like in each one.
+The ENCODE_BREAD macro takes as input a 5 character string of all uppercase letters. These are then packed 5 bits
+at a time into the 32 bit breadcrumb. 5*5 = 25 bits taken up. This leaves 7 bits which are then used as a counter
+within the breadcrumb. One can thus set a 5 character description of a function and increment the counter at various
+points within the function so that a crash can better be localized. It would be possible to expand the character
+portion to 6 instead of 5 and then only have a 2 bit counter. This still gives four possibilities for the counter
+which in practice may be enough, especially since the utility of the counter can be limited by the fact that no
+other breadcrumb dropping functions could be called in the meantime.
+*/
 #ifndef ENCODE_BREAD
 #define ENCODE_BREAD(a) ( (((a[0]-0x40) & 0x1F) << 27) + (((a[1] - 0x40) & 0x1F) << 22) + (((a[2] - 0x40) & 0x1F) << 17) + (((a[3] - 0x40) & 0x1F) << 12) + (((a[4] - 0x40) & 0x1F) << 7) )
 #endif
