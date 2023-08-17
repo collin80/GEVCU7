@@ -1,10 +1,6 @@
 /*
- * CANIODevice.h parent of canbus connected devices that can extent the system I/O.
- * does not specifically handle canopen for devices that use it. However, most devices can be
- * pretty easily faked for canopen support. Just register for messages that contain the device ID
- * as the lower 7 bits and allow all upper 4 bit patterns through. For canopen you have to
- * send on ID 0 but you aren't going to be receiving.
-
+ * FourAnalogM2.h - Implements an interface to an M.2 expansion card available for GEVCU7. Implements 4 analog outputs 0-5v
+ *
 Copyright (c) 2015 Collin Kidder, Michael Neuweiler, Charles Galpin
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -29,27 +25,33 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #pragma once
-#include <Arduino.h>
 #include "../Device.h"
 #include "../DeviceTypes.h"
-#include "../../CanHandler.h"
 #include "ExtIODevice.h"
 
-class CanIODeviceConfiguration : public ExtIODeviceConfiguration {
-public:
-    uint8_t canbusNum;
-};
+#define FOURANALOGM2 0x710
 
-class CANIODevice : public ExtIODevice, public CanObserver
+class FourAnaM2DeviceConfiguration: public ExtIODeviceConfiguration
 {
 public:
-	CANIODevice(void);
-
-	void setup();
-    void tearDown();
-    void handleCanFrame(const CAN_message_t &);
-    void loadConfiguration();
-    void saveConfiguration();
-    void handleMessage(uint32_t msg, void* data);
 };
 
+class FourAnalogM2 : public ExtIODevice
+{
+public:
+	FourAnalogM2(void);
+
+	int16_t getAnalogOutput(int which);
+	void setAnalogOutput(int which, int value);
+
+    void loadConfiguration();
+    void saveConfiguration();
+	void setup();
+    void earlyInit();
+
+    void handleMessage(uint32_t, void*);
+	DeviceId getId();
+
+private:
+	int16_t values[4];
+};

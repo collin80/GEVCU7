@@ -39,7 +39,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <ADC.h> //better ADC library compared to the built-in ADC functions
 #include "TickHandler.h"
 
-class CANIODevice;
+class ExtIODevice;
 
 enum SystemType 
 {
@@ -51,7 +51,7 @@ enum SystemType
 class ExtendedIODev
 {
 public:
-    CANIODevice *device;
+    ExtIODevice *device;
     uint8_t localOffset;
 };
 
@@ -100,7 +100,7 @@ public:
     void setDigitalInLatchMode(int which, LatchModes::LATCHMODE mode);
     void unlockDigitalInLatch(int which);
 
-    void installExtendedIO(CANIODevice *device);
+    void installExtendedIO(ExtIODevice *device);
 
     int numDigitalInputs();
     int numDigitalOutputs();

@@ -79,7 +79,7 @@ protected:
     std::vector<ConfigEntry> cfgEntries;
 
 private:
-    DeviceConfiguration *deviceConfiguration; // reference to the currently active configuration    
+    DeviceConfiguration *deviceConfiguration; // reference to the currently active configuration
 };
 
 #endif /* DEVICE_H_ */

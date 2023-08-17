@@ -27,7 +27,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "sys_io.h"
-#include "devices/io/CANIODevice.h"
+#include "devices/io/ExtIODevice.h"
 #include "devices/misc/SystemDevice.h"
 #include "i2c_driver_wire.h"
 
@@ -125,7 +125,7 @@ void SystemIO::setup() {
     adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::HIGH_SPEED );           // change the sampling speed
 }
 
-void SystemIO::installExtendedIO(CANIODevice *device)
+void SystemIO::installExtendedIO(ExtIODevice *device)
 {
     int counter;
     
@@ -137,6 +137,7 @@ void SystemIO::installExtendedIO(CANIODevice *device)
    
     if (device->getAnalogInputCount() > 0)
     {
+        Logger::avalanche("This device has analog inputs.");
         for (counter = 0; counter < NUM_EXT_IO; counter++)
         {
             if (extendedAnalogIn[counter].device == NULL)
@@ -154,6 +155,7 @@ void SystemIO::installExtendedIO(CANIODevice *device)
     
     if (device->getAnalogOutputCount() > 0)
     {
+        Logger::avalanche("This device has analog outputs.");
         for (counter = 0; counter < NUM_EXT_IO; counter++)
         {
             if (extendedAnalogOut[counter].device == NULL)
@@ -171,6 +173,7 @@ void SystemIO::installExtendedIO(CANIODevice *device)
 
     if (device->getDigitalOutputCount() > 0)
     {
+        Logger::avalanche("This device has digital outputs.");
         for (counter = 0; counter < NUM_EXT_IO; counter++)
         {
             if (extendedDigitalOut[counter].device == NULL)
@@ -188,6 +191,7 @@ void SystemIO::installExtendedIO(CANIODevice *device)
 
     if (device->getDigitalInputCount() > 0)
     {
+        Logger::avalanche("This device has digital inputs.");
         for (counter = 0; counter < NUM_EXT_IO; counter++)
         {
             if (extendedDigitalIn[counter].device == NULL)
@@ -230,7 +234,7 @@ void SystemIO::installExtendedIO(CANIODevice *device)
     int numAO = 0; //GEVCU has no real analog outputs - there are PWM but they're on the digital outputs
     for (int i = 0; i < NUM_EXT_IO; i++)
     {
-        if (extendedDigitalIn[i].device != NULL) numAO++;
+        if (extendedAnalogOut[i].device != NULL) numAO++;
         else break;
     }
     numAnaOut = numAO;
@@ -331,7 +335,7 @@ int16_t SystemIO::getAnalogIn(uint8_t which) {
     else //the return makes this superfluous...
     {        
         //handle an extended I/O call
-        CANIODevice *dev = extendedAnalogIn[which - NUM_ANALOG].device;
+        ExtIODevice *dev = extendedAnalogIn[which - NUM_ANALOG].device;
         if (dev) return dev->getAnalogInput(extendedAnalogIn[which - NUM_ANALOG].localOffset);
         return 0;
     }
@@ -342,7 +346,7 @@ int16_t SystemIO::getAnalogIn(uint8_t which) {
 boolean SystemIO::setAnalogOut(uint8_t which, int32_t level)
 {
     if (which >= numAnaOut) return false;
-    CANIODevice *dev;
+    ExtIODevice *dev;
     dev = extendedAnalogOut[which].device;
     if (dev) dev->setAnalogOutput(extendedAnalogOut[which].localOffset, level);
     return true;   
@@ -351,7 +355,7 @@ boolean SystemIO::setAnalogOut(uint8_t which, int32_t level)
 int32_t SystemIO::getAnalogOut(uint8_t which)
 {
     if (which >= numAnaOut) return 0;
-    CANIODevice *dev;
+    ExtIODevice *dev;
     dev = extendedAnalogOut[which].device;
     if (dev) return dev->getAnalogOutput(extendedAnalogOut[which].localOffset);
     return 0;    
@@ -386,7 +390,7 @@ boolean SystemIO::getDigitalIn(uint8_t which) {
     }
     else
     {
-        CANIODevice *dev;
+        ExtIODevice *dev;
         dev = extendedDigitalIn[which - NUM_DIGITAL].device;
         if (dev) return dev->getDigitalInput(extendedDigitalIn[which - NUM_DIGITAL].localOffset);
     }
@@ -404,7 +408,7 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
     }
     else
     {
-        CANIODevice *dev;
+        ExtIODevice *dev;
         dev = extendedDigitalOut[which - NUM_OUTPUT].device;
         if (dev) return dev->setDigitalOutput(extendedDigitalOut[which - NUM_OUTPUT].localOffset, active);
     }
@@ -420,7 +424,7 @@ boolean SystemIO::getDigitalOutput(uint8_t which) {
     }
     else
     {
-        CANIODevice *dev;
+        ExtIODevice *dev;
         dev = extendedDigitalOut[which - NUM_OUTPUT].device;
         if (dev) return dev->getDigitalOutput(extendedDigitalOut[which - NUM_OUTPUT].localOffset);
     }

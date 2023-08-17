@@ -38,7 +38,8 @@ Device::Device() {
 
 //Empty functions to handle these callbacks if the derived classes don't
 
-void Device::setup() {
+void Device::setup() 
+{
 }
 
 void Device::earlyInit() {
@@ -61,6 +62,8 @@ void Device::disableDevice()
         canHandlerBus1.detachAll(obs);
         canHandlerBus2.detachAll(obs);
     }
+    //send disable message to the device in case it wants to do anything fancy
+    deviceManager.sendMessage(DEVICE_ANY, this->getId(), MSG_DISABLE, NULL);
 }
 
 const char* Device::getCommonName() {
@@ -90,6 +93,8 @@ void Device::handleMessage(uint32_t msgType, const void* message) {
         break;
     case MSG_SETUP:
         this->setup();
+        //send enable message to the device in case it wants to do anything fancy
+        deviceManager.sendMessage(DEVICE_ANY, this->getId(), MSG_ENABLE, NULL);
         break;
     }
 }

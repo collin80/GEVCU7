@@ -33,23 +33,43 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../Device.h"
 #include "../DeviceTypes.h"
 #include "../../CanHandler.h"
-#include "ExtIODevice.h"
 
-class CanIODeviceConfiguration : public ExtIODeviceConfiguration {
+class ExtIODeviceConfiguration : public DeviceConfiguration {
 public:
-    uint8_t canbusNum;
 };
 
-class CANIODevice : public ExtIODevice, public CanObserver
+class ExtIODevice : public Device
 {
 public:
-	CANIODevice(void);
+	ExtIODevice(void);
+
+	int getDigitalOutputCount();
+	int getAnalogOutputCount();
+	int getDigitalInputCount();
+	int getAnalogInputCount();
+
+	//derived classes override any of these they need to
+	virtual void setDigitalOutput(int which, bool hi);
+	virtual bool getDigitalOutput(int which);
+	virtual void setAnalogOutput(int which, int value);
+	virtual int16_t getAnalogOutput(int which);
+	virtual bool getDigitalInput(int which);
+	virtual int16_t getAnalogInput(int which);
+
+	virtual void setLatchingMode(int which, LatchModes::LATCHMODE mode);
+	virtual void unlockLatch(int which);
 
 	void setup();
     void tearDown();
-    void handleCanFrame(const CAN_message_t &);
+    virtual void handleMessage(uint32_t, void*);
     void loadConfiguration();
     void saveConfiguration();
-    void handleMessage(uint32_t msg, void* data);
+    DeviceType getType();    
+
+protected:
+	int numDigitalOutputs;
+	int numAnalogOutputs;
+	int numDigitalInputs;
+	int numAnalogInputs;
 };
 
