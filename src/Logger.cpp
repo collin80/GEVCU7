@@ -24,6 +24,12 @@
 
  */
 
+/*
+The astute might realize that the log level can be set from -1 to 3 not just 0-3.
+-1 level is called avalanche and it is what it says. This is extra debugging.
+You will get a LOT of traffic on the serial console if you do this.
+*/
+
 #include "Logger.h"
 #include "SD.h"
 #include "RingBuf.h"
@@ -39,8 +45,9 @@ FsFile logFile;
 #define LOG_FILE_SIZE 1000000  // 1M bytes.
 
 #define RING_BUF_CAPACITY 16 * 1024
-#define LOG_FILENAME "GevcuLog.txt"
-#define CFG_TICK_INTERVAL_SDLOGGING                 40000
+#define LOG_FILENAME "GevcuLog"
+#define MAX_LOGFILES 200
+#define CFG_TICK_INTERVAL_SDLOGGING 40000
 
 // RingBuf for File type FsFile.
 RingBuf<FsFile, RING_BUF_CAPACITY> rb;
@@ -49,8 +56,23 @@ uint32_t Logger::lastLogTime = 0;
 
 void Logger::initializeFile()
 {
-    // Open or create file - truncate existing file.
-    logFile = SD.sdfs.open(LOG_FILENAME, O_RDWR | O_CREAT | O_TRUNC);
+    char fn1[100];
+    char fn2[100];
+    //basically, rename all files one number higher than they were then start a new log with no numbers
+    //as the current log
+    for (int i = MAX_LOGFILES - 1; i > 0; i--)
+    {
+        snprintf(fn1, 200, "%s%d.txt", LOG_FILENAME, i);
+        snprintf(fn2, 200, "%s%d.txt", LOG_FILENAME, i - 1);
+        SD.sdfs.remove(fn1); //delete any file that may have been there
+        SD.sdfs.rename(fn2, fn1); //rename the file to the name we just (maybe) deleted
+    }
+    snprintf(fn1, 200, "%s1.txt", LOG_FILENAME);
+    snprintf(fn2, 200, "%s.txt", LOG_FILENAME);
+    SD.sdfs.remove(fn1);
+    SD.sdfs.rename(fn2, fn1);
+
+    logFile = SD.sdfs.open(fn2, O_RDWR | O_CREAT | O_TRUNC);
     if (!logFile) {
         Serial.println("open failed\n");
         return;
@@ -70,6 +92,8 @@ void Logger::initializeFile()
     // initialize the RingBuf.
     rb.begin(&logFile);
     Serial.println("Initialized RingBuff");
+
+    //potentially save the breadcrumbs from the previous crash into the logfile here.
 }
 
 //if there is a sector to write or 1 second has gone by then save the data
