@@ -93,7 +93,25 @@ void Logger::initializeFile()
     rb.begin(&logFile);
     Serial.println("Initialized RingBuff");
 
-    //potentially save the breadcrumbs from the previous crash into the logfile here.
+    if (CrashReport) 
+    {
+        rb.println(CrashReport);
+        flushFile();
+    }
+}
+
+void Logger::flushFile()
+{
+    size_t n = rb.bytesUsed();
+    int ret = 0;
+    int writeBytes = min(n, 512u);
+    ret = rb.writeOut(writeBytes);
+    if (writeBytes != ret) {
+        Serial.printf("Writeout failed. Want to write %u bytes but wrote %u\n", writeBytes, ret);
+        logFile.close();
+        return;
+    }
+    else logFile.flush(); //make sure it is updated on disk
 }
 
 //if there is a sector to write or 1 second has gone by then save the data
@@ -102,20 +120,12 @@ void Logger::loop()
     static uint32_t lastWriteTime = 0;
     if (!sdCardPresent) return;
     size_t n = rb.bytesUsed();
-    int ret = 0;
     //Serial.println(n);
     //delay(100);
     if ( ( (n >= 512) || ((millis() - lastWriteTime) > 1000) ) && !logFile.isBusy()) {
       // Not busy only allows one sector before possible busy wait.
       // Write one sector from RingBuf to file.
-      int writeBytes = min(n, 512u);
-      ret = rb.writeOut(writeBytes);
-      if (writeBytes != ret) {
-        Serial.printf("Writeout failed. Want to write %u bytes but wrote %u\n", writeBytes, ret);
-        logFile.close();
-        return;
-      }
-      else logFile.flush(); //make sure it is updated on disk
+      flushFile();
       lastWriteTime = millis();
     }
 }

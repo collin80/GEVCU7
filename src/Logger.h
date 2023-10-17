@@ -54,6 +54,7 @@ public:
     static boolean isDebug();
     static void initializeFile();
     static void loop();
+    static void flushFile();
 private:
     static uint32_t lastLogTime;
 

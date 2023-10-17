@@ -26,6 +26,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "CrashHandler.h"
 #include "eeprom_layout.h"
+#include "Logger.h"
 
 CrashHandler::CrashHandler()
 {
@@ -37,30 +38,47 @@ This should be called early in code start up. It will analyze and display the cr
 but also store the breadcrumbs which are otherwise immediately deleted. The rest of
 the bc structure should not change during runtime so it's probably OK to leave that stuff as-is
 */
-void CrashHandler::analyzeCrashDataOnStartup()
+void CrashHandler::captureCrashDataOnStartup()
 {
+    for (int i = 0; i < 6; i++) storedCrumbs[i] = 0;
+    lastBootCrashed = false;
     if ( CrashReport )
     {
-        Serial.println("SYSTEM CRASHED! Analyzing the crash data.");
         lastBootCrashed = true;
-        if (bc->bitmask) {
-            for (int i=0; i < 6; i++) {
-                if (bc->bitmask & (1 << i)) {
-                    Serial.print("Breadcrumb #");
-                    Serial.print(i + 1);
-                    Serial.print(" was ");
-                    decodeBreadcrumbToSerial(bc->value[i]);
+        if (bc->bitmask)
+        {
+            for (int i=0; i < 6; i++)
+            {
+                if (bc->bitmask & (1 << i))
+                {
                     storedCrumbs[i] = bc->value[i];
                 }
             }
         }
-        Serial.println(CrashReport);
+    }
+}
+
+void CrashHandler::analyzeCrashData()
+{
+    char buff[10];
+    if (lastBootCrashed)
+    {
+        Logger::error("SYSTEM CRASHED! Analyzing the crash data.");
+        for (int i=0; i < 6; i++) {
+            if (storedCrumbs[i] > 0) {
+                decodeBreadcrumbToString(storedCrumbs[i], buff);
+                Logger::error("Breadcrumb # %i was %s", i+1, buff);
+            }
+        }
+        if (CrashReport) 
+        {
+            Serial.println(CrashReport);
+        }
+        Logger::flushFile();
     }
     else
     {
-        Serial.println("No prior crash detected, Good news!");
-        for (int i = 0; i < 6; i++) storedCrumbs[i] = 0;
-        lastBootCrashed = false;
+        Logger::info("No prior crash detected, Good news!");
     }
 }
 
@@ -71,6 +89,7 @@ bool CrashHandler::bCrashed()
 
 void CrashHandler::decodeBreadcrumbToSerial(uint32_t val)
 {
+
   Serial.write( (val >> 27) + 0x40);
   Serial.write( ((val >> 22) & 0x1f) + 0x40);
   Serial.write( ((val >> 17) & 0x1f) + 0x40);

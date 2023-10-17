@@ -64,7 +64,8 @@ public:
     void decodeBreadcrumbToString(uint32_t val, char* buffer);
     void addBreadcrumb(uint32_t crumb);
     void updateBreadcrumb(uint8_t crumb);
-    void analyzeCrashDataOnStartup();
+    void captureCrashDataOnStartup();
+    void analyzeCrashData();
     bool bCrashed();
 
 private:
