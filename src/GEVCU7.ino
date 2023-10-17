@@ -40,11 +40,7 @@ bleeds through the 5V regulator and turns on the 12v light but a little bit diml
 
 
 Both the onboard ESP32 and the MicroMod adapter itself can be updated
-via files on the sdcard. Code to log to sdcard is done. It appears that sometimes
-the sdcard log file gets corrupted. This might have been due to a previous problem
-in the TeensyDuino files themselves. Need to test again to see if sdcard is more
-stable now. Testing has seemed to show that logging is stable now. I haven't seen
-the logging be corrupted any longer.
+via files on the sdcard. 
 
 
 The board now presents as two serial ports. The first one is the standard
@@ -123,21 +119,21 @@ in JSON instead. This is much easier to work with.
 */
 
 #include "GEVCU.h"
-#include "src/devices/DeviceTypes.h"
+#include "devices/DeviceTypes.h"
 
 // The following includes are required in the .ino file by the Arduino IDE in order to properly
 // identify the required libraries for the build.
 #include <FlexCAN_T4.h>
 #include <TeensyTimerTool.h>
-#include "src/i2c_driver_wire.h"
+#include "i2c_driver_wire.h"
 #include <SPI.h>
 #include "SD.h"
 #include "Watchdog_t4.h"
-#include "src/devices/esp32/esp_loader.h"
-#include "src/devices/esp32/gevcu_port.h"
-#include "src/FlasherX.h"
-#include "src/devices/misc/SystemDevice.h"
-#include "src/CrashHandler.h"
+#include "devices/esp32/esp_loader.h"
+#include "devices/esp32/gevcu_port.h"
+#include "FlasherX.h"
+#include "devices/misc/SystemDevice.h"
+#include "CrashHandler.h"
 #include "localconfig.h"
 
 // Use Teensy SDIO - SDIO is four bit and direct in hardware - it should be plenty fast
@@ -303,7 +299,7 @@ void setup() {
 #endif
 
     //pretty early in boot we want to know if the previous try crashed
-    crashHandler.analyzeCrashDataOnStartup();
+    crashHandler.captureCrashDataOnStartup();
 
     crashHandler.addBreadcrumb(ENCODE_BREAD("START"));
 
@@ -342,6 +338,8 @@ void setup() {
         sdCardPresent = false;
     }
 #endif
+
+    crashHandler.analyzeCrashData();
 
     if (sdCardPresent)
     {

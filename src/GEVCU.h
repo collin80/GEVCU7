@@ -28,21 +28,21 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define GEVCU_H_
 
 #include <Arduino.h>
-#include "src/config.h"
-#include "src/devices/Device.h"
-#include "src/devices/io/Throttle.h"
-#include "src/devices/bms/BatteryManager.h"
-#include "src/devices/motorctrl/MotorController.h"
-#include "src/devices/dcdc/DCDCController.h"
-#include "src/devices/io/ThrottleDetector.h"
-#include "src/Heartbeat.h"
-#include "src/sys_io.h"
-#include "src/CanHandler.h"
-#include "src/MemCache.h"
-#include "src/DeviceManager.h"
-#include "src/SerialConsole.h"
-#include "src/Sys_Messages.h"
-#include "src/FaultHandler.h"
+#include "config.h"
+#include "devices/Device.h"
+#include "devices/io/Throttle.h"
+#include "devices/bms/BatteryManager.h"
+#include "devices/motorctrl/MotorController.h"
+#include "devices/dcdc/DCDCController.h"
+#include "devices/io/ThrottleDetector.h"
+#include "Heartbeat.h"
+#include "sys_io.h"
+#include "CanHandler.h"
+#include "MemCache.h"
+#include "DeviceManager.h"
+#include "SerialConsole.h"
+#include "Sys_Messages.h"
+#include "FaultHandler.h"
 
 #ifdef __cplusplus
 extern "C" {

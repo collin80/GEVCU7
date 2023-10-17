@@ -10,7 +10,7 @@
 #define TEENSY_INIT_USB_DELAY_AFTER 200
 
 //if this is defined there is a large start up delay so you can see the start up messages. NOT for production!
-//#define DEBUG_STARTUP_DELAY
+#define DEBUG_STARTUP_DELAY
 
 //If this is defined then we will ignore the hardware sd inserted signal and just claim it's inserted. Required for first prototype.
 //Probably don't enable this on more recent hardware. Starting at the 2nd prototype the sdcard can properly be detected.
