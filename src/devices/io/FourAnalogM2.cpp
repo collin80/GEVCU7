@@ -49,10 +49,12 @@ void FourAnalogM2::setup()
     //cfgEntries.push_back(entry);
 		
 	systemIO.installExtendedIO(this);
-    //setAnalogOutput(0, 64);
-    //setAnalogOutput(1, 128);
-    //setAnalogOutput(2, 256);
-    //setAnalogOutput(3, 512);
+    
+    //for testing
+    //setAnalogOutput(0, 64); //0.3125V
+    //setAnalogOutput(1, 128); //0.625V
+    //setAnalogOutput(2, 256); //1.25V
+    //setAnalogOutput(3, 512); //2.5V
 }
 
 
