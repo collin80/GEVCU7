@@ -63,6 +63,7 @@ public:
     virtual uint32_t getTickInterval();
     const char* getCommonName();
     const char* getShortName();
+    void forceEnableState(bool state);
 
     virtual void loadConfiguration();
     virtual void saveConfiguration();

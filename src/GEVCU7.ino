@@ -384,6 +384,7 @@ void setup() {
     Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
     sysDev->earlyInit();
 	PrefHandler::setDeviceStatus(SYSTEM, true);
+    PrefHandler::setDeviceStatus(HEARTBEAT, true);
     //Also, the system device has to be initialized a bit early.    
     sysDev->setup();
 

@@ -100,6 +100,7 @@ void DeviceManager::removeDevice(Device *device) {
     case DEVICE_IO:
     case DEVICE_DCDC:
     case DEVICE_NONE:
+    case DEVICE_HVAC:
         break;
     }
 }

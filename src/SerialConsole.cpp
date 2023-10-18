@@ -291,23 +291,29 @@ void SerialConsole::printMenu() {
     Logger::console("   JSONREAD=1 - Read JSON file from sdCard and update all devices accordingly");
     Logger::console("   NUKE=1 - Resets all device settings in EEPROM. You have been warned.");
 
+    //This call causes the device manager to list all enabled and disabled devices
     deviceManager.printDeviceList();
 
+    //then go through each device entry in the list and see if the given device is enabled. 
+    //If so, output all its configuration options
     for (int j = 0; j < CFG_DEV_MGR_MAX_DEVICES; j++)
     {
         Device *dev = deviceManager.getDeviceByIdx(j);
         if (dev)
         {
-            if (dev->isEnabled()) getConfigEntriesForDevice(dev);
-            if (dev == accelerator)
+            if (dev->isEnabled())
             {
-                Logger::console("   z = detect throttle min/max, num throttles and subtype");
-                Logger::console("   Z = save throttle values");
-            }
-            if (dev == brake)
-            {
-                Logger::console("   b = detect brake min/max");
-                Logger::console("   B = save brake values");
+                getConfigEntriesForDevice(dev);
+                if (dev == accelerator)
+                {
+                    Logger::console("   z = detect throttle min/max, num throttles and subtype");
+                    Logger::console("   Z = save throttle values");
+                }
+                if (dev == brake)
+                {
+                    Logger::console("   b = detect brake min/max");
+                    Logger::console("   B = save brake values");
+                }
             }
         }
     }
@@ -397,7 +403,12 @@ void SerialConsole::handleConfigCmd() {
             memCache->FlushAllPages();
             Logger::console("Successfully enabled device.(%X, %d) Trying to start it immediately!", newValue, newValue);
             Device *dev = deviceManager.getDeviceByID(newValue);
-            if (dev) dev->setup();
+            if (dev)
+            {
+                dev->forceEnableState(true);
+                dev->setup();
+            } 
+            else Logger::error("Couldn't initialize the device without a reboot!");
         }
         else {
             Logger::console("Invalid device ID (%X, %d)", newValue, newValue);
@@ -407,7 +418,11 @@ void SerialConsole::handleConfigCmd() {
             memCache->FlushAllPages();
             Logger::console("Successfully disabled device. Trying to stop it immediately.");
             Device *dev = deviceManager.getDeviceByID(newValue);
-            if (dev) dev->disableDevice();
+            if (dev)
+            {
+                dev->disableDevice();
+                dev->forceEnableState(false);
+            }
         }
         else {
             Logger::console("Invalid device ID (%X, %d)", newValue, newValue);

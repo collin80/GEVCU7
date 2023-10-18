@@ -86,6 +86,14 @@ bool Device::isEnabled() {
     return prefsHandler->isEnabled();
 }
 
+void Device::forceEnableState(bool state)
+{
+    if (prefsHandler)
+    {
+        prefsHandler->setEnabledStatus(state);
+    }
+}
+
 void Device::handleMessage(uint32_t msgType, const void* message) {
     switch (msgType) {
     case MSG_STARTUP:
