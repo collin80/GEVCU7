@@ -564,6 +564,9 @@ void SerialConsole::handleShortCmd() {
     case 'Q':
         PrefHandler::initDevTable();
         break;
+    case 'S':
+        deviceManager.printAllStatusEntries();
+        break;
     }
 }
 

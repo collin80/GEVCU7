@@ -94,12 +94,9 @@ struct ConfigEntry
 from ConfigEntry in that you cannot edit these values. Instead these values are only updated by the device
 itself. The format here is a little bit weird but for reasons of making life easier on device developers.
 Since there is a pointer to the actual variable the device developer doesn't need to worry about updating
-these. All the developer needs to do is register these entries. Thinking to create a StatusManager
-class that has all these StatusEntry records in it. That one class would then periodically check
-for new data and update as needed. This would then show which items were changed and they could 
-be updated. But, the StatusManager would not be doing the updating. It should allow other devices
-to register callbacks that would happen when a status entry is updated. In this way something like the
-esp32 could receive a callback only when things update and thus updates would only happen when necessary.
+these. All the developer needs to do is register these entries. The Device Manager class now is also
+managing the status updates. Every tick the device manager will look through all status entries and see
+if the value has changed for any of them. If so, it dispatches a message to any status watchers.
 */
 struct StatusEntry
 {
@@ -125,6 +122,57 @@ struct StatusEntry
         varType = type;
         lastValue = val;
         device = dev;
+    }
+
+    //creates the prettiest version of the value it can. It will interpret integers as integers, print floats
+    //with only a few decimal places, etc.
+    String getValueAsString()
+    {
+        String out;
+        if (varType == BYTE)
+        {
+            uint8_t v = *((uint8_t*)varPtr);
+            out = String(v);
+            return out;
+        }
+        if (varType == STRING)
+        {
+            char *str = (char *)varPtr;
+            while (str) out += *str++;
+            return out;
+        }
+        if (varType == INT16)
+        {
+            int16_t v = *((int16_t*)varPtr);
+            out = String(v);
+            return out;
+        }
+        if (varType == UINT16)
+        {
+            uint16_t v = *((uint16_t*)varPtr);
+            out = String(v);
+            return out;
+        }
+        if (varType == INT32)
+        {
+            int32_t v = *((int32_t*)varPtr);
+            out = String(v);
+            return out;
+        }
+        if (varType == UINT32)
+        {
+            uint32_t v = *((uint32_t*)varPtr);
+            out = String(v);
+            return out;
+        }
+        if (varType == FLOAT)
+        {
+            float v = *((float*)varPtr);
+            out = String(v, 3);
+            return out;
+        }
+        out = "";
+        return out;
     }
 
     double getValueAsDouble()

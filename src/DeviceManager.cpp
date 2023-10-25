@@ -188,7 +188,8 @@ void DeviceManager::printAllStatusEntries()
     for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
     {
         dev = (Device *)it->device;
-        Logger::console("Name: %s Type: %s   dev: %s", it->statusName.c_str(), CFG_VAR_TYPE_NAMES[it->varType], dev->getShortName());
+        Logger::console("Name: %s Type: %s   dev: %s value: %s", 
+            it->statusName.c_str(), CFG_VAR_TYPE_NAMES[it->varType], dev->getShortName(), it->getValueAsString().c_str());        
     }
 }
 
