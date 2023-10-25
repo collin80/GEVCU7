@@ -67,6 +67,7 @@ void MemCache::FlushSinglePage()
     for (c = 0; c<NUM_CACHED_PAGES; c++) {
         if (pages[c].dirty) {
             cache_writepage(c);
+            Logger::avalanche("Writing page at cache index %i", c);
             pages[c].dirty = false;
             pages[c].age = 0; //freshly flushed!
             delay(10); //naughty! But, for testing we'll allow it. TODO: switch to non-blocking wait
@@ -83,7 +84,9 @@ void MemCache::FlushAllPages()
     for (c = 0; c < NUM_CACHED_PAGES; c++) {
         if (pages[c].dirty) { //found a dirty page so flush it
             cache_writepage(c);
+            Logger::avalanche("Writing page at cache index %i", c);
             pages[c].dirty = false;
+            pages[c].age = 0;
             delay(10); //10ms is longest it would take to write a page according to datasheet
             wdt.feed();
         }
@@ -94,6 +97,7 @@ void MemCache::FlushAllPages()
 void MemCache::FlushPage(uint8_t page) {
     if (pages[page].dirty) {
         cache_writepage(page);
+        Logger::avalanche("Writing page at cache index %i", page);
         pages[page].dirty = false;
         pages[page].age = 0; //freshly flushed!
         delay(10);
