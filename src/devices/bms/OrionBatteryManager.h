@@ -1,9 +1,9 @@
 /*
- * BatteryManager.h
+ * OrionBatteryManager.h
  *
- * Parent class for battery management / monitoring systems
+ * Read messages from OrionBMS
  *
-Copyright (c) 2013 Collin Kidder, Michael Neuweiler, Charles Galpin
+Copyright (c) 2023 Collin Kidder, Michael Neuweiler, Charles Galpin
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -26,8 +26,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
  */
 
-#ifndef THINKBATT_H_
-#define THINKBATT_H_
+#ifndef ORIONBATT_H_
+#define ORIONBATT_H_
 
 #include <Arduino.h>
 #include "../../config.h"
@@ -36,19 +36,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "BatteryManager.h"
 #include "../../CanHandler.h"
 
-#define THINKBMS 0x2000
-#define CFG_TICK_INTERVAL_BMS_THINK                 500000
+#define ORIONBMS 0x2010
+#define CFG_TICK_INTERVAL_BMS_ORION                 500000
 
-class ThinkBatteryManagerConfiguration : public BatteryManagerConfiguration
+class OrionBatteryManagerConfiguration : public BatteryManagerConfiguration
 {
 public:
     uint8_t canbusNum;
 };
 
-class ThinkBatteryManager : public BatteryManager, CanObserver
+class OrionBatteryManager : public BatteryManager, CanObserver
 {
 public:
-    ThinkBatteryManager();
+    OrionBatteryManager();
     void setup();
     void earlyInit();
     void handleTick();

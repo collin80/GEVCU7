@@ -195,6 +195,11 @@ bool ThinkBatteryManager::hasPackCurrent()
     return true;
 }
 
+bool ThinkBatteryManager::hasLimits()
+{
+    return false;
+}
+
 bool ThinkBatteryManager::hasTemperatures()
 {
     return true;

@@ -51,36 +51,33 @@ void BatteryManager::setup() {
 
     BatteryManagerConfiguration *config = (BatteryManagerConfiguration *) getConfiguration();
 
-    ConfigEntry entry;
-    entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 100000.0}, 2, nullptr};
-    cfgEntries.push_back(entry);
-    //entry = {"AHLEFT", "Number of amp hours remaining in pack in tenths ampere-hours", &config->packAHRemaining / 100000, CFG_ENTRY_VAR_TYPE::INT32, 0, 1000000, 0, nullptr};
+    //ConfigEntry entry;
+    //entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 100000.0}, 2, nullptr};
     //cfgEntries.push_back(entry);
-    entry = {"VOLTLIMHI", "High limit for pack voltage in volts", &config->highVoltLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 800.0}, 1, nullptr};
-    cfgEntries.push_back(entry);
-    entry = {"VOLTLIMLO", "Low limit for pack voltage in volts", &config->lowVoltLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 800.0}, 1, nullptr};
-    cfgEntries.push_back(entry);
-    entry = {"CELLLIMHI", "High limit for cell voltage in volts", &config->highCellLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 5.0}, 3, nullptr};
-    cfgEntries.push_back(entry);
-    entry = {"CELLLIMLO", "Low limit for cell voltage in hundredths of a volt", &config->lowCellLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 5.0}, 3, nullptr};
-    cfgEntries.push_back(entry);
-    entry = {"TEMPLIMHI", "High limit for pack and cell temperature in degrees C", &config->highTempLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 255.0}, 1, nullptr};
-    cfgEntries.push_back(entry);
-    entry = {"TEMPLIMLO", "Low limit for pack and cell temperature in degrees C", &config->lowTempLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -255.0}, {.floating = 255.0}, 1, nullptr};
-    cfgEntries.push_back(entry);
 
-#ifndef USE_HARD_CODED
-    if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-    }
-    else { //checksum invalid. Reinitialize values and store to EEPROM
-        //prefsHandler->saveChecksum();
-    }
-#else
-#endif
+    StatusEntry stat;
+    //        name       var           type                  prevVal  obj
+    stat = {"BMS_PackV", &packVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"BMS_PackC", &packCurrent, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"BMS_SOC", &SOC, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"BMS_LowestCellV", &lowestCellV, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"BMS_HighestCellV", &highestCellV, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"BMS_LowestCellT", &lowestCellTemp, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"BMS_HighestCellT", &highestCellTemp, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"BMS_dischargeLimit", &dischargeLimit, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"BMS_chargeLimit", &chargeLimit, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
 
-//TickHandler::getInstance()->detach(this);
-//TickHandler::getInstance()->attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC);
-
+    //TickHandler::getInstance()->detach(this);
+    //TickHandler::getInstance()->attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC);
 }
 
 float BatteryManager::getPackVoltage()
@@ -108,35 +105,27 @@ float BatteryManager::getLowestTemperature()
     return lowestCellTemp;
 }
 
+float BatteryManager::getChargeLimit()
+{
+    return chargeLimit;
+}
+
+float BatteryManager::getDischargeLimit()
+{
+    return dischargeLimit;
+}
+
 void BatteryManager::loadConfiguration() {
     BatteryManagerConfiguration *config = (BatteryManagerConfiguration *)getConfiguration();
 
     Device::loadConfiguration(); // call parent
-
-    //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-        prefsHandler->read("Capacity", &config->packCapacity, 100.0f);
-        prefsHandler->read("AHRemaining", &config->packAHRemaining, 50.0f);
-        prefsHandler->read("HVHighLim", &config->highVoltLimit, 385.0f);
-        prefsHandler->read("HVLowLim", &config->lowVoltLimit, 240.0f);
-        prefsHandler->read("CellHiLim", &config->highCellLimit, 3.900f);
-        prefsHandler->read("CellLowLim", &config->lowCellLimit, 2.400f);
-        prefsHandler->read("TempHighLim", &config->highTempLimit, 60.0f);
-        prefsHandler->read("TempLowLim", &config->lowTempLimit, -20.0f);        
+     
 }
 
 void BatteryManager::saveConfiguration() {
     BatteryManagerConfiguration *config = (BatteryManagerConfiguration *)getConfiguration();
     
     Device::saveConfiguration(); // call parent
-
-    prefsHandler->write("AHRemaining", config->packAHRemaining);
-    prefsHandler->write("Capacity", config->packCapacity);
-    prefsHandler->write("HVHighLim", config->highVoltLimit);
-    prefsHandler->write("HVLowLim", config->lowVoltLimit);
-    prefsHandler->write("CellHiLim", config->highCellLimit);
-    prefsHandler->write("CellLowLim", config->lowCellLimit);
-    prefsHandler->write("TempHighLim", config->highTempLimit);
-    prefsHandler->write("TempLowLim", config->lowTempLimit);    
 
     prefsHandler->saveChecksum();
 }

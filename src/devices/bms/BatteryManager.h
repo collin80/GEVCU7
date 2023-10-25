@@ -32,17 +32,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <Arduino.h>
 #include "../../config.h"
 #include "../Device.h"
+#include "../../DeviceManager.h"
 
 class BatteryManagerConfiguration : public DeviceConfiguration {
 public:
-    float packCapacity;
-    float packAHRemaining;
-    float highVoltLimit;
-    float lowVoltLimit;
-    float highCellLimit;
-    float lowCellLimit;
-    float highTempLimit;
-    float lowTempLimit;
 };
 
 class BatteryManager : public Device {
@@ -56,6 +49,8 @@ public:
     //bool allowDischarging();
     float getHighestTemperature();
     float getLowestTemperature();
+    float getChargeLimit();
+    float getDischargeLimit();
     DeviceType getType();
     void setup();
     void handleTick();
@@ -68,6 +63,7 @@ public:
     virtual bool hasPackVoltage() = 0;
     virtual bool hasPackCurrent() = 0;
     virtual bool hasTemperatures() = 0;
+    virtual bool hasLimits() = 0;
     virtual bool isChargeOK() = 0;
     virtual bool isDischargeOK() = 0;
 protected:
@@ -78,7 +74,7 @@ protected:
     float lowestCellTemp, highestCellTemp;
     //should be some form of discharge and charge limit. I don't know if it should be % or amps
     //some BMS systems will report one way and some the other.
-    int dischargeLimit, chargeLimit;
+    float dischargeLimit, chargeLimit;
     bool allowCharge, allowDischarge;
 
 private:
