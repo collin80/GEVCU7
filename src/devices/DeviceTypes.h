@@ -105,6 +105,7 @@ struct StatusEntry
     CFG_ENTRY_VAR_TYPE varType;
     double lastValue;
     Device *device;
+    uint32_t hash;
 
     StatusEntry()
     {
@@ -113,6 +114,7 @@ struct StatusEntry
         varType = CFG_ENTRY_VAR_TYPE::BYTE;
         lastValue = 0.0;
         device = nullptr;
+        hash = 0;
     }
 
     StatusEntry(String name, void *ptr, CFG_ENTRY_VAR_TYPE type, double val, Device *dev)
@@ -122,6 +124,27 @@ struct StatusEntry
         varType = type;
         lastValue = val;
         device = dev;
+        hash = fnvHash(statusName.c_str());
+    }
+
+    static uint32_t fnvHash(const char *input)
+    {
+        uint32_t hash = 2166136261ul;
+        char c;
+        while (*input)
+        {
+            c = *input++;
+            c = toupper(c); //force all names to uppercase just to make it consistent
+            hash = hash ^ c;
+            hash = hash * 16777619;
+        }
+        return hash;
+    }
+
+    uint32_t getHash()
+    {
+        if (!hash) hash = fnvHash(statusName.c_str());
+        return hash;
     }
 
     //creates the prettiest version of the value it can. It will interpret integers as integers, print floats

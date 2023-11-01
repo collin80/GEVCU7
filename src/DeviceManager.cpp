@@ -36,6 +36,7 @@
  */
 
 #include "DeviceManager.h"
+#include "devices/display/StatusCSV.h"
 
 const char *CFG_VAR_TYPE_NAMES[7] = {"BYTE","STRING","INT16","UINT16","INT32","UINT32","FLOAT"};
 
@@ -181,15 +182,34 @@ void DeviceManager::removeAllEntriesForDevice(Device *dev)
     }
 }
 
+StatusEntry* DeviceManager::findStatusEntryByHash(uint32_t hash)
+{
+    for (int i = 0; i < statusEntries.size(); i++)
+    {
+        if (statusEntries[i].getHash() == hash) return &statusEntries[i];
+    }
+    return nullptr;
+}
+
 void DeviceManager::printAllStatusEntries()
 {
+    StatusCSV *statusDevice = static_cast<StatusCSV *>(getDeviceByID(STATUSCSV));
+    
     Device *dev;
     Logger::console("All status entries:");
     for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
     {
         dev = (Device *)it->device;
-        Logger::console("Name: %s Type: %s   dev: %s value: %s", 
-            it->statusName.c_str(), CFG_VAR_TYPE_NAMES[it->varType], dev->getShortName(), it->getValueAsString().c_str());        
+        if (statusDevice && statusDevice->isHashMonitored(it->getHash()))
+        {
+            Logger::console("Hash: %x   [%s:%s]   value: %s   <MONITORED>", 
+                it->getHash(), dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
+        }
+        else 
+        {
+            Logger::console("Hash: %x   [%s:%s]   value: %s", 
+                it->getHash(), dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
+        }
     }
 }
 
