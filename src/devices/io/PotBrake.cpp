@@ -204,6 +204,7 @@ void PotBrake::saveConfiguration() {
     prefsHandler->write("BrakeMinRegen", config->minimumRegen);
     prefsHandler->write("BrakeADC", config->AdcPin1);
     prefsHandler->saveChecksum();
+    prefsHandler->forceCacheWrite();
 }
 
 PotBrake potBrake;

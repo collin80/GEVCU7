@@ -226,13 +226,13 @@ void CanBrake::loadConfiguration() {
 void CanBrake::saveConfiguration() {
     CanBrakeConfiguration *config = (CanBrakeConfiguration *) getConfiguration();
 
-    Throttle::saveConfiguration(); // call parent
-
     prefsHandler->write("BrakeMin1", config->minimumLevel1);
     prefsHandler->write("BrakeMax1", config->maximumLevel1);
     prefsHandler->write("BrakeCarType", config->carType);
     prefsHandler->write("CanbusNum", config->canbusNum);
     prefsHandler->saveChecksum();
+
+    Throttle::saveConfiguration(); // call parent
 }
 
 CanBrake canBrake;

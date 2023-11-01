@@ -121,5 +121,6 @@ void ChargeController::saveConfiguration()
     prefsHandler->write("EnablePin", config->enablePin);    
 
     prefsHandler->saveChecksum();
+    prefsHandler->forceCacheWrite();
 }
 

@@ -128,4 +128,5 @@ void BatteryManager::saveConfiguration() {
     Device::saveConfiguration(); // call parent
 
     prefsHandler->saveChecksum();
+    prefsHandler->forceCacheWrite();
 }

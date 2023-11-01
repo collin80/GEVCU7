@@ -119,5 +119,6 @@ void DCDCController::saveConfiguration()
     prefsHandler->write("EnablePin", config->enablePin);    
 
     prefsHandler->saveChecksum();
+    prefsHandler->forceCacheWrite();
 }
 

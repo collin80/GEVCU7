@@ -50,4 +50,5 @@ void CANIODevice::saveConfiguration() {
 
     prefsHandler->write("CanbusNum", config->canbusNum);
     prefsHandler->saveChecksum();
+    prefsHandler->forceCacheWrite();
 }

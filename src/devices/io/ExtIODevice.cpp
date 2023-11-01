@@ -108,5 +108,6 @@ void ExtIODevice::saveConfiguration() {
     ExtIODeviceConfiguration *config = (ExtIODeviceConfiguration *) getConfiguration();
 
     Device::saveConfiguration(); // call parent
+	prefsHandler->forceCacheWrite();
 
 }

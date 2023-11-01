@@ -197,13 +197,12 @@ void CanThrottle::loadConfiguration() {
 void CanThrottle::saveConfiguration() {
     CanThrottleConfiguration *config = (CanThrottleConfiguration *) getConfiguration();
 
-    Throttle::saveConfiguration(); // call parent
-
     prefsHandler->write("ThrottleMin1", config->minimumLevel1);
     prefsHandler->write("ThrottleMax1", config->maximumLevel1);
     prefsHandler->write("ThrottleCarType", config->carType);
     prefsHandler->write("CanbusNum", config->canbusNum);
     prefsHandler->saveChecksum();
+    Throttle::saveConfiguration(); // call parent
 }
 
 //auto register thineself

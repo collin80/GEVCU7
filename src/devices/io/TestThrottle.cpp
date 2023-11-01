@@ -182,6 +182,7 @@ void TestThrottle::saveConfiguration() {
     prefsHandler->write("ThrottleMin1", config->minimumLevel1);
     prefsHandler->write("ThrottleMax1", config->maximumLevel1);
     prefsHandler->saveChecksum();
+    prefsHandler->forceCacheWrite();
 }
 
 TestThrottle testThrottle;

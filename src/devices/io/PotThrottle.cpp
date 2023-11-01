@@ -283,8 +283,6 @@ void PotThrottle::loadConfiguration() {
 void PotThrottle::saveConfiguration() {
     PotThrottleConfiguration *config = (PotThrottleConfiguration *) getConfiguration();
 
-    Throttle::saveConfiguration(); // call parent
-
     prefsHandler->write("ThrottleMin1", (uint16_t)config->minimumLevel1);
     prefsHandler->write("ThrottleMax1", (uint16_t)config->maximumLevel1);
     prefsHandler->write("ThrottleMin2", (uint16_t)config->minimumLevel2);
@@ -293,8 +291,8 @@ void PotThrottle::saveConfiguration() {
     prefsHandler->write("ThrottleType", config->throttleSubType);
     prefsHandler->write("ADC1", config->AdcPin1);
     prefsHandler->write("ADC2", config->AdcPin2);
-    prefsHandler->saveChecksum();
-    prefsHandler->forceCacheWrite();
+    
+    Throttle::saveConfiguration(); // call parent
 }
 
 String PotThrottle::describeThrottleType()

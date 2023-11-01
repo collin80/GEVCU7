@@ -95,5 +95,6 @@ void HVACController::saveConfiguration()
     prefsHandler->write("TargetTemperature", config->targetTemperature);
 
     prefsHandler->saveChecksum();
+    prefsHandler->forceCacheWrite();
 }
 

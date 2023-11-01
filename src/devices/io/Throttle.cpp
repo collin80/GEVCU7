@@ -262,6 +262,7 @@ void Throttle::saveConfiguration() {
     prefsHandler->write("MinAccelRegen", config->minimumRegen);
     prefsHandler->write("MaxAccelRegen", config->maximumRegen);
     prefsHandler->saveChecksum();
+    prefsHandler->forceCacheWrite();
 
     Logger::console("Throttle configuration saved");
 }
