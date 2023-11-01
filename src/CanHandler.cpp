@@ -4,7 +4,7 @@
  * Devices may register to this handler in order to receive CAN frames (publish/subscribe)
  * and they can also use this class to send messages.
  *
-Copyright (c) 2013 Collin Kidder, Michael Neuweiler, Charles Galpin
+Copyright (c) 2013-2023 Collin Kidder, Michael Neuweiler, Charles Galpin
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -96,6 +96,7 @@ CanHandler::CanHandler(CanBusNode canBusNode)
     binOutput = false;
     gvretState = IDLE;
     gvretStep = 0;
+    gvretMode = true; //whether to send and receive GVRET traffic on SerialUSB1 (second USB serial port)
 }
 
 /*
@@ -311,9 +312,15 @@ uint8_t CanHandler::checksumCalc(uint8_t *buffer, int length)
     return valu;
 }
 
+void CanHandler::setGVRETMode(bool mode)
+{
+    gvretMode = mode;
+}
+
 void CanHandler::sendFrameToUSB(const CAN_message_t &msg, int busNum)
 {
     if (!binOutput) return;
+    if (!gvretMode) return;
     uint8_t buff[20];
     uint32_t now = micros();
     buff[0] = 0xF1;
@@ -341,6 +348,7 @@ void CanHandler::sendFrameToUSB(const CAN_message_t &msg, int busNum)
 void CanHandler::sendFrameToUSB(const CANFD_message_t &msg, int busNum)
 {
     if (!binOutput) return;
+    if (!gvretMode) return;
     uint8_t buff[70];
     uint32_t now = micros();
     buff[0] = 0xF1;
@@ -365,6 +373,7 @@ void CanHandler::sendFrameToUSB(const CANFD_message_t &msg, int busNum)
 
 void CanHandler::loop()
 {
+    if (!gvretMode) return;
     uint8_t buff[80];
     uint8_t temp8;
     uint16_t temp16;
@@ -799,7 +808,7 @@ void CanHandler::process(const CAN_message_t &msg)
 
     CanObserver *observer;
 
-    sendFrameToUSB(msg);
+    if (gvretMode) sendFrameToUSB(msg);
     logFrame(msg);
 
     if(msg.id == CAN_SWITCH) CANIO(msg);
@@ -880,7 +889,7 @@ void CanHandler::process(const CANFD_message_t &msgfd)
         return;
     }    
 
-    sendFrameToUSB(msgfd);
+    if (gvretMode) sendFrameToUSB(msgfd);
     logFrame(msgfd);
 
     for (int i = 0; i < CFG_CAN_NUM_OBSERVERS; i++) 
@@ -992,14 +1001,14 @@ void CanHandler::sendFrame(const CAN_message_t &msg)
         break;            
     }
 
-    sendFrameToUSB(msg, busNum);
+    if (gvretMode) sendFrameToUSB(msg, busNum);
 }
 
 void CanHandler::sendFrameFD(const CANFD_message_t& framefd)
 {
     if (canBusNode != CAN_BUS_2) return;
     Can2.write(framefd);
-    sendFrameToUSB(framefd, 2);
+    if (gvretMode) sendFrameToUSB(framefd, 2);
 }
 
 void CanHandler::sendISOTP(int id, int length, uint8_t *data)

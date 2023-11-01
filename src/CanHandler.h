@@ -166,6 +166,7 @@ public:
     void sendFrameFD(const CANFD_message_t& framefd);
     void sendISOTP(int id, int length, uint8_t *data);
     void setSWMode(SWMode newMode);
+    void setGVRETMode(bool mode);
     SWMode getSWMode();
 
     //canopen support functions
@@ -198,6 +199,7 @@ private:
     bool binOutput;
     GVRET_STATE gvretState;
     int gvretStep;
+    bool gvretMode;
     CAN_message_t build_out_frame;
     CANFD_message_t build_out_fd;
 
