@@ -59,12 +59,14 @@ public:
     bool write(const char *key, float val);
     bool write(const char *key, double val);
     bool write(const char *key, const char *val, size_t maxlen);
+    bool writeBlock(const char *key, uint8_t *data, size_t length);
     bool read(const char *key, uint8_t *val, uint8_t defval);
     bool read(const char *key, uint16_t *val, uint16_t defval);
     bool read(const char *key, uint32_t *val, uint32_t defval);
     bool read(const char *key, float *val, float defval);
     bool read(const char *key, double *val, double defval);
     bool read(const char *key, char *val, const char* defval);
+    bool readBlock(const char *key, uint8_t *data, size_t length);
 
     uint8_t calcChecksum();
     void saveChecksum();
