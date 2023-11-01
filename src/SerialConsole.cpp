@@ -240,13 +240,13 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
         strcpy((char *)entry->varPtr, valu);
         break;
     case CFG_ENTRY_VAR_TYPE::UINT16:
-        ui16 = (uint16_t)strtol(valu, NULL, 0);
+        ui16 = (uint16_t)strtoul(valu, NULL, 0);
         if (ui16 < entry->minValue.u_int) result = 1;
         else if (ui16 > entry->maxValue.u_int) result = 2;
         else *(uint16_t *)entry->varPtr = ui16;
         break;
     case CFG_ENTRY_VAR_TYPE::UINT32:
-        ui32 = (uint32_t)strtol(valu, NULL, 0);
+        ui32 = (uint32_t)strtoul(valu, NULL, 0);
         if (ui32 < entry->minValue.u_int) result = 1;
         else if (ui32 > entry->maxValue.u_int) result = 2;
         else *(uint32_t *)entry->varPtr = ui32;
