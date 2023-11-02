@@ -90,6 +90,7 @@ void StatusCSV::handleTick()
             enableStatusHash(config->enableHash);
             isEnabled = false;
             Logger::console("Enabled the status entry!");
+            saveConfiguration();
         }
         config->enableHash = 0;
     }
@@ -101,6 +102,7 @@ void StatusCSV::handleTick()
             disableStatusHash(config->disableHash);
             isEnabled = false;
             Logger::console("Disabled the status entry!");
+            saveConfiguration();
         }
         config->disableHash = 0;
     }
@@ -235,10 +237,6 @@ void StatusCSV::loadConfiguration() {
     if (!prefsHandler->readBlock("EnabledItems", (uint8_t *)&config->enabledStatusEntries, sizeof(config->enabledStatusEntries)))
     {
         memset((uint8_t *)&config->enabledStatusEntries, 0, sizeof(config->enabledStatusEntries));
-        //these are test entries. Don't uncomment these lines for production builds
-        //config->enabledStatusEntries[0] = 0xe4d7dd0c;
-        //config->enabledStatusEntries[1] = 0x31ea2b88;
-        //config->enabledStatusEntries[2] = 0x77249773;
     }
 }
 
