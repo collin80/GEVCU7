@@ -31,6 +31,7 @@ extern WDT_T4<WDT3> wdt;
 
 MemCache::MemCache()
 {
+    agingTimer = 0;
 }
 
 void MemCache::setup() {
@@ -50,8 +51,15 @@ void MemCache::setup() {
 void MemCache::handleTick()
 {
     int c;
-    cache_age();
-    for (c = 0; c<NUM_CACHED_PAGES; c++) {
+    
+    agingTimer++;
+    if (agingTimer == AGING_PERIOD)
+    {
+        agingTimer = 0;
+        cache_age();
+    }
+    
+    for (c = 0; c < NUM_CACHED_PAGES; c++) {
         if ((pages[c].age == MAX_AGE) && (pages[c].dirty)) {
             FlushPage(c);
             return;
@@ -167,6 +175,29 @@ void MemCache::AgeFullyAddress(uint32_t address)
 
     if (thisCache != 0xFF) { //if we did indeed have that page in cache
         pages[thisCache].age = MAX_AGE;
+    }
+}
+
+//Basically, print out the entire memcache table to the serial console
+//Remember, the address stored in the pages table is 1/256th of the real address as it stores the page,
+//not the true address. So, this code multiplies to bring it back to true address
+void MemCache::dumpCacheDiagnostics()
+{
+    int c;
+    for (c = 0; c < NUM_CACHED_PAGES; c++)
+    {    
+        if (pages[c].address >= 0xFFFFFF) continue;
+        Logger::console("%i: [%x] Age: %i Dirty: %i", c, pages[c].address << 8, pages[c].age, pages[c].dirty);
+        for (int i = 0; i < 16; i++)
+        {
+            Logger::console("        %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x", 
+                pages[c].data[0 + 16*i], pages[c].data[1 + 16*i], pages[c].data[2 + 16*i], pages[c].data[3 + 16*i],
+                pages[c].data[4 + 16*i], pages[c].data[5 + 16*i], pages[c].data[6 + 16*i], pages[c].data[7 + 16*i],
+                pages[c].data[8 + 16*i], pages[c].data[9+ 16*i], pages[c].data[10 + 16*i], pages[c].data[11 + 16*i],
+                pages[c].data[12 + 16*i], pages[c].data[13 + 16*i], pages[c].data[14 + 16*i], pages[c].data[15 + 16*i]
+            );
+        }
+        Logger::console("");
     }
 }
 
