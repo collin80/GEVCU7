@@ -45,7 +45,7 @@ MotorController::MotorController() : Device() {
     speedRequested = 0;
     speedActual = 0;
     torqueRequested = 0;
-    torqueActual = 10;
+    torqueActual = 0;
     torqueAvailable = 0;
     mechanicalPower = 0;
 
