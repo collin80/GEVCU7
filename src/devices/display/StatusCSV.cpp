@@ -65,15 +65,15 @@ void StatusCSV::setup() {
     ConfigEntry entry;
     entry = {"TICKUPDATE", "Set number of timer ticks per update (20ms intervals)", &config->ticksPerUpdate, CFG_ENTRY_VAR_TYPE::UINT16, {.u_int = 1}, {.u_int = 10000}, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"STATUS-EN", "Specify a status entry hash to enable", &config->enableHash, CFG_ENTRY_VAR_TYPE::UINT32, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr};
+    entry = {"STATUS-EN", "Status entries to enable (or ALL for all of them)", &config->enableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"STATUS-DIS", "Specify a status entry hash to disable", &config->disableHash, CFG_ENTRY_VAR_TYPE::UINT32, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr};
+    entry = {"STATUS-DIS", "Status entries to disable (or ALL)", &config->disableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr};
     cfgEntries.push_back(entry);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_STATUS);
 
-    config->enableHash = 0;
-    config->disableHash = 0;
+    config->enableString[0] = 0;
+    config->disableString[0] = 0;
 }
 
 //This method handles periodic tick calls received from the tasker.
@@ -82,29 +82,22 @@ void StatusCSV::handleTick()
     StatusEntry *ent = nullptr;
     int c;
 
-    if (config->enableHash)
+    if (config->enableString[0] > 0)
     {
-        ent = deviceManager.findStatusEntryByHash(config->enableHash);
-        if (ent)
-        {
-            enableStatusHash(config->enableHash);
-            isEnabled = false;
-            Logger::console("Enabled the status entry!");
-            saveConfiguration();
-        }
-        config->enableHash = 0;
+        enableStatusHash(config->enableString);
+        isEnabled = false;
+        //Logger::console("Enabled the status entries!");
+        saveConfiguration();
+        config->enableString[0] = 0;
     }
-    if (config->disableHash)
+
+    if (config->disableString[0] > 0)
     {
-        ent = deviceManager.findStatusEntryByHash(config->disableHash);
-        if (ent)
-        {
-            disableStatusHash(config->disableHash);
-            isEnabled = false;
-            Logger::console("Disabled the status entry!");
-            saveConfiguration();
-        }
-        config->disableHash = 0;
+        disableStatusHash(config->disableString);
+        isEnabled = false;
+        //Logger::console("Disabled the status entries!");
+        saveConfiguration();
+        config->disableString[0] = 0;
     }
 
     while (SerialUSB1.available()) {
@@ -148,28 +141,77 @@ void StatusCSV::handleTick()
     }
 }
 
-void StatusCSV::enableStatusHash(uint32_t hash)
+void StatusCSV::enableStatusHash(char * str)
 {
-    for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
+    if (!stricmp("ALL", str))
     {
-        if (config->enabledStatusEntries[i] == 0)
+//        for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
+//        {
+//            config->enabledStatusEntries[i] = 0;
+//        }
+        Logger::console("I lied. This is not supported yet... sorry....");
+    }
+    else
+    {
+        int idx;
+        uint32_t hash;
+        StatusEntry *ent = nullptr;
+        char *tok = strtok(str, ",");
+        while (tok)
         {
-            config->enabledStatusEntries[i] = hash;
-            return;
+            idx = strtoul(tok, NULL, 0) - 1; //arrays are 0 based but indexes in program are 1 based
+            ent = deviceManager.FindStatusEntryByIdx(idx);
+            if (ent)
+            {
+                hash = ent->getHash();
+                for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
+                {
+                    if (config->enabledStatusEntries[i] == 0)
+                    {
+                        config->enabledStatusEntries[i] = hash;
+                        break;
+                    }
+                }
+            }
+            tok = strtok(NULL, ","); //get next one
         }
     }
     saveConfiguration();
     handleSerialSwitch();
 }
 
-void StatusCSV::disableStatusHash(uint32_t hash)
+void StatusCSV::disableStatusHash(char * str)
 {
-    for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
+    if (!stricmp("ALL", str))
     {
-        if (config->enabledStatusEntries[i] == hash)
+        for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
         {
             config->enabledStatusEntries[i] = 0;
-            //return;
+        }
+    }
+    else
+    {
+        int idx;
+        uint32_t hash;
+        StatusEntry *ent = nullptr;
+        char *tok = strtok(str, ",");
+        while (tok)
+        {
+            idx = strtoul(tok, NULL, 0) - 1;
+            ent = deviceManager.FindStatusEntryByIdx(idx);
+            if (ent)
+            {
+                hash = ent->getHash();
+                for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
+                {
+                    if (config->enabledStatusEntries[i] == hash)
+                    {
+                        config->enabledStatusEntries[i] = 0;
+                        break;
+                    }
+                }
+            }
+            tok = strtok(NULL, ","); //get next one
         }
     }
     saveConfiguration();

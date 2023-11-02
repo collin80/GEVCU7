@@ -49,8 +49,8 @@ class StatusCSVConfiguration: public DeviceConfiguration {
 public:
     uint16_t ticksPerUpdate;
     uint32_t enabledStatusEntries[NUM_ENTRIES_IN_TABLE]; //4 bytes per entry
-    uint32_t enableHash;
-    uint32_t disableHash;
+    char enableString[100];
+    char disableString[100];
 };
 
 class StatusCSV: public Device {
@@ -75,8 +75,8 @@ private:
     bool isEnabled;
 
     void handleSerialSwitch();
-    void enableStatusHash(uint32_t hash);
-    void disableStatusHash(uint32_t hash);
+    void enableStatusHash(char * str);
+    void disableStatusHash(char * str);
 };
 
 #endif
