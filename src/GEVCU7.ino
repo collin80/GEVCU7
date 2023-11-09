@@ -147,7 +147,9 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 
 byte i = 0;
 
-bool sdCardPresent;
+uint8_t sdCardPresence; //0 = not inserted, positive numbers indicate it has been inserted for increasing time (up to a limit)
+bool sdCardWorking; //does it appear that the sdcard is currently working properly and able to be used?
+bool sdCardInitFailed; //got a presence signal but trying to init it failed. Quit trying until next insertion
 
 WDT_T4<WDT3> wdt; //use the RTWDT which should be the safest one
 
@@ -310,8 +312,16 @@ void setup() {
     Serial.print(" at ");
     Serial.println(__TIME__);
 
+    sdCardInitFailed = false;
+
 #ifndef ASSUME_SDCARD_INSERTED
-    if (digitalRead(SD_DETECT) == 0)
+    for (int i = 0; i < 4; i++)
+    {
+        if (!digitalRead(SD_DETECT)) sdCardPresence++;
+        else sdCardPresence = 0;
+        delay(10); 
+    }
+    if (sdCardPresence > 1)
     {
 #endif
         Serial.print("Attempting to mount sdCard ");
@@ -320,11 +330,12 @@ void setup() {
 	    {
     	    //sdCard.initErrorHalt(&Serial);
             Serial.println("- Could not initialize sdCard");
-            sdCardPresent = false;
+            sdCardWorking = false;
+            sdCardInitFailed = true;
   	    }
         else 
         {
-            sdCardPresent = true;
+            sdCardWorking = true;
             Serial.println(" OK!");
             Logger::initializeFile();
             //if the system crashed we ought to decode all the breadcrumbs and save them into the logfile.
@@ -335,13 +346,13 @@ void setup() {
     else
     {
         Serial.println("No sdCard detected.");
-        sdCardPresent = false;
+        sdCardWorking = false;
     }
 #endif
 
     crashHandler.analyzeCrashData();
 
-    if (sdCardPresent)
+    if (sdCardWorking)
     {
         //here, directly after trying to find the SDCard is the best place to check the sdcard for firmware files
         //and flash them to the appropriate places if they exist.

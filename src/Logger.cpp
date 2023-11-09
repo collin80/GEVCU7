@@ -36,7 +36,7 @@ You will get a LOT of traffic on the serial console if you do this.
 #include "DeviceManager.h"
 #include "devices/misc/SystemDevice.h"
 
-extern bool sdCardPresent;
+extern bool sdCardWorking;
 FsFile logFile;
 
 // For efficiency the log has to be preallocated for a certain amount of space.
@@ -77,7 +77,7 @@ void Logger::initializeFile()
         Serial.println("open failed\n");
         return;
     }
-    else Serial.println("File Opened OK");
+    else Serial.println("Log file has been opened for writing.");
     // File must be pre-allocated to avoid huge
     // delays searching for free clusters.
     /*
@@ -118,7 +118,7 @@ void Logger::flushFile()
 void Logger::loop()
 {
     static uint32_t lastWriteTime = 0;
-    if (!sdCardPresent) return;
+    if (!sdCardWorking) return;
     size_t n = rb.bytesUsed();
     //Serial.println(n);
     //delay(100);
@@ -362,7 +362,7 @@ void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list 
     outputString += buff;
     //outputString += "\n";
     Serial.println(outputString);
-    if (sdCardPresent) rb.println(outputString);
+    if (sdCardWorking) rb.println(outputString);
 }
 
 /*

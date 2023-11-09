@@ -52,7 +52,7 @@ void StatusCSV::earlyInit()
  */
 void StatusCSV::setup() {
 
-    Logger::info("add device: EVIC (id: %X, %X)", STATUSCSV, this);
+    Logger::info("add device: StatusCSV (id: %X, %X)", STATUSCSV, this);
 
     tickHandler.detach(this);//Turn off tickhandler
 

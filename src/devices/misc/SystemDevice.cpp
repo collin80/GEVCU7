@@ -25,8 +25,14 @@
  */
 
 #include "SystemDevice.h"
+#include "SD.h"
+
+#define CFG_TICK_SYSTEM 40000
 
 SystemConfiguration *sysConfig;
+extern bool sdCardWorking;
+extern uint8_t sdCardPresence;
+extern bool sdCardInitFailed;
 
 /*
  * Constructor
@@ -48,6 +54,8 @@ void SystemDevice::earlyInit()
 void SystemDevice::setup() {
     if (sysConfig != nullptr) return;
     Logger::info("add device: System (id: %X, %X)", SYSTEM, this);
+
+    tickHandler.detach(this);//Turn off tickhandler
 
     loadConfiguration();
     
@@ -83,13 +91,48 @@ void SystemDevice::setup() {
     cfgEntries.push_back(entry);
     entry = {"SWCANMODE", "Set whether CAN0 is in SingleWire mode (only with hardware mods)", &config->swcanMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
     cfgEntries.push_back(entry);
+
+    tickHandler.attach(this, CFG_TICK_SYSTEM);
 }
 
 /*
- * Process a timer event. This is where you should be doing checks and updates. 
+ * Basically the only thing to do here is to figure out the state of the sdcard. There are a few states we care about:
+ 1. SDCard is not inserted and has not been inserted
+ 2. SDCard is not inserted but last we knew it was
+ 3. SDCard is inserted but last we knew it wasn't
+ 4. SDCard is inserted and has been
+ States 1 and 4 are stable and we don't really care that much. The states to track and handle are really 2 and 3 
  */
-void SystemDevice::handleTick() {
-    Device::handleTick(); // Call parent which controls the workflow
+void SystemDevice::handleTick()
+{
+    if (!digitalRead(SD_DETECT)) sdCardPresence++;
+        else sdCardPresence = 0;
+    if (sdCardPresence > 10) sdCardPresence = 10;
+    if (!sdCardWorking && (sdCardPresence == 10) && !sdCardInitFailed) //freshly inserted
+    {
+        Logger::info("SDCard has been inserted. Attempting to initialize it.");
+        if (!SD.sdfs.begin(SdioConfig(FIFO_SDIO)))
+	    {
+    	    //sdCard.initErrorHalt(&Serial);
+            Logger::error("Could not initialize sdCard.");
+            sdCardWorking = false;
+            sdCardInitFailed = true;
+  	    }
+        else 
+        {
+            sdCardWorking = true;
+            sdCardInitFailed = false;
+            Logger::info("SDCard driver was initialized.");
+            Logger::initializeFile();
+        }
+    }
+
+    if (sdCardWorking && sdCardPresence == 0) //sdcard has been removed
+    {
+        Logger::info("SDCard has been removed! No logging, loading, or saving will be possible.");
+        sdCardInitFailed = false;
+        sdCardWorking = false;
+    }
 }
 
 /*
