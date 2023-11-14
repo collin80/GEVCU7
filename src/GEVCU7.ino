@@ -393,9 +393,14 @@ void setup() {
 
     //force the system device to be set enabled. ALWAYS. It would not be good if it weren't enabled!
     Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
+    Device *sysIODev = deviceManager.getDeviceByID(SYSIO);
     sysDev->earlyInit();
+    sysIODev->earlyInit();
+    //all the 0x7?00 devices should always be enabled.
 	PrefHandler::setDeviceStatus(SYSTEM, true);
     PrefHandler::setDeviceStatus(HEARTBEAT, true);
+    PrefHandler::setDeviceStatus(MEMCACHE, true);
+    PrefHandler::setDeviceStatus(SYSIO, true);
     //Also, the system device has to be initialized a bit early.    
     sysDev->setup();
 

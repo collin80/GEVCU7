@@ -38,6 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logger.h"
 #include <ADC.h> //better ADC library compared to the built-in ADC functions
 #include "TickHandler.h"
+#include "devices/Device.h"
 
 class ExtIODevice;
 
@@ -77,13 +78,17 @@ struct PWM_SPECS
     uint32_t progress;
 };
 
-class SystemIO: public TickObserver
+class SystemIO: public Device
 {
 public:
     SystemIO();
     
     void setup();
+    void earlyInit();
     void setup_ADC_params();
+
+    DeviceId getId();
+    DeviceType getType();
 
     int16_t getAnalogIn(uint8_t which); //get value of one of the 4 analog inputs
     boolean setAnalogOut(uint8_t which, int32_t level);
@@ -118,12 +123,17 @@ private:
     void _pSetDigitalOutput(int pin, int state);
     int _pGetDigitalOutput(int pin);
     int16_t _pGetAnalogRaw(uint8_t which);
+    void setupStatusEntries();
 
     ADC *adc;
 
     SystemType sysType;
 
+    bool ranSetup;
+
     int adcMuxSelect;
+
+    int ioStatusIdx;
 
     uint8_t pcaDigitalOutputCache;
     
@@ -131,6 +141,10 @@ private:
     int numDigOut;
     int numAnaIn;
     int numAnaOut;
+
+    uint8_t digOutState[NUM_OUTPUT];
+    uint8_t digInState[NUM_DIGITAL];
+    int16_t anaInState[NUM_ANALOG];
 
     PWM_SPECS digPWMOutput[NUM_OUTPUT];
     uint32_t lastMicros;

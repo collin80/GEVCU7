@@ -74,7 +74,7 @@ void CrashHandler::analyzeCrashData()
         {
             Serial.println(CrashReport);
         }
-        Logger::flushFile();
+        //Logger::flushFile();
     }
     else
     {

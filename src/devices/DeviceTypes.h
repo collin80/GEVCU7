@@ -269,6 +269,7 @@ of all registered devices and get the list that way.
 #define SYSTEM 0x7100
 #define HEARTBEAT 0x7200
 #define MEMCACHE 0x7300
+#define SYSIO  0x7400
 #define INVALID 0xFFFF
 
 typedef uint16_t DeviceId;

@@ -30,11 +30,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "devices/io/ExtIODevice.h"
 #include "devices/misc/SystemDevice.h"
 #include "i2c_driver_wire.h"
+#include "DeviceManager.h"
 
 #undef HID_ENABLED
 
-SystemIO::SystemIO()
+SystemIO::SystemIO() : Device()
 {
+    commonName = "System IO";
+    shortName = "IO";
     for (int i = 0; i < NUM_EXT_IO; i++)
     {
         extendedDigitalOut[i].device = NULL;
@@ -49,6 +52,7 @@ SystemIO::SystemIO()
     numAnaOut = 0;
     pcaDigitalOutputCache = 0; //all outputs off by default
     adcMuxSelect = 0;
+    ioStatusIdx = 0;
 
     for (int i = 0; i < NUM_OUTPUT; i++)
     {
@@ -56,9 +60,16 @@ SystemIO::SystemIO()
         digPWMOutput[i].progress = 0;
         digPWMOutput[i].pwmActive = false;
         digPWMOutput[i].freqInterval = 0;
-    }
+        digOutState[i] = 0;
 
-    adc = new ADC(); // adc object;
+    }
+    
+    for (int i = 0; i < NUM_DIGITAL; i++) digInState[i] = 0;
+    for (int i = 0; i < NUM_ANALOG; i++) anaInState[i] = 0;
+    
+    adc = new ADC(); // adc object
+
+    ranSetup = false;
 }
 
 void SystemIO::setup_ADC_params()
@@ -81,8 +92,24 @@ SystemType SystemIO::getSystemType() {
     return sysType;
 }
 
+void SystemIO::earlyInit()
+{
+    if (!prefsHandler) prefsHandler = new PrefHandler(SYSIO);
+}
+
+DeviceId SystemIO::getId() {
+    return (SYSIO);
+}
+
+DeviceType SystemIO::getType()
+{
+    return DEVICE_IO;
+}
+
 void SystemIO::setup() {
+    if (ranSetup) return;
     analogReadRes(12);
+    tickHandler.detach(this);
 
     setup_ADC_params();
 
@@ -123,6 +150,45 @@ void SystemIO::setup() {
     adc->adc1->setResolution(12);                                           // set bits of resolution
     adc->adc1->setConversionSpeed(ADC_CONVERSION_SPEED::HIGH_SPEED);       // change the conversion speed
     adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::HIGH_SPEED );           // change the sampling speed
+
+    setupStatusEntries();
+
+    ranSetup = true;
+    //the need for ranSetup is based upon a kludge. This is set up as a device now but it gets initialized
+    //early so setup is called manually. But, then the device manager tries again later on thinking it hasn't
+    //been done. The system device has this same problem. It should be fixed properly at some point.
+}
+
+void SystemIO::setupStatusEntries()
+{
+    char buff[30];
+    int i;
+
+    StatusEntry stat;
+
+    for (i = 0; i < NUM_DIGITAL; i++)
+    {
+        sprintf(buff, "SYS_DIGIN%i", i);
+      //        name       var           type                  prevVal  obj
+        stat = {buff, &digInState[i], CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+        deviceManager.addStatusEntry(stat);
+    }
+
+    for (i = 0; i < NUM_OUTPUT; i++)
+    {
+        sprintf(buff, "SYS_DIGOUT%i", i);
+      //        name       var           type                  prevVal  obj
+        stat = {buff, &digOutState[i], CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+        deviceManager.addStatusEntry(stat);
+    }
+
+    for (i = 0; i < NUM_ANALOG; i++)
+    {
+        sprintf(buff, "SYS_ANAIN%i", i);
+      //        name       var           type                  prevVal  obj
+        stat = {buff, &anaInState[i], CFG_ENTRY_VAR_TYPE::INT16, 0, this};
+        deviceManager.addStatusEntry(stat);
+    }
 }
 
 void SystemIO::installExtendedIO(ExtIODevice *device)
@@ -405,6 +471,7 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
     {
         _pSetDigitalOutput(which, active);
         digPWMOutput[which].pwmActive = false;
+        digOutState[which] = active;
     }
     else
     {
@@ -448,6 +515,7 @@ void SystemIO::setDigitalOutputPWM(uint8_t which, uint8_t freq, uint16_t duty)
     double prog = duty / 1000.0;
     digPWMOutput[which].triggerPoint = (uint32_t)(digPWMOutput[which].freqInterval * prog);
     _pSetDigitalOutput(which, false);//set it low to start
+    digOutState[which] = 0;
 }
 
 void SystemIO::updateDigitalPWMDuty(uint8_t which, uint16_t duty)
@@ -485,6 +553,19 @@ void SystemIO::handleTick()
     uint8_t outputMask;
     uint8_t tempCache = pcaDigitalOutputCache;
 
+    //each tick increment status index and maybe update one of the digital or analog inputs
+    if (ioStatusIdx < NUM_DIGITAL)
+    {
+        digInState[ioStatusIdx] = getDigitalIn(ioStatusIdx);
+    }
+    else if ((ioStatusIdx - NUM_DIGITAL) < NUM_ANALOG)
+    {
+        int idx = ioStatusIdx - NUM_DIGITAL;
+        anaInState[idx] = getAnalogIn(idx);
+    }
+    else ioStatusIdx = -1;
+    ioStatusIdx++;
+
     for (int i = 0; i < NUM_OUTPUT; i++)
     {
         if (!digPWMOutput[i].pwmActive) continue;
@@ -494,12 +575,14 @@ void SystemIO::handleTick()
         {
             Logger::debug("%i on!", i);
             pcaDigitalOutputCache |= (1 << i);
+            digOutState[i] = 1;
         }
         else
         {
             Logger::debug("%i OFF!", i);
             outputMask = ~(1 << i);
             pcaDigitalOutputCache &= outputMask;
+            digOutState[i] = 0;
         }
         //we have to constrain the progress variable to be within the freqInterval value but do so here
         //after we've already done our output calc because this should yield the closest match to our
