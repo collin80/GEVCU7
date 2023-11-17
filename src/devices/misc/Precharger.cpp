@@ -99,11 +99,6 @@ void Precharger::handleTick() {
 
     PrechargeConfiguration *config = (PrechargeConfiguration *) getConfiguration();
 
-    if (config->enableInput < 255)
-    {
-        if (!systemIO.getDigitalIn(config->enableInput)) return; //don't do any processing if we're not enabled
-    }
-
 /*  
     there are two basic types of precharge - a raw time and thats it or we look at other devices to get voltages
     a BMS would know the pack voltage and something like a motor controller would know what voltage it currently sees.
@@ -114,8 +109,15 @@ void Precharger::handleTick() {
     switch (state)
     {
     case PRECHARGE_INIT:
+        //don't actually initialize until the enable pin goes high if we've got one.
+        if (config->enableInput < 255)
+        {
+            if (!systemIO.getDigitalIn(config->enableInput)) return; //don't do any processing if we're not enabled
+        }
+
         //need to set up to enter in progress
         prechargeBeginTime = millis();
+
         if (config->prechargeRelay != 255) 
         {
             Logger::info("Starting precharge by closing the precharge relay");

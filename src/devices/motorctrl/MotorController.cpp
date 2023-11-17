@@ -158,9 +158,9 @@ void MotorController::handleTick() {
         throttleRequested = brake->getLevel();
     //Logger::debug("Throttle: %d", throttleRequested);
 
-    if(skipcounter++ > 30)    //A very low priority loop for checks that only need to be done once per second.
+    if (skipcounter++ > 30)    //A very low priority loop for checks that only need to be done once per second.
     {
-        skipcounter=0; //Reset our laptimer
+        skipcounter = 0; //Reset our laptimer
         checkEnableInput();
         checkGearInputs();
     }
@@ -242,7 +242,7 @@ void MotorController::checkGearInputs()
     {
         if((systemIO.getDigitalIn(reverseinput)) || testreverseinput)
         {
-            setSelectedGear(REVERSE);
+            selGear = REVERSE;
             //statusBitfield2 |=1 << 16; //set bit to turn on REVERSE annunciator
             //statusBitfield2 |=1 << reverseinput;//setbit to Turn on reverse input annunciator
         }
@@ -252,7 +252,7 @@ void MotorController::checkGearInputs()
     {
         if((systemIO.getDigitalIn(forwardInput)) )
         {
-            setSelectedGear(DRIVE);
+            selGear = DRIVE;
             //statusBitfield2 |=1 << 16; //set bit to turn on REVERSE annunciator
             //statusBitfield2 |=1 << reverseinput;//setbit to Turn on reverse input annunciator
         }
@@ -262,6 +262,8 @@ void MotorController::checkGearInputs()
     if ( (selGear == NEUTRAL) && 
          (reverseinput < 255) && 
          (forwardInput == 255) ) selGear = DRIVE;
+
+    Logger::debug("Selected gear: %i", selGear);
 
     setSelectedGear(selGear);
 }
