@@ -68,9 +68,9 @@ void MotorController::setup() {
     cfgEntries.reserve(20);
 
     ConfigEntry entry;
-    entry = {"TORQ", "Set torque upper limit (tenths of a Nm)", &config->torqueMax, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 5000.0}, 1, nullptr};
+    entry = {"TORQ", "Set torque upper limit (Nm)", &config->torqueMax, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 5000.0}, 1, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TORQSLEW", "Torque slew rate (per second, tenths of a Nm)", &config->torqueSlewRate, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 50000.0}, 1, nullptr};
+    entry = {"TORQSLEW", "Torque slew rate (per second, Nm)", &config->torqueSlewRate, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 50000.0}, 1, nullptr};
     cfgEntries.push_back(entry);
     entry = {"RPM", "Set maximum RPM", &config->speedMax, CFG_ENTRY_VAR_TYPE::UINT16, 0, 30000, 0, nullptr};
     cfgEntries.push_back(entry);
@@ -78,9 +78,11 @@ void MotorController::setup() {
     cfgEntries.push_back(entry);
     entry = {"REVLIM", "How much torque to allow in reverse (Tenths of a percent)", &config->reversePercent, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"ENABLEIN", "Digital input to enable motor controller (0-3, 255 for none)", &config->enableIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"ENABLEIN", "Digital input to enable motor controller (0-11, 255 for none)", &config->enableIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"REVIN", "Digital input to reverse motor rotation (0-3, 255 for none)", &config->reverseIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"FWDIN", "Digital input to enable forward motion (0-11, 255 for none)", &config->forwardIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"REVIN", "Digital input to enable reverse motion (0-11, 255 for none)", &config->reverseIn, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
     entry = {"TAPERHI", "Regen taper upper RPM (0 - 20000)", &config->regenTaperUpper, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr};
     cfgEntries.push_back(entry);
@@ -160,7 +162,7 @@ void MotorController::handleTick() {
     {
         skipcounter=0; //Reset our laptimer
         checkEnableInput();
-        checkReverseInput();
+        checkGearInputs();
     }
 }
 
@@ -211,7 +213,7 @@ void MotorController::checkReverseLight()
 void MotorController:: checkEnableInput()
 {
     uint16_t enableinput=getEnableIn();
-    if(enableinput >= 0 && enableinput<4) //Do we even have an enable input configured ie NOT 255.
+    if(enableinput >= 0 && enableinput < 255) //Do we even have an enable input configured ie NOT 255.
     {
         if((systemIO.getDigitalIn(enableinput))||testenableinput) //If it's ON let's set our opstate to ENABLE
         {
@@ -222,6 +224,7 @@ void MotorController:: checkEnableInput()
         else
         {
             setOpState(DISABLED);//If it's off, lets set DISABLED.  These two could just as easily be reversed
+            setSelectedGear(NEUTRAL);
             //statusBitfield2 &= ~(1 << 18); //clear bit to turn off ENABLE annunciator
             //statusBitfield2 &= ~(1 << enableinput);//clear bit to turn off enable input annunciator
         }
@@ -229,24 +232,38 @@ void MotorController:: checkEnableInput()
 }
 
 //IF we have a reverse input configured, this will set our selected gear to REVERSE any time the input is true, DRIVE if not
-void MotorController:: checkReverseInput()
+void MotorController::checkGearInputs()
 {
-    uint16_t reverseinput=getReverseIn();
-    if(reverseinput >= 0 && reverseinput<4)  //If we don't have a Reverse Input, do nothing
+    if (getOpState() != ENABLE) return;
+    uint8_t reverseinput = getReverseIn();
+    uint8_t forwardInput = getForwardIn();
+    Gears selGear = NEUTRAL;
+    if(reverseinput >= 0 && reverseinput < 255)  //If we don't have a Reverse Input, do nothing
     {
-        if((systemIO.getDigitalIn(reverseinput))||testreverseinput)
+        if((systemIO.getDigitalIn(reverseinput)) || testreverseinput)
         {
             setSelectedGear(REVERSE);
             //statusBitfield2 |=1 << 16; //set bit to turn on REVERSE annunciator
             //statusBitfield2 |=1 << reverseinput;//setbit to Turn on reverse input annunciator
         }
-        else
+    }
+
+    if(forwardInput >= 0 && forwardInput < 255)  //If we don't have a Reverse Input, do nothing
+    {
+        if((systemIO.getDigitalIn(forwardInput)) )
         {
-            setSelectedGear(DRIVE); //If it's off, lets set to DRIVE.
-            //statusBitfield2 &= ~(1 << 16); //clear bit to turn off REVERSE annunciator
-            //statusBitfield2 &= ~(1 << reverseinput);//clear bit to turn off reverse input annunciator
+            setSelectedGear(DRIVE);
+            //statusBitfield2 |=1 << 16; //set bit to turn on REVERSE annunciator
+            //statusBitfield2 |=1 << reverseinput;//setbit to Turn on reverse input annunciator
         }
     }
+    //lastly, if we're still in neutral but there was a reverse input and there isn't a forward input
+    //then the correct thing to do is go into forward mode.
+    if ( (selGear == NEUTRAL) && 
+         (reverseinput < 255) && 
+         (forwardInput == 255) ) selGear = DRIVE;
+
+    setSelectedGear(selGear);
 }
 
 
@@ -290,9 +307,15 @@ int8_t MotorController::getEnableIn() {
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
     return config->enableIn;
 }
+
 int8_t MotorController::getReverseIn() {
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
     return config->reverseIn;
+}
+
+int8_t MotorController::getForwardIn() {
+    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
+    return config->forwardIn;
 }
 
 int16_t MotorController::getThrottle() {
@@ -378,6 +401,7 @@ void MotorController::loadConfiguration() {
         prefsHandler->read("Reverse_DIN", &config->reverseIn, 1);
         prefsHandler->read("RegenTaperUpper", &config->regenTaperUpper, 500);
         prefsHandler->read("RegenTaperLower", &config->regenTaperLower, 75);
+        prefsHandler->read("FwdDIN", &config->forwardIn, 255);
         if (config->regenTaperLower < 0 || config->regenTaperLower > 10000 ||
             config->regenTaperUpper < config->regenTaperLower || config->regenTaperUpper > 10000) {
             config->regenTaperLower = 75;
@@ -399,6 +423,7 @@ void MotorController::saveConfiguration() {
     prefsHandler->write("ReversePercentage", config->reversePercent);
     prefsHandler->write("Enable_DIN", config->enableIn);
     prefsHandler->write("Reverse_DIN", config->reverseIn);
+    prefsHandler->write("FwdDIN", config->forwardIn);
     prefsHandler->write("RegenTaperLower", config->regenTaperLower);
     prefsHandler->write("RegenTaperUpper", config->regenTaperUpper);
     

@@ -339,7 +339,7 @@ void DmocMotorController::sendCmd2() {
             torqueCommand+=torqueRequested;   //If actual rpm is less than max rpm, add torque to offset
         }
         else {
-            torqueCommand += torqueRequested /1.3;   // else torque is reduced
+            torqueCommand += torqueRequested / 1.3;   // else torque is reduced
         }
         output.buf[0] = (torqueCommand & 0xFF00) >> 8;
         output.buf[1] = (torqueCommand & 0x00FF);

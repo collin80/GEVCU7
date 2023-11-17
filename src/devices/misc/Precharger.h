@@ -63,6 +63,7 @@ public:
     uint16_t prechargeTime; //in milliseconds. So, up to 65 seconds possible. If waiting for BMS/MC voltage instead this is max time to wait before faulting
     uint8_t prechargeRelay;
     uint8_t mainRelay;
+    uint8_t enableInput;
 };
 
 class Precharger: public Device {

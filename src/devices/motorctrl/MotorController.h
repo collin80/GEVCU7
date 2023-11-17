@@ -59,6 +59,7 @@ public:
     //elsewhere too.
     uint8_t enableIn;
     uint8_t reverseIn;
+    uint8_t forwardIn;
 };
 
 class MotorController: public Device {
@@ -126,8 +127,8 @@ public:
     void checkBrakeLight();
     void checkReverseLight();
     void checkEnableInput();
-    void checkReverseInput();
-
+    void checkGearInputs();
+    
     void brakecheck();
     bool isReady();
     bool isRunning();
@@ -148,6 +149,7 @@ public:
     int16_t getThrottle();
     int8_t getEnableIn();
     int8_t getReverseIn();
+    int8_t getForwardIn();
     int16_t getselectedGear();
     int16_t getSpeedRequested();
     int16_t getSpeedActual();

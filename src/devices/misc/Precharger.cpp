@@ -68,6 +68,8 @@ void Precharger::setup() {
     cfgEntries.push_back(entry);
     entry = {"MAINCONTACTOR", "Set output to use for main contactor", &config->mainRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
     cfgEntries.push_back(entry);
+    entry = {"PRECHARGE-TRIGGER", "Set input to use for triggering precharge", &config->enableInput, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    cfgEntries.push_back(entry);
 
     StatusEntry stat;
     //        name                       var         type               prevVal  obj
@@ -96,6 +98,11 @@ void Precharger::handleTick() {
     //Logger::avalanche("Precharge Tick Handler");
 
     PrechargeConfiguration *config = (PrechargeConfiguration *) getConfiguration();
+
+    if (config->enableInput < 255)
+    {
+        if (!systemIO.getDigitalIn(config->enableInput)) return; //don't do any processing if we're not enabled
+    }
 
 /*  
     there are two basic types of precharge - a raw time and thats it or we look at other devices to get voltages
@@ -198,6 +205,7 @@ void Precharger::loadConfiguration() {
     prefsHandler->read("PrechargeTime", &config->prechargeTime, 6000);
     prefsHandler->read("PrechargeType", &config->prechargeType, (uint8_t)PT_TIME_DELAY);
     prefsHandler->read("MainContactor", &config->mainRelay, 1);
+    prefsHandler->read("PrechargeTrig", &config->enableInput, 255);
 }
 
 /*
@@ -211,6 +219,7 @@ void Precharger::saveConfiguration() {
     prefsHandler->write("PrechargeTime", config->prechargeTime);
     prefsHandler->write("PrechargeType", config->prechargeType);
     prefsHandler->write("MainContactor", config->mainRelay);
+    prefsHandler->write("PrechargeTrig", config->enableInput);
 
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();

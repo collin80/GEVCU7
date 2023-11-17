@@ -253,7 +253,7 @@ void PotThrottle::loadConfiguration() {
     Throttle::loadConfiguration(); // call parent
 
     //if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-        Logger::debug(POTACCELPEDAL, Constants::validChecksum);
+        //Logger::debug(POTACCELPEDAL, Constants::validChecksum);
         prefsHandler->read("ThrottleMin1", (uint16_t *)&config->minimumLevel1, 20);        
         prefsHandler->read("ThrottleMax1", (uint16_t *)&config->maximumLevel1, 3150);
         prefsHandler->read("ThrottleMin2", (uint16_t *)&config->minimumLevel2, 0);        
