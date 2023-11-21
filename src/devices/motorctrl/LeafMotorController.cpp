@@ -33,7 +33,6 @@
 extern bool runThrottle; //TODO: remove use of global variables !
 
 LeafMotorController::LeafMotorController() : MotorController() {    
-    selectedGear = NEUTRAL;
     operationState = DISABLED;
     actualState = DISABLED;
     online = 0;
@@ -129,9 +128,9 @@ void LeafMotorController::handleTick() {
         if (activityCount > 40) //If we are receiving regular CAN messages from DMOC, this will very quickly get to over 40. We'll limit
             // it to 60 so if we lose communications, within 20 ticks we will decrement below this value.
         {
-            Logger::debug(LEAFINV, "Enable Input Active? %u         Reverse Input Active? %u" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
-            if(getEnableIn() < 0) setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
-            if(getReverseIn() < 0) setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
+            //Logger::debug(LEAFINV, "Enable Input Active? %u         Reverse Input Active? %u" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
+            //if(getEnableIn() < 0) setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
+            //if(getReverseIn() < 0) setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
         }
     }
     else {
@@ -159,6 +158,7 @@ void LeafMotorController::sendFrame11A()
     static int counter = 0;
     LeafMotorControllerConfiguration *config = (LeafMotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
+    Gears currentGear = getSelectedGear();
     output.len = 8;
     output.id = 0x11A;
     output.flags.extended = 0; //standard frame
@@ -168,8 +168,8 @@ void LeafMotorController::sendFrame11A()
     output.buf[0] = 0x00;
     if (operationState == ENABLE)
     {
-        if (selectedGear == DRIVE) output.buf[0] = 4 << 4;
-        else if (selectedGear == REVERSE) output.buf[0] = 2 << 4;
+        if (currentGear == DRIVE) output.buf[0] = 4 << 4;
+        else if (currentGear == REVERSE) output.buf[0] = 2 << 4;
     }
 
     if (operationState != ENABLE) output.buf[1] = 0x80;
@@ -252,10 +252,10 @@ void LeafMotorController::taperRegen()
 }
 
 void LeafMotorController::setGear(Gears gear) {
-    selectedGear = gear;
+    setSelectedGear(gear);
     //if the gear was just set to drive or reverse and the DMOC is not currently in enabled
     //op state then ask for it by name
-    if (selectedGear != NEUTRAL) {
+    if (gear != NEUTRAL) {
         operationState = ENABLE;
     }
     //should it be set to standby when selecting neutral? I don't know. Doing that prevents regen

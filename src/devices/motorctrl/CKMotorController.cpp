@@ -33,7 +33,6 @@
 uint32_t CK_milli;
 
 CKMotorController::CKMotorController() : MotorController() {    
-    selectedGear = NEUTRAL;
     operationState = DISABLED;
     actualState = DISABLED;
     online = 0;
@@ -47,7 +46,8 @@ void CKMotorController::earlyInit()
     prefsHandler = new PrefHandler(CKINVERTER);
 }
 
-void CKMotorController::setup() {
+void CKMotorController::setup() 
+{
     tickHandler.detach(this);
 
     Logger::info("add device: CKINVCTRL (id:%X, %X)", CKINVERTER, this);
@@ -59,8 +59,8 @@ void CKMotorController::setup() {
     canHandlerIsolated.attach(this, 0x410, 0x7f0, false);
 
     running = false;
-    setSelectedGear(NEUTRAL);
-    setOpState(ENABLE);
+    //setSelectedGear(NEUTRAL);
+    //setOpState(ENABLE);
     CK_milli = millis();
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CK);
@@ -134,6 +134,7 @@ void CKMotorController::sendPowerCmd() {
     CKMotorControllerConfiguration *config = (CKMotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
     OperationState newstate;
+    Gears currentGear = getSelectedGear();
     output.len = 7;
     output.id = 0x232;
     output.flags.extended = 0; //standard frame
@@ -143,12 +144,12 @@ void CKMotorController::sendPowerCmd() {
 	//obviously just for debugging during development. Do not leave these next lines here for long!
 	//operationState = MotorController::ENABLE;
 	//selectedGear = MotorController::DRIVE;
-	powerMode = MotorController::modeSpeed;
+    setPowerMode(MotorController::modeSpeed);
 	actualState = MotorController::ENABLE;
 
-	if (operationState == ENABLE && selectedGear != NEUTRAL)
+	if (operationState == ENABLE && currentGear != NEUTRAL)
 	{
-		if (powerMode == modeSpeed)
+		if (getPowerMode() == modeSpeed)
 		{
 			torqueRequested = 0;
 			if (throttleRequested > 0)
@@ -157,7 +158,7 @@ void CKMotorController::sendPowerCmd() {
 			}
 			else speedRequested = 0;
 		}	
-		else if (powerMode == modeTorque)
+		else if (getPowerMode() == modeTorque)
 		{
 			speedRequested = 0;
 			torqueRequested = throttleRequested * config->torqueMax / 100.0f; //Send in 0.1Nm increments
@@ -177,8 +178,8 @@ void CKMotorController::sendPowerCmd() {
    
     if (actualState == ENABLE) {
 		output.buf[4] = 1;
-		if (selectedGear == MotorController::DRIVE) output.buf[4] += 2;
-		if (selectedGear == MotorController::REVERSE) output.buf[4] += 4;
+		if (currentGear == MotorController::DRIVE) output.buf[4] += 2;
+		if (currentGear == MotorController::REVERSE) output.buf[4] += 4;
     }
     else { //force neutral gear until the system is enabled.
         output.buf[4] = 0;
@@ -222,10 +223,10 @@ byte CKMotorController::calcChecksum(CAN_message_t& thisFrame)
 }
 	    
 void CKMotorController::setGear(Gears gear) {
-    selectedGear = gear;
+    setSelectedGear(gear);
     //if the gear was just set to drive or reverse and the DMOC is not currently in enabled
     //op state then ask for it by name
-    if (selectedGear != NEUTRAL) {
+    if (gear != NEUTRAL) {
         operationState = ENABLE;
     }
     //should it be set to standby when selecting neutral? I don't know. Doing that prevents regen

@@ -50,6 +50,7 @@ MotorController::MotorController() : Device() {
     mechanicalPower = 0;
 
     selectedGear = NEUTRAL;
+    strcpy(gearText, "Neutral");
     operationState = ENABLE;
 
     dcVoltage = 0;
@@ -101,7 +102,7 @@ void MotorController::setup() {
     deviceManager.addStatusEntry(stat);
     stat = {"MC_Warning", &warning, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
     deviceManager.addStatusEntry(stat);
-    stat = {"MC_Gear", &selectedGear, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    stat = {"MC_Gear", &selectedGear, CFG_ENTRY_VAR_TYPE::INT16, 0, this};
     deviceManager.addStatusEntry(stat);
     stat = {"MC_PowerMode", &powerMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
     deviceManager.addStatusEntry(stat);
@@ -133,7 +134,7 @@ void MotorController::setup() {
     deviceManager.addStatusEntry(stat);
     stat = {"MC_SysTemp", &temperatureSystem, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
     deviceManager.addStatusEntry(stat);
-
+    
     Device::setup();
 }
 
@@ -212,7 +213,7 @@ void MotorController::checkReverseLight()
 //If we have an ENABLE input configured, this will set opstation to ENABLE anytime it is true (12v), DISABLED if not.
 void MotorController:: checkEnableInput()
 {
-    uint16_t enableinput=getEnableIn();
+    uint16_t enableinput = getEnableIn();
     if(enableinput >= 0 && enableinput < 255) //Do we even have an enable input configured ie NOT 255.
     {
         if((systemIO.getDigitalIn(enableinput))||testenableinput) //If it's ON let's set our opstate to ENABLE
@@ -229,6 +230,7 @@ void MotorController:: checkEnableInput()
             //statusBitfield2 &= ~(1 << enableinput);//clear bit to turn off enable input annunciator
         }
     }
+    if (enableinput == 255) setOpState(ENABLE);
 }
 
 //IF we have a reverse input configured, this will set our selected gear to REVERSE any time the input is true, DRIVE if not
@@ -305,17 +307,17 @@ uint32_t MotorController::getStatusBitfield() {
     return statusBitfield.bitfield;
 }
 
-int8_t MotorController::getEnableIn() {
+uint8_t MotorController::getEnableIn() {
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
     return config->enableIn;
 }
 
-int8_t MotorController::getReverseIn() {
+uint8_t MotorController::getReverseIn() {
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
     return config->reverseIn;
 }
 
-int8_t MotorController::getForwardIn() {
+uint8_t MotorController::getForwardIn() {
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
     return config->forwardIn;
 }
@@ -344,7 +346,22 @@ MotorController::Gears MotorController::getSelectedGear() {
     return selectedGear;
 }
 void MotorController::setSelectedGear(Gears gear) {
-    selectedGear=gear;
+    selectedGear = gear;
+    switch (gear)
+    {
+    case NEUTRAL:
+        strcpy(gearText, "Neutral");
+        break;
+    case DRIVE:
+        strcpy(gearText, "Drive");
+        break;
+    case REVERSE:
+        strcpy(gearText, "Reverse");
+        break;
+    default:
+        strcpy(gearText, "ERROR");
+        break;
+    }
 }
 
 float MotorController::getTorqueAvailable() {

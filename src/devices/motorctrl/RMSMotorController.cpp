@@ -74,7 +74,6 @@ void RMSMotorController::setup()
     attachedCANBus->attach(this, 0x0A0, 0x7f0, false);
 
     operationState = ENABLE;
-    selectedGear = NEUTRAL;
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER);
 }
 
@@ -344,8 +343,8 @@ void RMSMotorController::handleCANMsgIntState(uint8_t *data)
 	
 	Logger::debug ("Relay States: %x", relayState);
 	
-	if (invRunMode) powerMode = modeSpeed;
-	else powerMode = modeTorque;
+	if (invRunMode) setPowerMode(modeSpeed);
+	else setPowerMode(modeTorque);
 	
 	switch (invActiveDischarge)
 	{
@@ -508,6 +507,7 @@ void RMSMotorController::handleTick() {
 void RMSMotorController::sendCmdFrame()
 {
     RMSMotorControllerConfiguration *config = (RMSMotorControllerConfiguration *)getConfiguration();
+	Gears currentGear = getSelectedGear();
 
     CAN_message_t output;
     output.len = 8;
@@ -529,7 +529,7 @@ void RMSMotorController::sendCmdFrame()
 	
 	
     //if(operationState == ENABLE && !isLockedOut && selectedGear != NEUTRAL && donePrecharge)
-    if(operationState == ENABLE && !isLockedOut && selectedGear != NEUTRAL)
+    if(operationState == ENABLE && !isLockedOut && currentGear != NEUTRAL)
     {
         output.buf[5] = 1;
     }
@@ -538,7 +538,7 @@ void RMSMotorController::sendCmdFrame()
         output.buf[5] = 0;
     }
 
-    if(selectedGear == DRIVE)
+    if(currentGear == DRIVE)
     {
         output.buf[4] = 0;
     }

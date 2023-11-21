@@ -49,7 +49,6 @@ long ms;
 DmocMotorController::DmocMotorController() : MotorController() {    
     step = SPEED_TORQUE;
 
-    selectedGear = NEUTRAL;
     operationState = DISABLED;
     actualState = DISABLED;
     online = 0;
@@ -217,9 +216,9 @@ void DmocMotorController::handleTick() {
         if (activityCount > 40) //If we are receiving regular CAN messages from DMOC, this will very quickly get to over 40. We'll limit
             // it to 60 so if we lose communications, within 20 ticks we will decrement below this value.
         {
-            Logger::debug(DMOC645, "Enable Input Active? %u         Reverse Input Active? %u" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
-            if(getEnableIn()<0)setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
-            if(getReverseIn()<0)setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
+            //Logger::debug(DMOC645, "Enable Input Active? %u         Reverse Input Active? %u" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
+            //if(getEnableIn()<0)setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
+            //if(getReverseIn()<0)setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
         }
     }
     else {
@@ -252,12 +251,15 @@ void DmocMotorController::sendCmd1() {
     DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
     OperationState newstate;
+    Gears currentGear = getSelectedGear();
+    PowerMode currentMode = getPowerMode();
+
     alive = (alive + 2) & 0x0F;
     output.len = 8;
     output.id = 0x232;
     output.flags.extended = 0; //standard frame
 
-    if (throttleRequested > 0 && operationState == ENABLE && selectedGear != NEUTRAL && powerMode == modeSpeed)
+    if (throttleRequested > 0 && operationState == ENABLE && currentGear != NEUTRAL && currentMode == modeSpeed)
         speedRequested = 20000 + (((long) throttleRequested * (long) config->speedMax) / 1000);
     else
         speedRequested = 20000;
@@ -277,11 +279,16 @@ void DmocMotorController::sendCmd1() {
     if (operationState == POWERDOWN)
         newstate = POWERDOWN;
 
-    if (actualState == ENABLE) {
-        output.buf[6] = alive + ((byte) selectedGear << 4) + ((byte) newstate << 6); //use new automatic state system.
+    if (actualState == ENABLE) 
+    {
+        int gear = 0;
+        if (currentGear == DRIVE) gear = 1;
+        if (currentGear == REVERSE) gear = 2;
+        output.buf[6] = alive + ((byte) gear << 4) + ((byte) newstate << 6); //use new automatic state system.
     }
-    else { //force neutral gear until the system is enabled.
-        output.buf[6] = alive + ((byte) NEUTRAL << 4) + ((byte) newstate << 6); //use new automatic state system.
+    else //force neutral gear until the system is enabled. 
+    {
+        output.buf[6] = alive + ((byte) 0 << 4) + ((byte) newstate << 6); //use new automatic state system.
     }
 
     output.buf[7] = calcChecksum(output);
@@ -308,6 +315,8 @@ void DmocMotorController::taperRegen()
 void DmocMotorController::sendCmd2() {
     DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
+    Gears currentGear = getSelectedGear();
+    PowerMode currentMode = getPowerMode();
     output.len = 8;
     output.id = 0x233;
     output.flags.extended = 0; //standard frame
@@ -321,19 +330,19 @@ void DmocMotorController::sendCmd2() {
 
     Logger::debug(DMOC645, "Throttle requested: %i", throttleRequested);
 
-    torqueRequested=0;
+    torqueRequested = 0;
     if (actualState == ENABLE) { //don't even try sending torque commands until the DMOC reports it is ready
-        if (selectedGear == DRIVE) {
+        if (currentGear == DRIVE) {
             torqueRequested = (((long) throttleRequested * (long) config->torqueMax) / 100.0f);
             //if (speedActual < config->regenTaperUpper && torqueRequested < 0) taperRegen();
         }
-        if (selectedGear == REVERSE) {
+        if (currentGear == REVERSE) {
             torqueRequested = (((long) throttleRequested * -1 *(long) config->torqueMax) / 100.0f);//If reversed, regen becomes positive torque and positive pedal becomes regen.  Let's reverse this by reversing the sign.  In this way, we'll have gradually diminishing positive torque (in reverse, regen) followed by gradually increasing regen (positive torque in reverse.)
             //if (speedActual < config->regenTaperUpper && torqueRequested > 0) taperRegen();
         }
     }
 
-    if (powerMode == modeTorque)
+    if (currentMode == modeTorque)
     {
         if(speedActual < config->speedMax) {
             torqueCommand+=torqueRequested;   //If actual rpm is less than max rpm, add torque to offset
@@ -416,13 +425,14 @@ void DmocMotorController::sendCmd4() {
 //Another C/R frame but this one also specifies which shifter position we're in
 void DmocMotorController::sendCmd5() {
     CAN_message_t output;
+    Gears currentGear = getSelectedGear();
     output.len = 8;
     output.id = 0x236;
     output.flags.extended = 0; //standard frame
     output.buf[0] = 2;
     output.buf[1] = 127;
     output.buf[2] = 0;
-    if (operationState == ENABLE && selectedGear != NEUTRAL) {
+    if (operationState == ENABLE && currentGear != NEUTRAL) {
         output.buf[3] = 52;
         output.buf[4] = 26;
         output.buf[5] = 59; //drive
@@ -441,10 +451,10 @@ void DmocMotorController::sendCmd5() {
 
 
 void DmocMotorController::setGear(Gears gear) {
-    selectedGear = gear;
+    setSelectedGear(gear);
     //if the gear was just set to drive or reverse and the DMOC is not currently in enabled
     //op state then ask for it by name
-    if (selectedGear != NEUTRAL) {
+    if (gear != NEUTRAL) {
         operationState = ENABLE;
     }
     //should it be set to standby when selecting neutral? I don't know. Doing that prevents regen

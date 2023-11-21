@@ -76,8 +76,8 @@ void CodaMotorController::setup()
     // register ourselves as observer of all 0x20x can frames for UQM
     canHandlerIsolated.attach(this, 0x200, 0x7f0, false);
 
-    operationState=ENABLE;
-    selectedGear=DRIVE;
+    operationState = ENABLE;
+    setSelectedGear(DRIVE);
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CODAUQM);
 }
 
@@ -221,7 +221,7 @@ void CodaMotorController::sendCmd1()
         output.buf[1] = 0x40; //0100 0000
     }
 
-    if(selectedGear==DRIVE)
+    if(getSelectedGear() == DRIVE)
     {
         output.buf[1] |= 0x20; //xx10 0000
     }

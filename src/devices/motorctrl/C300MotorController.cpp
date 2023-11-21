@@ -32,7 +32,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define CANADA_MODE
 
 C300MotorController::C300MotorController() : MotorController() {    
-    selectedGear = NEUTRAL;
     operationState = DISABLED;
     actualState = DISABLED;
     online = 0;
@@ -219,17 +218,17 @@ void C300MotorController::handleTick() {
     {
         activityCount--;
         if (activityCount > 60) activityCount = 60;
-        if (activityCount > 40) //If we are receiving regular CAN messages from DMOC, this will very quickly get to over 40. We'll limit
+        /*if (activityCount > 40) //If we are receiving regular CAN messages from DMOC, this will very quickly get to over 40. We'll limit
             // it to 60 so if we lose communications, within 20 ticks we will decrement below this value.
         {
             Logger::debug("Enable Input Active? %u         Reverse Input Active? %u" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
             if(getEnableIn()<0)setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
             if(getReverseIn()<0)setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
-        }
+        } */
     }
     else 
     {
-        setSelectedGear(NEUTRAL); //We will stay in NEUTRAL until we get at least 40 frames ahead indicating continous communications.
+        //setSelectedGear(NEUTRAL); //We will stay in NEUTRAL until we get at least 40 frames ahead indicating continous communications.
     }
 
     if(!online)  //This routine checks to see if we have received any frames from the inverter.  If so, ONLINE would be true and
@@ -296,9 +295,9 @@ void C300MotorController::sendCmdUS()
     }
     
     speedRequested = 12000;
-    if (selectedGear == NEUTRAL) setOpState(DISABLED);
+    if (getSelectedGear() == NEUTRAL) setOpState(DISABLED);
                                                                                           // torque mode
-    output.buf[0] = ((operationState == ENABLE)?1:0) | ((selectedGear == DRIVE)?0:2) | (2 << 2) | (alive << 4);
+    output.buf[0] = ((operationState == ENABLE)?1:0) | ((getSelectedGear() == DRIVE)?0:2) | (2 << 2) | (alive << 4);
     output.buf[1] = 0; //0 at the low bit means brake valid. What brake?
     output.buf[2] = 0; //all reserved bits
     output.buf[3] = 0; //also all reserved bits
@@ -351,7 +350,7 @@ void C300MotorController::sendCmdCanada()
 
     if (throttleRequested < 0) taperRegen();
 
-    if (selectedGear == REVERSE) torqueRequested *= -1;
+    if (getSelectedGear() == REVERSE) torqueRequested *= -1;
     if(speedActual < config->speedMax)
     {
         torqueCommand += torqueRequested;   //If actual rpm is less than max rpm, add torque to offset
@@ -362,7 +361,7 @@ void C300MotorController::sendCmdCanada()
     }
 
     speedRequested = 24000; //12000 but the scale is 0.5
-    if (selectedGear == NEUTRAL) setOpState(DISABLED);
+    if (getSelectedGear() == NEUTRAL) setOpState(DISABLED);
                                                                                           // torque mode
     output.buf[0] = (torqueCommand & 0xFF00) >> 8;
     output.buf[1] = (torqueCommand & 0x00FF);
@@ -371,8 +370,8 @@ void C300MotorController::sendCmdCanada()
     //output.buf[4] = (allowedToOperate ? 1 : 0) + (1 << 1) + (1 << 5);
     output.buf[4] = 0x23; //bits 0, 1, 5
     output.buf[5] = 0; //default to neutral
-    if (selectedGear == DRIVE) output.buf[5] = 1; //drive
-    if (selectedGear == REVERSE) output.buf[5] = 2; //reverse
+    if (getSelectedGear() == DRIVE) output.buf[5] = 1; //drive
+    if (getSelectedGear() == REVERSE) output.buf[5] = 2; //reverse
     output.buf[6] = alive;
 
     Logger::debug("C300 Command tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],

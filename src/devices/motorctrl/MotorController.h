@@ -67,9 +67,9 @@ class MotorController: public Device {
 public:
     enum Gears {
         NEUTRAL = 0,
-        DRIVE =   1,
-        REVERSE = 2,
-        ERROR =   3,
+        DRIVE =   10,
+        REVERSE = -10,
+        ERROR =   0xFF,
     };
 
     enum PowerMode {
@@ -147,9 +147,9 @@ public:
     Gears getSelectedGear();
 
     int16_t getThrottle();
-    int8_t getEnableIn();
-    int8_t getReverseIn();
-    int8_t getForwardIn();
+    uint8_t getEnableIn();
+    uint8_t getReverseIn();
+    uint8_t getForwardIn();
     int16_t getselectedGear();
     int16_t getSpeedRequested();
     int16_t getSpeedActual();
@@ -179,9 +179,6 @@ protected:
     bool testenableinput;
     bool testreverseinput;
 
-    Gears selectedGear;
-
-    PowerMode powerMode;
     OperationState operationState; //the op state we want
 
     int16_t throttleRequested; // -1000 to 1000 (per mille of throttle level)
@@ -200,6 +197,11 @@ protected:
     float temperatureSystem; // temperature of controller in degree C
 
     uint32_t skipcounter;
+
+private:
+    Gears selectedGear;
+    char gearText[16];
+    PowerMode powerMode;
 };
 
 #endif

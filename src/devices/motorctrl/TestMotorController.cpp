@@ -30,7 +30,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TestMotorController.h"
 
 TestMotorController::TestMotorController() : MotorController() {    
-    selectedGear = DRIVE;
+    setSelectedGear(DRIVE);
     commonName = "Test Inverter";
     shortName = "TestInverter";
 }
@@ -58,7 +58,9 @@ void TestMotorController::setup() {
 
 void TestMotorController::handleTick() {
     TestMotorControllerConfiguration *config = (TestMotorControllerConfiguration *)getConfiguration();
-    
+    Gears currentGear = getSelectedGear();
+    PowerMode currentMode = getPowerMode();
+
     MotorController::handleTick(); //kick the ball up to papa
     
     dcVoltage = 360.0f; //360v nominal voltage
@@ -66,10 +68,10 @@ void TestMotorController::handleTick() {
     //use throttleRequested to produce some motor like output.
     //throttleRequested ranges +/- 1000 so regen is possible here if the throttle has it set up.
     
-    if (powerMode == modeSpeed)
+    if (currentMode == modeSpeed)
     {
         torqueRequested = 0;
-        if (throttleRequested > 0 && operationState == ENABLE && selectedGear != NEUTRAL)
+        if (throttleRequested > 0 && operationState == ENABLE && currentGear != NEUTRAL)
             speedRequested = (((long) throttleRequested * (long) config->speedMax) / 1000);
         else
             speedRequested = 0;
@@ -84,9 +86,9 @@ void TestMotorController::handleTick() {
     }
     else
     {
-        if (selectedGear == DRIVE)
+        if (currentGear == DRIVE)
             torqueRequested = (((long) throttleRequested * (long) config->torqueMax) / 1000.0f);
-        if (selectedGear == REVERSE)
+        if (currentGear == REVERSE)
             torqueRequested = (((long) throttleRequested * -1 *(long) config->torqueMax) / 1000.0f);
         
         torqueActual = ((torqueActual * 7) + (torqueRequested * 3)) / 10.0;
@@ -118,17 +120,17 @@ void TestMotorController::handleTick() {
     temperatureInverter = 190 + abs(mechanicalPower * 3) / 2;
     temperatureSystem = (temperatureInverter + temperatureMotor) / 2;
     
-    Logger::debug(TESTINVERTER, "PowerMode: %i, Gear: %i", powerMode, selectedGear);
+    Logger::debug(TESTINVERTER, "PowerMode: %i, Gear: %i", currentMode, currentGear);
     Logger::debug(TESTINVERTER, "TorqueReq: %f, SpeedReq: %i", torqueRequested, speedRequested);
     Logger::debug(TESTINVERTER, "dcCurrent: %f, mechPower: %f", dcCurrent, mechanicalPower);
     
 }
 
 void TestMotorController::setGear(Gears gear) {
-    selectedGear = gear;
+    setSelectedGear(gear);
     //if the gear was just set to drive or reverse and the DMOC is not currently in enabled
     //op state then ask for it by name
-    if (selectedGear != NEUTRAL) {
+    if (gear != NEUTRAL) {
         operationState = ENABLE;
     }
     //should it be set to standby when selecting neutral? I don't know. Doing that prevents regen
