@@ -161,7 +161,8 @@ struct StatusEntry
         if (varType == STRING)
         {
             char *str = (char *)varPtr;
-            while (str) out += *str++;
+            //while (str) out += *str++;
+            out = str;
             return out;
         }
         if (varType == INT16)
