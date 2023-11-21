@@ -164,8 +164,28 @@ void Precharger::handleTick() {
         }
         break;
     case PRECHARGE_COMPLETE:
-        //nothing more to do!
         isPrecharged = true;
+        /*
+        I'm somewhat hesitant to add this code but here it is. This code will open the contactors and reset the precharge
+        state if the trigger input goes low. There are pros and cons to this. As a bonus, this then lets you connect via USB
+        and the trigger will start precharge but also reset it so that power cycling 12V while keeping USB active does the right
+        thing. As a downside, it also allows for the possibility that a faulty wire could cause the contactors to open during
+        the vehicle driving. On a permanent magnet motor this leads to everything connected to HV blowing up. But, not doing the reset
+        can ruin the contactors if you power cycle while USB is connected. There is no perfect answer here. Use the below code if you
+        want, or don't if you feel more comfortable that way. Change #if 1 to #if 0 if you don't want to use the below code
+        */
+#if 1
+        if (config->enableInput < 255)
+        {
+            if (!systemIO.getDigitalIn(config->enableInput))
+            {
+                if (config->prechargeRelay != 255) systemIO.setDigitalOutput(config->prechargeRelay, false);
+                if (config->mainRelay != 255) systemIO.setDigitalOutput(config->mainRelay, false);
+                isPrecharged = false;
+                state = PRECHARGE_INIT;
+            }
+        }
+#endif
         break; 
     case PRECHARGE_FAULT: //if we fault then be sure to turn off the contactors
         if (config->prechargeRelay != 255) systemIO.setDigitalOutput(config->prechargeRelay, false);
