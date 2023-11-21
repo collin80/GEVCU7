@@ -275,6 +275,8 @@ void SerialConsole::printMenu() {
 
     //Show build # here as well in case people are using the native port and don't get to see the start up messages
     Logger::console("Build number: %u", CFG_BUILD_NUM);
+    Logger::console("Build Date: %s at %s", __DATE__, __TIME__);
+
     if (motorController) 
     {
         Logger::console("Motor Controller Status: isRunning: %i  isFaulted: %i", 
@@ -282,9 +284,9 @@ void SerialConsole::printMenu() {
     }
     Logger::console("\n*************SYSTEM MENU *****************");
     Logger::console("Enable line endings of some sort (LF, CR, CRLF)");
-    Logger::console("Most commands case sensitive\n");
+    Logger::console("Only single letter commands are case sensitive.\n");
     Logger::console("GENERAL SYSTEM CONFIGURATION\n");
-    Logger::console("   h = help (displays this message)");
+    Logger::console("   h/H/? = help (displays this message)");
     Logger::console("   DUMP=1 - Dump entire EEPROM to sdcard");
     Logger::console("   RESTORE=1 - Read eeprom backup from sdcard and flash it to EEPROM");
     Logger::console("   JSONDUMP=1 - Read config of every enabled device and store it in JSON format to sdcard");
