@@ -422,7 +422,7 @@ void ESP32Driver::saveConfiguration() {
     prefsHandler->write("WIFIPW", (const char *)config->ssid_pw, 64);
     prefsHandler->write("HostName", (const char *)config->hostName, 64);
     prefsHandler->write("WiFiMode", config->esp32_mode);
-    prefsHandler->saveChecksum();
+    //prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
 }
 
