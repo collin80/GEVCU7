@@ -84,7 +84,7 @@ TickHandler::TickHandler() {
 #endif
 }
 
-void TickHandler::setup()
+FLASHMEM void TickHandler::setup()
 {
     for (int i = 0; i < NUM_TIMERS; i++)
     {
@@ -104,7 +104,7 @@ void TickHandler::setup()
  * used. Then a free TickObserver slot (of max CFG_MAX_TICK_OBSERVERS) is looked up. If all went
  * well, the timer is configured and (re)started.
  */
-void TickHandler::attach(TickObserver* observer, uint32_t interval) {
+FLASHMEM void TickHandler::attach(TickObserver* observer, uint32_t interval) {
     timer = findTimer(interval);
     if (timer == -1) {
         timer = findFreeTimer(interval);	// no timer with given tick interval exist -> look for unused (interval == 0)
@@ -172,7 +172,7 @@ void TickHandler::attach(TickObserver* observer, uint32_t interval) {
 /**
  * Remove an observer from all timers where it was registered.
  */
-void TickHandler::detach(TickObserver* observer) {
+FLASHMEM void TickHandler::detach(TickObserver* observer) {
     for (int timer = 0; timer < NUM_TIMERS; timer++) {
         for (int observerIndex = 0; observerIndex < CFG_TIMER_NUM_OBSERVERS; observerIndex++) {
             if (timerEntry[timer].observer[observerIndex] == observer) {

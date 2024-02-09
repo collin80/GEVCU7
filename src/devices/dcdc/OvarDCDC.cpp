@@ -122,4 +122,4 @@ void OvarDCDCController::saveConfiguration() {
     DCDCController::saveConfiguration();
 }
 
-OvarDCDCController ovardc;
+DMAMEM OvarDCDCController ovardc;

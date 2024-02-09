@@ -206,4 +206,4 @@ void CanThrottle::saveConfiguration() {
 }
 
 //auto register thineself
-CanThrottle canThrottle;
+DMAMEM CanThrottle canThrottle;

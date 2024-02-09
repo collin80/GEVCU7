@@ -298,4 +298,4 @@ void StatusCSV::saveConfiguration() {
     prefsHandler->forceCacheWrite();
 }
 
-StatusCSV statuscsv;
+DMAMEM StatusCSV statuscsv;

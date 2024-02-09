@@ -304,6 +304,6 @@ String PotThrottle::describeThrottleType()
 }
 
 //creation of a global variable here causes the driver to automatically register itself without external help
-PotThrottle potThrottle;
+DMAMEM PotThrottle potThrottle;
 
 

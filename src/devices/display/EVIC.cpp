@@ -515,7 +515,7 @@ uint8_t  EVIC::getCello()
     return Cello;
 }
 
-EVIC evic;
+DMAMEM EVIC evic;
 
 
 

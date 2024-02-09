@@ -190,7 +190,7 @@ void wdtCallback()
     Serial.println("Watchdog was not fed. It will eat you soon. Sorry...");
 }
 
-void sendTestCANFrames()
+FLASHMEM void sendTestCANFrames()
 {
     CAN_message_t output;
     output.len = 8;
@@ -227,7 +227,7 @@ void sendTestCANFrames()
 */
 }
 
-void testGEVCUHardware()
+FLASHMEM void testGEVCUHardware()
 {
     int val;
     Serial.print("ADC: ");
@@ -273,7 +273,7 @@ void testGEVCUHardware()
     digitalWrite(45, LOW); */
 }
 
-void setup() {
+FLASHMEM void setup() {
     WDT_timings_t config;
     //GEVCU might loop very rapidly sometimes so windowing mode would be tough. Revisit later
     //config.window = 100; /* in milliseconds, 32ms to 522.232s, must be smaller than timeout */

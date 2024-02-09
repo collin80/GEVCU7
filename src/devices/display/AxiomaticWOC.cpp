@@ -174,4 +174,4 @@ void AxiomaticWOC::saveConfiguration()
     prefsHandler->forceCacheWrite();
 }
 
-AxiomaticWOC awoc;
+DMAMEM AxiomaticWOC awoc;

@@ -157,4 +157,4 @@ void LightController::saveConfiguration() {
     prefsHandler->forceCacheWrite();
 }
 
-LightController lightCtrl;
+DMAMEM LightController lightCtrl;

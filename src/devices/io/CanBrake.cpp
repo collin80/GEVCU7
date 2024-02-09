@@ -235,5 +235,5 @@ void CanBrake::saveConfiguration() {
     Throttle::saveConfiguration(); // call parent
 }
 
-CanBrake canBrake;
+DMAMEM CanBrake canBrake;
 

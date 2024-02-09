@@ -16,7 +16,7 @@ namespace ESP32NS
         NORMAL,
         BOOTLOADER
     };
-}
+};
 
 class ESP32Configuration: public DeviceConfiguration {
 public:
@@ -35,6 +35,7 @@ public:
     void disableDevice();
     ESP32Driver();
     void processSerial();
+    void sendLogString(String str);
 
     DeviceId getId();
     uint32_t getTickInterval();

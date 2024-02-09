@@ -154,6 +154,6 @@ void OrionBatteryManager::saveConfiguration() {
     BatteryManager::saveConfiguration();
 }
 
-OrionBatteryManager orionBMS;
+DMAMEM OrionBatteryManager orionBMS;
 
 

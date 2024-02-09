@@ -151,6 +151,7 @@ public:
     CanHandler(CanBusNode busNumber);
     void setup();
     void loop();
+    void checkStatus();
     uint32_t getBusSpeed();
     uint32_t getBusFDSpeed();
     void setBusSpeed(uint32_t newSpeed);
@@ -168,6 +169,7 @@ public:
     void setSWMode(SWMode newMode);
     void setGVRETMode(bool mode);
     SWMode getSWMode();
+
 
     //canopen support functions
     void sendNodeStart(int id = 0);
@@ -202,6 +204,8 @@ private:
     bool gvretMode;
     CAN_message_t build_out_frame;
     CANFD_message_t build_out_fd;
+    CAN_error_t errors;
+    uint32_t check_time;
 
     void logFrame(const CAN_message_t &msg);
     void logFrame(const CANFD_message_t &msg_fd);

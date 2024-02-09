@@ -54,9 +54,14 @@ CanHandler canHandlerBus0 = CanHandler(CanHandler::CAN_BUS_0);
 CanHandler canHandlerBus1 = CanHandler(CanHandler::CAN_BUS_1);
 CanHandler canHandlerBus2 = CanHandler(CanHandler::CAN_BUS_2);
 
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0; //Reg CAN or SWCAN depending on mode
-FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1; //Isolated CAN
-FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> Can2; //Only CAN-FD capable output
+/*
+  putting these in DMAMEM saves a lot of tightly coupled RAM but I'm not entirely sure whether it should be done.
+  TCM is much faster and thus putting the CAN objects in DMAMEM slows down CAN access. However, the processor
+  runs at 600MHz and CAN runs only up to about 8Mb so it might be OK. Keep an eye on performance.
+*/
+DMAMEM FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0; //Reg CAN or SWCAN depending on mode
+DMAMEM FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1; //Isolated CAN
+DMAMEM FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> Can2; //Only CAN-FD capable output
 
 void canRX0(const CAN_message_t &msg) 
 {
@@ -75,6 +80,9 @@ void canRX2(const CANFD_message_t &msg)
 
 void canEvents()
 {
+    canHandlerBus0.checkStatus();
+    canHandlerBus1.checkStatus();
+    canHandlerBus2.checkStatus();
     Can0.events();
     Can1.events();
     Can2.events();
@@ -97,6 +105,9 @@ CanHandler::CanHandler(CanBusNode canBusNode)
     gvretState = IDLE;
     gvretStep = 0;
     gvretMode = true; //whether to send and receive GVRET traffic on SerialUSB1 (second USB serial port)
+    check_time = 10000;
+    errors.ECR = 0;
+    errors.ESR1 = 0;
 }
 
 /*
@@ -193,7 +204,45 @@ void CanHandler::setup()
     }
 }
 
-void CanHandler::setSWMode(SWMode newMode)
+FLASHMEM void CanHandler::checkStatus()
+{
+    CAN_error_t temp_error;
+    if ((millis() - check_time) >= 1000) //only once per second
+    {
+        switch (canBusNode)
+        {
+        case CAN_BUS_0:
+            Can0.error(temp_error, false);
+            break;
+        case CAN_BUS_1:
+            Can1.error(temp_error, false);
+            break;
+        case CAN_BUS_2:
+            Can2.error(temp_error, false);
+            break;
+        }
+
+        if (temp_error.ESR1)
+        {
+            //Logger::error("CAN%i error flags: %x", canBusNode, temp_error.ESR1);
+        
+            //Logger::error("CAN%i State: %s   FLT_CONF: %s", canBusNode, (char*)temp_error.state, (char*)temp_error.FLT_CONF);
+            if ( temp_error.BIT1_ERR ) Logger::error("CAN%i Bit1 Error!", canBusNode);
+            if ( temp_error.BIT0_ERR ) Logger::error("CAN%i Bit0 Error!", canBusNode);
+            if ( temp_error.ACK_ERR ) Logger::error("CAN%i No acknowledgement!", canBusNode);
+            if ( temp_error.CRC_ERR ) Logger::error("CAN%i Bad CRC!", canBusNode);
+            if ( temp_error.FRM_ERR ) Logger::error("CAN%i Form error!", canBusNode);
+            if ( temp_error.STF_ERR ) Logger::error("CAN%i Stuffing error!", canBusNode);
+            if ( temp_error.RX_WRN ) Logger::error("CAN%i RX Warning! ErrCnt: %i", canBusNode, temp_error.RX_ERR_COUNTER);
+            if ( temp_error.TX_WRN ) Logger::error("CAN%i TX Warning! ErrCnt: %i", canBusNode, temp_error.TX_ERR_COUNTER);
+        }
+        errors = temp_error;
+
+        check_time = millis();
+    }
+}
+
+FLASHMEM void CanHandler::setSWMode(SWMode newMode)
 {
     if (canBusNode != CAN_BUS_0) return; //naughty!
     swmode = newMode;
@@ -238,7 +287,7 @@ uint32_t CanHandler::getBusFDSpeed()
     return fdSpeed;
 }
 
-void CanHandler::setBusSpeed(uint32_t newSpeed)
+FLASHMEM void CanHandler::setBusSpeed(uint32_t newSpeed)
 {
     CANFD_timings_t fdTimings;
     uint32_t fdSpeed;
@@ -287,7 +336,7 @@ void CanHandler::setBusSpeed(uint32_t newSpeed)
     Logger::info("CAN%d init ok. Speed = %i", busNum, busSpeed);
 }
 
-void CanHandler::setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed)
+FLASHMEM void CanHandler::setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed)
 {
     CANFD_timings_t fdTimings;
     if (canBusNode != CAN_BUS_2) return; //only CAN2 can do FD mode
@@ -668,7 +717,7 @@ void CanHandler::loop()
  *  \param mask - the mask to be applied to the frames
  *  \param extended - set if extended frames must be supported
  */
-void CanHandler::attach(CanObserver* observer, uint32_t id, uint32_t mask, bool extended)
+FLASHMEM void CanHandler::attach(CanObserver* observer, uint32_t id, uint32_t mask, bool extended)
 {
     int8_t pos = findFreeObserverData();
 
@@ -703,7 +752,7 @@ void CanHandler::attach(CanObserver* observer, uint32_t id, uint32_t mask, bool 
  * \param id - id of the observer to detach (required as one CanObserver may register itself several times)
  * \param mask - mask of the observer to detach (dito)
  */
-void CanHandler::detach(CanObserver* observer, uint32_t id, uint32_t mask)
+FLASHMEM void CanHandler::detach(CanObserver* observer, uint32_t id, uint32_t mask)
 {
     for (int i = 0; i < CFG_CAN_NUM_OBSERVERS; i++) {
         if (observerData[i].observer == observer &&
@@ -719,7 +768,7 @@ void CanHandler::detach(CanObserver* observer, uint32_t id, uint32_t mask)
 /* Detaches all CAN observers for a given object
  * \param observer - observer object to detach
 */
-void CanHandler::detachAll(CanObserver *observer)
+FLASHMEM void CanHandler::detachAll(CanObserver *observer)
 {
     for (int i = 0; i < CFG_CAN_NUM_OBSERVERS; i++) {
         if (observerData[i].observer == observer)
@@ -1172,7 +1221,7 @@ CanObserver::CanObserver()
     attachedCANBus = &canHandlerBus1;
 }
 
-void CanObserver::setAttachedCANBus(int bus)
+FLASHMEM void CanObserver::setAttachedCANBus(int bus)
 {
     switch (bus)
     {

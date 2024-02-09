@@ -35,6 +35,7 @@ You will get a LOT of traffic on the serial console if you do this.
 #include "RingBuf.h"
 #include "DeviceManager.h"
 #include "devices/misc/SystemDevice.h"
+#include "devices/esp32/ESP32Driver.h"
 
 extern bool sdCardWorking;
 FsFile logFile;
@@ -50,9 +51,10 @@ FsFile logFile;
 #define CFG_TICK_INTERVAL_SDLOGGING 40000
 
 // RingBuf for File type FsFile.
-RingBuf<FsFile, RING_BUF_CAPACITY> rb;
+DMAMEM RingBuf<FsFile, RING_BUF_CAPACITY> rb;
 
 uint32_t Logger::lastLogTime = 0;
+ESP32Driver* Logger::esp32 = nullptr;
 
 void Logger::initializeFile()
 {
@@ -117,6 +119,7 @@ void Logger::flushFile()
 //if there is a sector to write or 1 second has gone by then save the data
 void Logger::loop()
 {
+    esp32 = static_cast<ESP32Driver *>(deviceManager.getDeviceByID(0x0800));
     static uint32_t lastWriteTime = 0;
     if (!sdCardWorking) return;
     size_t n = rb.bytesUsed();
@@ -363,6 +366,7 @@ void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list 
     //outputString += "\n";
     Serial.println(outputString);
     if (sdCardWorking) rb.println(outputString);
+    if (esp32) esp32->sendLogString(outputString); //if ESP32 module is loaded then try to send output to telnet as well
 }
 
 /*

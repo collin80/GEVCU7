@@ -161,4 +161,4 @@ void TestMotorController::saveConfiguration() {
     MotorController::saveConfiguration();
 }
 
-TestMotorController testMC;
+DMAMEM TestMotorController testMC;

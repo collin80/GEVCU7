@@ -46,6 +46,7 @@ class SerialConsole {
 public:
     SerialConsole(MemCache* memCache);
     SerialConsole(MemCache* memCache, Heartbeat* heartbeat);
+    void injectChar(char c);
     void loop();
     void setup();
     void printMenu();

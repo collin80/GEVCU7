@@ -258,4 +258,4 @@ void CKMotorController::saveConfiguration() {
     MotorController::saveConfiguration();
 }
 
-CKMotorController ckMotorC;
+DMAMEM CKMotorController ckMotorC;

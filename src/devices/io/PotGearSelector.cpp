@@ -162,4 +162,4 @@ void PotGearSelector::saveConfiguration()
     prefsHandler->forceCacheWrite();
 }
 
-PotGearSelector potgear;
+DMAMEM PotGearSelector potgear;

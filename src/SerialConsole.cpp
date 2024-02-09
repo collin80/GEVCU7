@@ -70,7 +70,7 @@ void SerialConsole::loop() {
     }
 }
 
-void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry)
+FLASHMEM void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry)
 {
     String str = "   ";
     str += entry.cfgName + "=";
@@ -268,7 +268,7 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
 }
 
 
-void SerialConsole::printMenu() {
+FLASHMEM void SerialConsole::printMenu() {
     MotorController* motorController = (MotorController*) deviceManager.getMotorController();
     Throttle *accelerator = deviceManager.getAccelerator();
     Throttle *brake = deviceManager.getBrake();
@@ -354,7 +354,19 @@ void SerialConsole::serialEvent() {
     }
 }
 
-void SerialConsole::handleConsoleCmd() {
+void SerialConsole::injectChar(char c)
+{
+    if (c == 10 || c == 13) { //command done. Parse it.
+        handleConsoleCmd();
+        ptrBuffer = 0; //reset line counter once the line has been processed
+    } else {
+        cmdBuffer[ptrBuffer++] = (unsigned char) c;
+        if (ptrBuffer > 79)
+            ptrBuffer = 79;
+    }
+}
+
+FLASHMEM void SerialConsole::handleConsoleCmd() {
     handlingEvent = true;
 
     if (state == STATE_ROOT_MENU) {
@@ -367,7 +379,7 @@ void SerialConsole::handleConsoleCmd() {
     handlingEvent = false;
 }
 
-void SerialConsole::handleConfigCmd() {
+FLASHMEM void SerialConsole::handleConfigCmd() {
     int i;
     int newValue;
     bool updateWifi = true;
@@ -495,7 +507,7 @@ void SerialConsole::handleConfigCmd() {
     }
 }
 
-void SerialConsole::handleShortCmd() {
+FLASHMEM void SerialConsole::handleShortCmd() {
     uint8_t val;
     //MotorController* motorController = (MotorController*) deviceManager.getMotorController();
     Throttle *accelerator = deviceManager.getAccelerator();
@@ -572,7 +584,7 @@ void SerialConsole::handleShortCmd() {
     }
 }
 
-void SerialConsole::generateEEPROMBinary()
+FLASHMEM void SerialConsole::generateEEPROMBinary()
 {
     // Open or create file - truncate existing file.
     if (!file.open("eeprom.bin", O_RDWR | O_CREAT | O_TRUNC)) {
@@ -606,7 +618,7 @@ void SerialConsole::generateEEPROMBinary()
     Logger::console("Successfully saved EEPROM to sdcard.");
 }
 
-void SerialConsole::loadEEPROMBinary()
+FLASHMEM void SerialConsole::loadEEPROMBinary()
 {
     // Open or create file - truncate existing file.
     if (!file.open("eeprom.bin", O_READ)) {
@@ -646,7 +658,7 @@ void SerialConsole::loadEEPROMBinary()
     Logger::console("Successfully updated EEPROM from sdCard. Please reboot now.");
 }
 
-void SerialConsole::generateEEPROMJSON()
+FLASHMEM void SerialConsole::generateEEPROMJSON()
 {
     if (!file.open("gevcu7_settings.json", O_RDWR | O_CREAT | O_TRUNC)) {
         Logger::error("Could not create a json file on the sdcard. Aborting.");
@@ -673,7 +685,7 @@ void SerialConsole::generateEEPROMJSON()
     Logger::console("Done saving json settings file.");
 }
 
-void SerialConsole::loadEEPROMJSON()
+FLASHMEM void SerialConsole::loadEEPROMJSON()
 {
     DynamicJsonDocument doc(20000);
 

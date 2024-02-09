@@ -60,6 +60,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //Note that this is 10 years STRAIGHT. As in, you never turned it off for 10 years and every chance it got it wrote the page.
 //This should be plenty of EEPROM life.
 
+typedef struct
+{
+    uint8_t data[256];
+    uint32_t address; //address of start of page
+    uint8_t age; //
+    boolean dirty;
+} PageCache;
+
 class MemCache: public TickObserver {
 public:
     void setup();
@@ -94,13 +102,6 @@ public:
     MemCache();
 
 private:
-    typedef struct {
-        uint8_t data[256];
-        uint32_t address; //address of start of page
-        uint8_t age; //
-        boolean dirty;
-    } PageCache;
-
     PageCache pages[NUM_CACHED_PAGES];
     boolean isWriting();
     uint8_t cache_hit(uint32_t address);

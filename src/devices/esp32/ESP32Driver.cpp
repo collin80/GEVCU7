@@ -1,6 +1,9 @@
 #include "ESP32Driver.h"
 #include "gevcu_port.h"
 #include "../misc/SystemDevice.h"
+#include "../../SerialConsole.h"
+
+extern SerialConsole *serialConsole;
 
 /*
 Specification for Comm Protocol between ESP32 and GEVCU7 core
@@ -265,6 +268,12 @@ void ESP32Driver::handleTick() {
     crashHandler.updateBreadcrumb(2); //nothing above would add a breadcrumb so update the existing one
 }
 
+void ESP32Driver::sendLogString(String str)
+{
+    if (!systemAlive) return; //can't do anything until the system is actually up
+    Serial2.println("~" + str); //~ prefix means this is a telnet message
+}
+
 //the serial callback is not actually interrupt driven but is called from yield()
 //which could get called frequently (and always in the main loop if nothing else)
 void ESP32Driver::processSerial()
@@ -315,6 +324,15 @@ void ESP32Driver::processSerial()
                         {
                             processConfigReply(&doc);
                         }
+                    }
+                }
+                
+                if (bufferedLine[0] == '~')
+                {
+                    //send the whole thing (minus the ~) as input to the normal serial console
+                    for (int l = 1; l < bufferedLine.length(); l++)
+                    {
+                        serialConsole->injectChar(bufferedLine[l]);
                     }
                 }
 
@@ -426,7 +444,7 @@ void ESP32Driver::saveConfiguration() {
     prefsHandler->forceCacheWrite();
 }
 
-ESP32Driver esp32Driver;
+DMAMEM ESP32Driver esp32Driver;
 
 void serialEvent2()
 {

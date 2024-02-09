@@ -247,4 +247,4 @@ void Precharger::saveConfiguration() {
     prefsHandler->forceCacheWrite();
 }
 
-Precharger precharge;
+DMAMEM Precharger precharge;

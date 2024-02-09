@@ -239,6 +239,6 @@ void ThinkBatteryManager::saveConfiguration() {
     BatteryManager::saveConfiguration();
 }
 
-ThinkBatteryManager thinkBMS;
+DMAMEM ThinkBatteryManager thinkBMS;
 
 

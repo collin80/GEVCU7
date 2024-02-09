@@ -131,4 +131,4 @@ void DelphiDCDCController::timestamp()
     hours   = (int) ((millis() / (1000*60*60)) % 24);
 }
 
-DelphiDCDCController deldcdc;
+DMAMEM DelphiDCDCController deldcdc;

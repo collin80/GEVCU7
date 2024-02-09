@@ -132,4 +132,4 @@ void TSDCDCController::saveConfiguration() {
     DCDCController::saveConfiguration();
 }
 
-TSDCDCController tsdcdc;
+DMAMEM TSDCDCController tsdcdc;

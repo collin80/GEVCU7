@@ -222,4 +222,4 @@ void TeslaACGen2Controller::saveConfiguration() {
     HVACController::saveConfiguration();
 }
 
-TeslaACGen2Controller teslaGen2AC;
+DMAMEM TeslaACGen2Controller teslaGen2AC;

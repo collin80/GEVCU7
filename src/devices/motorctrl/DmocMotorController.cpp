@@ -522,4 +522,4 @@ void DmocMotorController::timestamp()
 
 }
 
-DmocMotorController dmocMC;
+DMAMEM DmocMotorController dmocMC;

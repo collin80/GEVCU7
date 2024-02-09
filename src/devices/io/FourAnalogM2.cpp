@@ -118,4 +118,4 @@ void FourAnalogM2::saveConfiguration() {
     ExtIODevice::saveConfiguration();
 }
 
-FourAnalogM2 four_ana;
+DMAMEM FourAnalogM2 four_ana;

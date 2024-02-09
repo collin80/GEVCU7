@@ -165,4 +165,4 @@ void VehicleSpecific::saveConfiguration() {
     Device::saveConfiguration(); // call parent
 }
 
-VehicleSpecific vehicle;
+DMAMEM VehicleSpecific vehicle;

@@ -128,4 +128,4 @@ void TCCHChargerController::saveConfiguration() {
     ChargeController::saveConfiguration();
 }
 
-TCCHChargerController tcch;
+DMAMEM TCCHChargerController tcch;

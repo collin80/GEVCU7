@@ -207,4 +207,4 @@ void PotBrake::saveConfiguration() {
     prefsHandler->forceCacheWrite();
 }
 
-PotBrake potBrake;
+DMAMEM PotBrake potBrake;

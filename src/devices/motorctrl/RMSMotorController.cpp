@@ -602,4 +602,4 @@ void RMSMotorController::saveConfiguration()
     MotorController::saveConfiguration();
 }
 
-RMSMotorController rmsMC;
+DMAMEM RMSMotorController rmsMC;

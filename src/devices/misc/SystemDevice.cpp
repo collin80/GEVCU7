@@ -229,4 +229,4 @@ void SystemDevice::saveConfiguration() {
     prefsHandler->forceCacheWrite();
 }
 
-SystemDevice sysDev;
+DMAMEM SystemDevice sysDev;

@@ -78,7 +78,7 @@ void SystemIO::setup_ADC_params()
         Logger::debug( "ADC:%d GAIN: %d Offset: %d", i, sysConfig->adcGain[i], sysConfig->adcOffset[i] );
 }
 
-void SystemIO::setSystemType(SystemType systemType) {
+FLASHMEM void SystemIO::setSystemType(SystemType systemType) {
     if (systemType >= GEVCU7A && systemType <= GEVCU7C)
     {
         sysConfig->systemType = systemType;
@@ -106,7 +106,7 @@ DeviceType SystemIO::getType()
     return DEVICE_IO;
 }
 
-void SystemIO::setup() {
+FLASHMEM void SystemIO::setup() {
     if (ranSetup) return;
     analogReadRes(12);
     tickHandler.detach(this);
@@ -159,7 +159,7 @@ void SystemIO::setup() {
     //been done. The system device has this same problem. It should be fixed properly at some point.
 }
 
-void SystemIO::setupStatusEntries()
+FLASHMEM void SystemIO::setupStatusEntries()
 {
     char buff[30];
     int i;
@@ -669,7 +669,7 @@ bool SystemIO::calibrateADCGain(int adc, int32_t target, bool update)
     return true;
 }
 
-void SystemIO::initDigitalMultiplexor()
+FLASHMEM void SystemIO::initDigitalMultiplexor()
 {
     //all of port 0 are outputs, all of port 1 are inputs
     //1 in a config bit means input, 0 = output
@@ -745,6 +745,6 @@ int SystemIO::_pGetDigitalOutput(int pin)
     return 0; //fallback in case something messes up
 }
 
-SystemIO systemIO;
+DMAMEM SystemIO systemIO;
 
 

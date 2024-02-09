@@ -279,4 +279,4 @@ void HeatCoolController::saveConfiguration() {
     prefsHandler->forceCacheWrite();
 }
 
-HeatCoolController heatcoolController;
+DMAMEM HeatCoolController heatcoolController;

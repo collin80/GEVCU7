@@ -387,4 +387,4 @@ void BrusaMotorController::saveConfiguration() {
     prefsHandler->saveChecksum();
 }
 
-BrusaMotorController brusaMC;
+DMAMEM BrusaMotorController brusaMC;

@@ -185,4 +185,4 @@ void TestThrottle::saveConfiguration() {
     prefsHandler->forceCacheWrite();
 }
 
-TestThrottle testThrottle;
+DMAMEM TestThrottle testThrottle;

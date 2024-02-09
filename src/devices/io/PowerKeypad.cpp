@@ -281,4 +281,4 @@ void PowerkeyPad::saveConfiguration() {
     CANIODevice::saveConfiguration();
 }
 
-PowerkeyPad powerkey;
+DMAMEM PowerkeyPad powerkey;

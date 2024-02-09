@@ -432,4 +432,4 @@ void C300MotorController::timestamp()
     // Serial<<buffer<<"\n";
 }
 
-C300MotorController C300MC;
+DMAMEM C300MotorController C300MC;

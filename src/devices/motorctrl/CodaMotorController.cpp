@@ -377,5 +377,5 @@ void CodaMotorController::timestamp()
     // Serial<<buffer<<"\n";
 }
 
-CodaMotorController codaMC;
+DMAMEM CodaMotorController codaMC;
 

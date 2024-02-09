@@ -315,4 +315,4 @@ void LeafMotorController::saveConfiguration() {
     MotorController::saveConfiguration();
 }
 
-LeafMotorController leafMC;
+DMAMEM LeafMotorController leafMC;
