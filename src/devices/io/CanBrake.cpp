@@ -90,6 +90,8 @@ void CanBrake::setup() {
         Logger::error(CANBRAKEPEDAL, "no valid car type defined.");
     }
 
+    setAlive();
+
     attachedCANBus->attach(this, responseId, responseMask, responseExtended);
     tickHandler.attach(this, CFG_TICK_INTERVAL_CAN_THROTTLE);
 }
@@ -101,6 +103,8 @@ void CanBrake::setup() {
 void CanBrake::handleTick() {
     crashHandler.addBreadcrumb(ENCODE_BREAD("CNBRK") + 1);
     Throttle::handleTick(); // Call parent handleTick
+
+    checkAlive(4000);
 
     attachedCANBus->sendFrame(requestFrame);
 
@@ -117,6 +121,7 @@ void CanBrake::handleCanFrame(const CAN_message_t &frame) {
     CanBrakeConfiguration *config = (CanBrakeConfiguration *)getConfiguration();
 
     if (frame.id == responseId) {
+        setAlive();
         switch (config->carType) {
         case Volvo_S80_Gas:
             rawSignal.input1 = frame.buf[5];

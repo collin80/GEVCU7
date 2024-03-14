@@ -10,6 +10,7 @@ DelphiDCDCController::DelphiDCDCController() : DCDCController()
 
 void DelphiDCDCController::handleCanFrame(const CAN_message_t &frame)
 {
+    setAlive();
     Logger::debug("DelphiDCDC msg: %X", frame.id);
     Logger::debug("DelphiDCDC data: %X%X%X%X%X%X%X%X", frame.buf[0],frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
 }
@@ -36,6 +37,8 @@ void DelphiDCDCController::setup()
 
     setAttachedCANBus(config->canbusNum);
 
+    setAlive();
+
     attachedCANBus->attach(this, 0x1D5, 0x7ff, false);
     //Watch for 0x1D5 messages from Delphi converter
     tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
@@ -46,6 +49,8 @@ void DelphiDCDCController::setup()
 void DelphiDCDCController::handleTick()
 {
     DCDCController::handleTick(); //kick the ball up to papa
+
+    checkAlive(4000);
 
     sendCmd();   //Send our Delphi voltage control command
 }

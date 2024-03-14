@@ -34,8 +34,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 C300MotorController::C300MotorController() : MotorController() {    
     operationState = DISABLED;
     actualState = DISABLED;
-    online = 0;
-    activityCount = 0;
     allowedToOperate = false;
 //	maxTorque = 2000;
     commonName = "C300 Inverter";
@@ -64,11 +62,12 @@ void C300MotorController::setup() {
     canHandlerIsolated.attach(this, 0x0CFF7802, 0x0FFFF0FF, true);
 #endif
 
-    running = false;
     setPowerMode(modeTorque);
     setSelectedGear(NEUTRAL);
     setOpState(DISABLED );
     ms=millis();
+
+    setAlive();
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_C300);
 }
@@ -76,7 +75,7 @@ void C300MotorController::setup() {
 void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
     int RotorTemp, invTemp, StatorTemp;
     int temp;
-    online = true; //if a frame got to here then it passed the filter and must have been from the C300
+    setAlive(); //if a frame got to here then it passed the filter and must have been from the C300
     bool isOK = false;
     uint8_t b0 = 0;
 
@@ -98,7 +97,6 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         prechargeComplete = ((frame.buf[1] & 8) == 8) ? true : false;
         speedActual = ((frame.buf[4] * 256) + frame.buf[5]) - 12000;
         torqueActual = (((frame.buf[2] * 256) + frame.buf[3]) / 4.0f) - 5000;
-        activityCount++;
         break;
     case 0x0CFF7B02: //torque limits and temperatures
         //byte 0 upper nibble = counter
@@ -111,7 +109,6 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         temperatureMotor = frame.buf[6] - 40;
         temperatureInverter = frame.buf[5] - 40;
         temperatureSystem = frame.buf[7] - 40;
-        activityCount++;
         break;
     case 0x0CFF7A02: //input voltage and current
         //byte 0 upper nibble = counter
@@ -119,7 +116,6 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         //byte 3-4 = controller input DC amperage (1 scale 1000 offset)
         dcVoltage = ((frame.buf[1] * 256) + frame.buf[2]);
         dcCurrent = (((frame.buf[3] * 256) + frame.buf[4])) - 1000;
-        activityCount++;
         break;
     case 0x0CFF7C02: //fault reporting
         //byte 0 bits 0-1 = motor overspeed fault (0 = no, 3 = its bad!)
@@ -134,7 +130,6 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         //byte 4 bits 0-1 = CAN Fault (HTF would we know that then?!)
         //Byte 4 bits 2-3 = motor temperature sensor fault
         //Byte 5 bits 4-5 = motor tuning fault (position faulty?)
-        activityCount++;
         break;
     //canada messages
     case 0x0C01D0EF:
@@ -158,7 +153,6 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
             //    if ((frame.buf[7] & 0xF) == 0) allowedToOperate = true;
             //}
         //}
-        activityCount++;
         break;
     case 0x1801D0EF:
         //byte 0 - 1: Input DC voltage (0.1 scale)
@@ -170,7 +164,6 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         dcCurrent = (((frame.buf[2] * 256) + frame.buf[3])) - 10000;        
         temperatureMotor = ((frame.buf[4] * 256) + frame.buf[5]) - 40;
         temperatureInverter = frame.buf[6] - 40;      
-        activityCount++;
         break;
     case 0x1802D0EF:
         //byte 0: Motor status (1 = self check inProg, 2 = Self Check Done, 3 = HV power on complete, 
@@ -182,7 +175,6 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         b0 = frame.buf[0];
         if (b0 >= 3 && b0 < 0x08) isOK = true;
         if (!isOK && allowedToOperate) allowedToOperate = false;
-        activityCount++;
         break;
     case 0x1803D0EF:
         //byte 0 bit 0: IGBT fault!
@@ -205,7 +197,6 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         //byte 2 bit 7: UDC lower limit alarm
         //byte 3 bit 0: UDC upper limit alarm
         //byte 4 bit 0: HV interlock status (0=Abnormal 1 = All OK)
-        activityCount++;
         break;
     }
 }
@@ -214,33 +205,21 @@ void C300MotorController::handleTick() {
 
     MotorController::handleTick(); //kick the ball up to papa
 
-    if (activityCount > 0)
+/*
+    if (isOperational)
     {
-        activityCount--;
-        if (activityCount > 60) activityCount = 60;
-        /*if (activityCount > 40) //If we are receiving regular CAN messages from DMOC, this will very quickly get to over 40. We'll limit
-            // it to 60 so if we lose communications, within 20 ticks we will decrement below this value.
         {
             Logger::debug("Enable Input Active? %u         Reverse Input Active? %u" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
             if(getEnableIn()<0)setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
             if(getReverseIn()<0)setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
-        } */
+        }
     }
     else 
     {
         //setSelectedGear(NEUTRAL); //We will stay in NEUTRAL until we get at least 40 frames ahead indicating continous communications.
-    }
+    }*/
 
-    if(!online)  //This routine checks to see if we have received any frames from the inverter.  If so, ONLINE would be true and
-    {   //we set the RUNNING light on.  If no frames are received for 2 seconds, we set running OFF.
-        if ((millis()-ms)>2000)
-        {
-            running=false; // We haven't received any frames for over 2 seconds.  Otherwise online would be true.
-            ms=millis();   //Reset our 2 second timer
-        }
-    }
-    else running=true;
-    online=false;//This flag will be set to 1 by received frames.
+    checkAlive(1000);
 
 #ifdef CANADA_MODE
     sendCmdCanada();
@@ -263,7 +242,7 @@ void C300MotorController::sendCmdUS()
     C300MotorControllerConfiguration *config = (C300MotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
     OperationState newstate;
-    alive = (alive + 1) & 0x0F;
+    alive = (alive + 1);
     output.len = 8;
     output.id = 0x0CFF1401;
     output.flags.extended = 1; //29 bit ID, extended frame

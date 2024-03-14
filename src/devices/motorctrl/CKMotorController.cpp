@@ -35,7 +35,6 @@ uint32_t CK_milli;
 CKMotorController::CKMotorController() : MotorController() {    
     operationState = DISABLED;
     actualState = DISABLED;
-    online = 0;
 	aliveCounter = 0;
     commonName = "CK Inverter Ctrl Board";
     shortName = "CKInverter";
@@ -62,6 +61,7 @@ void CKMotorController::setup()
     //setSelectedGear(NEUTRAL);
     //setOpState(ENABLE);
     CK_milli = millis();
+    setAlive();
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CK);
 }
@@ -76,20 +76,17 @@ void CKMotorController::setup()
 void CKMotorController::handleCanFrame(const CAN_message_t &frame) {
     int RotorTemp, invTemp, StatorTemp;
     int temp;
-    online = true; //if a frame got to here then it passed the filter and must have been from the DMOC
+    setAlive(); //if a frame got to here then it passed the filter and must have been from the CK controller
 
     //Logger::debug("CKInverter CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame->id,frame->data.bytes[0] ,frame->data.bytes[1],frame->data.bytes[2],frame->data.bytes[3],frame->data.bytes[4],frame->data.bytes[5],frame->data.bytes[6],frame->data.bytes[7]);
 
     switch (frame.id) {
     case 0x410: //Debugging output 1
-        activityCount++;
         break;
     case 0x411: //debugging 2
-        activityCount++;
         break;
 
     case 0x412: //debugging 3
-        activityCount++;
         break;
     }
 }
@@ -98,12 +95,10 @@ void CKMotorController::handleTick() {
 
     MotorController::handleTick(); //kick the ball up to papa
 
-    if (activityCount > 0)
+    checkAlive(1000);
+
+    if (isOperational)
     {
-        activityCount--;
-        if (activityCount > 60) activityCount = 60;
-        if (activityCount > 40) //If we are receiving regular CAN messages from the controller, this will very quickly get to over 40. We'll limit
-            // it to 60 so if we lose communications, within 20 ticks we will decrement below this value.
         {
             //Logger::debug("EnableIn=%i and ReverseIn = %i" ,getEnableIn(),getReverseIn());
             //if(getEnableIn()<0) setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
@@ -113,18 +108,6 @@ void CKMotorController::handleTick() {
     else {
         setSelectedGear(NEUTRAL); //We will stay in NEUTRAL until we get at least 40 frames ahead indicating continous communications.
     }
-
-
-    if(!online)  //This routine checks to see if we have received any frames from the inverter.  If so, ONLINE would be true and
-    {   //we set the RUNNING light on.  If no frames are received for 2 seconds, we set running OFF.
-        if ((millis()-CK_milli)>2000)
-        {
-            running=false; // We haven't received any frames for over 2 seconds.  Otherwise online would be true.
-            CK_milli=millis();   //Reset our 2 second timer
-        }
-    }
-    else running=true;
-    online=false;//This flag will be set to 1 by received frames.
 
     sendPowerCmd();
 }

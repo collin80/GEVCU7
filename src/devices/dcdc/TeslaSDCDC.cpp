@@ -31,6 +31,7 @@ void TSDCDCController::handleCanFrame(const CAN_message_t &frame)
     Logger::debug("TS-DCDC data: %X%X%X%X%X%X%X%X", frame.buf[0],frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
     if (frame.id == 0x210)
     {
+        setAlive();
         outputVoltage = frame.buf[5] * 0.1;
         outputCurrent = frame.buf[4];
         deviceTemperature = (frame.buf[2] * 0.5) - 40;
@@ -69,6 +70,8 @@ void TSDCDCController::setup()
 
     setAttachedCANBus(config->canbusNum);
 
+    setAlive();
+
     attachedCANBus->attach(this, 0x210, 0x7ff, false);
     tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
     crashHandler.addBreadcrumb(ENCODE_BREAD("TSDCC") + 0);
@@ -77,6 +80,8 @@ void TSDCDCController::setup()
 void TSDCDCController::handleTick()
 {
     DCDCController::handleTick(); //kick the ball up to papa
+
+    checkAlive(4000);
 
     sendCmd();   //Send our Delphi voltage control command
 }

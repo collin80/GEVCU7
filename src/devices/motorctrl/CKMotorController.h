@@ -68,8 +68,6 @@ public:
 private:
 
     OperationState actualState; //what the controller is reporting it is    
-    byte online; //counter for whether controller appears to be operating
-    int activityCount;
 	uint8_t aliveCounter;
     void timestamp();
 	byte calcChecksum(CAN_message_t& thisFrame);

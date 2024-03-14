@@ -60,6 +60,8 @@ void OrionBatteryManager::setup() {
 
     attachedCANBus->attach(this, 0x6B0, 0x7f0, false);
 
+    setAlive();
+
     tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_ORION);
     crashHandler.addBreadcrumb(ENCODE_BREAD("ORBMS") + 0);
 }
@@ -70,6 +72,7 @@ void OrionBatteryManager::handleCanFrame(const CAN_message_t &frame) {
     int temp;
     int16_t curr;
     crashHandler.addBreadcrumb(ENCODE_BREAD("ORBMS") + 1);
+    setAlive();
     switch (frame.id) {
     case 0x6B0: //status msg 1 - current, voltage, SOC
         packVoltage = (frame.buf[2] * 256 + frame.buf[3]) / 10.0f;
@@ -90,7 +93,7 @@ void OrionBatteryManager::handleCanFrame(const CAN_message_t &frame) {
 //might think of tracking messages from OrionBMS and faulting if they stop. This would be a good idea!
 void OrionBatteryManager::handleTick() {
     BatteryManager::handleTick(); //kick the ball up to papa
-
+    checkAlive(4000);
     //sendKeepAlive();
 
 }

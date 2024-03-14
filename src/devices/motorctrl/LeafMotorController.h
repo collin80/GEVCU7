@@ -68,9 +68,7 @@ private:
 
     OperationState actualState; //what the controller is reporting it is
     int step;
-    byte online; //counter for whether Leaf inverter appears to be operating
     byte alive;
-    int activityCount;
     uint16_t torqueCommand;
     long ms;
     void sendFrame11A(); //gear selection, car on/off

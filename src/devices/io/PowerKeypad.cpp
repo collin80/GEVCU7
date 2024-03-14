@@ -51,6 +51,8 @@ void PowerkeyPad::setup()
 	setNodeID(deviceID);
 	setCANOpenMode(true);
 
+	setAlive();
+
 	//delay(125);
 	//canHandlerBus1.sendNodeStart(deviceID); //tell the keypad to enable itself
 	//delay(100);

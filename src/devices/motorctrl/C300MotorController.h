@@ -63,12 +63,10 @@ public:
 private:
 
     OperationState actualState; //what the controller is reporting it is
-    byte online; //counter for whether C300 appears to be operating
-    byte alive;
-    int activityCount;
     uint16_t torqueCommand;
     uint16_t maxAllowedTorque;
     uint32_t ms;
+    int alive;
     bool prechargeComplete;
     bool allowedToOperate;
     void timestamp();

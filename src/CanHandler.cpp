@@ -59,9 +59,9 @@ CanHandler canHandlerBus2 = CanHandler(CanHandler::CAN_BUS_2);
   TCM is much faster and thus putting the CAN objects in DMAMEM slows down CAN access. However, the processor
   runs at 600MHz and CAN runs only up to about 8Mb so it might be OK. Keep an eye on performance.
 */
-DMAMEM FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0; //Reg CAN or SWCAN depending on mode
-DMAMEM FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1; //Isolated CAN
-DMAMEM FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> Can2; //Only CAN-FD capable output
+FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0; //Reg CAN or SWCAN depending on mode
+FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1; //Isolated CAN
+FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> Can2; //Only CAN-FD capable output
 
 void canRX0(const CAN_message_t &msg) 
 {
@@ -1219,6 +1219,28 @@ CanObserver::CanObserver()
     canOpenMode = false;
     nodeID = 0x7F;
     attachedCANBus = &canHandlerBus1;
+    isOperational = true;
+    lastRx = 0;
+}
+
+bool CanObserver::getOperationalStatus()
+{
+    return isOperational;
+}
+
+void CanObserver::setAlive()
+{
+    isOperational = true;
+    lastRx = millis();
+}
+
+void CanObserver::checkAlive(uint32_t timeout)
+{
+    if (!isOperational) return; //if already dead then quit kicking the horse
+    if ( (lastRx + timeout) > millis()) //no CAN traffic in timeout period
+    {
+        isOperational = false;
+    }
 }
 
 FLASHMEM void CanObserver::setAttachedCANBus(int bus)

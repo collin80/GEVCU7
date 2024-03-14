@@ -71,6 +71,8 @@ void AxiomaticWOC::setup() {
     setAttachedCANBus(config->canbusNum);
 
     attachedCANBus->attach(this, 0x622, 0x7FF, false);
+
+    setAlive();
 	
     tickHandler.attach(this, CFG_TICK_INTERVAL_AXIOWOC);
 }
@@ -93,6 +95,7 @@ void AxiomaticWOC::handleCanFrame(const CAN_message_t &frame)
     uint8_t statusFlags;
     if (frame.id == 0x622)
     {
+        setAlive();
         statusFlags = frame.buf[0];
         pilotDuty = frame.buf[1];
         elapsedMinutes = ((frame.buf[2] << 8) + frame.buf[3]);
@@ -103,6 +106,7 @@ void AxiomaticWOC::handleCanFrame(const CAN_message_t &frame)
 //This method handles periodic tick calls received from the tasker.
 void AxiomaticWOC::handleTick()
 {
+    checkAlive(3000);
     sendLEDCmd();
 }
 

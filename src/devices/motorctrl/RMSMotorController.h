@@ -61,9 +61,7 @@ public:
     virtual void saveConfiguration();
 
 private:
-    byte online; //counter for whether we're getting traffic from RMS controller
     byte alive;
-    int activityCount;
     byte sequence;
     uint16_t torqueCommand;
 	uint32_t mss;

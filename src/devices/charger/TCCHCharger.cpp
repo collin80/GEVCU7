@@ -28,6 +28,8 @@ void TCCHChargerController::setup()
 
     setAttachedCANBus(config->canbusNum);
 
+    setAlive();
+
     //watch for the charger status message
     attachedCANBus->attach(this, 0x18FF50E5, 0x1FFFFFFF, true);
     tickHandler.attach(this, CFG_TICK_INTERVAL_TCCH);
@@ -45,6 +47,7 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
 
     if (frame.id == 0x18FF50E5)
     {
+        setAlive();
 	    currentVoltage = (frame.buf[0] << 8) + (frame.buf[1]);
 	    currentAmps = (frame.buf[2] << 8) + (frame.buf[3]);
         status = frame.buf[4];
@@ -64,6 +67,8 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
 void TCCHChargerController::handleTick()
 {
     ChargeController::handleTick(); //kick the ball up to papa
+
+    checkAlive(4000);
 
     sendCmd();   //Send our Delphi voltage control command
 }

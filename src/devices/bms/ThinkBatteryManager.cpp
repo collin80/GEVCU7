@@ -61,6 +61,8 @@ void ThinkBatteryManager::setup() {
     //Relevant BMS messages are 0x300 - 0x30F
     attachedCANBus->attach(this, 0x300, 0x7f0, false);
 
+    setAlive();
+
     tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_THINK);
     crashHandler.addBreadcrumb(ENCODE_BREAD("THBMS") + 0);
 }
@@ -70,6 +72,7 @@ void ThinkBatteryManager::setup() {
 void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
     int temp;
     crashHandler.addBreadcrumb(ENCODE_BREAD("THBMS") + 1);
+    setAlive();
     switch (frame.id) {
     case 0x300: //Start up message
         //we're not really interested in much here except whether init worked.
@@ -159,7 +162,7 @@ void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
 
 void ThinkBatteryManager::handleTick() {
     BatteryManager::handleTick(); //kick the ball up to papa
-
+    checkAlive(4000);
     sendKeepAlive();
 
 }

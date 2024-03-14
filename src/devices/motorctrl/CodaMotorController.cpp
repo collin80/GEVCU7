@@ -51,8 +51,6 @@ const uint8_t swizzleTable[] = { 0xAA, 0x7F, 0xFE, 0x29, 0x52, 0xA4, 0x9D, 0xEF,
 CodaMotorController::CodaMotorController() : MotorController()
 {
     operationState = ENABLE;
-    online = 0;
-    activityCount = 0;
     sequence=0;
     commonName = "Coda UQM Powerphase 100 Inverter";
     shortName = "CodaUQM";
@@ -78,6 +76,8 @@ void CodaMotorController::setup()
 
     operationState = ENABLE;
     setSelectedGear(DRIVE);
+    setAlive();
+
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CODAUQM);
 }
 
@@ -86,12 +86,12 @@ void CodaMotorController::handleCanFrame(const CAN_message_t &frame)
 {
     int RotorTemp, invTemp, StatorTemp;
     int temp;
-    online = 1; //if a frame got to here then it passed the filter and must come from UQM
+    setAlive(); //if a frame got to here then it passed the filter and must come from UQM
     if (!running) //if we're newly running then cancel faults if necessary.
     {
         faultHandler.cancelOngoingFault(CODAUQM, FAULT_MOTORCTRL_COMM);
     }
-    running=true;
+    running = true;
     Logger::debug("UQM inverter msg: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
                   frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
                   frame.buf[5],frame.buf[6],frame.buf[7]);
@@ -162,17 +162,9 @@ void CodaMotorController::handleTick() {
     MotorController::handleTick(); //kick the ball up to papa
     sendCmd1();   //Send our lone torque command
 
-    if(!online)  //This routine checks to see if we have received any frames from the inverter.  If so, ONLINE would be true and
-    {   //we set the RUNNING light on.  If no frames are received for 2 seconds, we set running OFF.
-        if (millis()-mss>2000)
-        {
-            running=false; // We haven't received any frames for over 2 seconds.  Otherwise online would be true.
-            mss=millis();   //Reset our 2 second timer
-        }
-    }
-    else running=true;
-    online=false;//This flag will be set to true by received frames
+    checkAlive(1000);
 
+    if (isOperational) running = true;
 }
 
 

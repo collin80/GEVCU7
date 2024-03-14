@@ -38,8 +38,6 @@ template<class T> inline Print &operator <<(Print &obj, T arg) {
 RMSMotorController::RMSMotorController() : MotorController()
 {
     operationState = ENABLE;
-    online = 0;
-    activityCount = 0;
     sequence = 0;
     isLockedOut = true;
     commonName = "Rinehart Motion Systems Inverter";
@@ -73,6 +71,8 @@ void RMSMotorController::setup()
     //allow through 0xA0 through 0xAF	
     attachedCANBus->attach(this, 0x0A0, 0x7f0, false);
 
+	setAlive();
+
     operationState = ENABLE;
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER);
 }
@@ -82,7 +82,7 @@ void RMSMotorController::handleCanFrame(const CAN_message_t &frame)
 {
     int temp;
     uint8_t *data = (uint8_t *)frame.buf;
-    online = 1; //if a frame got to here then it passed the filter and must come from RMS
+    setAlive();
 	
     if (!running) //if we're newly running then cancel faults if necessary.
     {
@@ -489,18 +489,18 @@ void RMSMotorController::handleTick() {
 
     MotorController::handleTick(); //kick the ball up to papa
 	
-    if (isCANControlled) sendCmdFrame();   //Send out control message if inverter tells us it's set to CAN control. Otherwise just listen
+	//Send out control message if inverter tells us it's set to CAN control. Otherwise just listen
+    if (isCANControlled)
+	{
+		checkAlive(1000);
+		sendCmdFrame();
+	}
 
-    if(!online)  //This routine checks to see if we have received any frames from the inverter.  If so, ONLINE would be true and
-    {   //we set the RUNNING light on.  If no frames are received for 2 seconds, we set running OFF.
-        if (millis()-mss>2000)
-        {
-            running = false; // We haven't received any frames for over 2 seconds.  Otherwise online would be true.
-            mss=millis();   //Reset our 2 second timer
-        }
+    if(isOperational)  //This routine checks to see if we have received any frames from the inverter.  If so, ONLINE would be true and
+    {
+		running = true;
     }
-    else running = true;
-    online = false;//This flag will be set to true by received frames
+    else running = false;
 }
 
 

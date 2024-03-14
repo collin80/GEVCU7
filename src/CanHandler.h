@@ -81,10 +81,15 @@ public:
     bool isCANOpen();
     void setNodeID(unsigned int id);
     unsigned int getNodeID();
+    bool getOperationalStatus();
 
 protected:
     CanHandler *attachedCANBus;
+    uint32_t lastRx;
+    bool isOperational;
     void setAttachedCANBus(int bus);
+    void setAlive();
+    void checkAlive(uint32_t timeout);
 
 private:
     bool canOpenMode;

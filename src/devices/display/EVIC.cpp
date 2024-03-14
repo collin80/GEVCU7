@@ -75,6 +75,8 @@ void EVIC::setup() {
     canHandlerBus1.attach(this, CAN_SWITCH, 0x7ff, false);
     canHandlerBus0.attach(this, CAN_SWITCH, 0x7ff, false);
 
+    setAlive();
+
     //MotorController* motorController = deviceManager.getMotorController();
     //nominalVolt=(motorController->nominalVolts); //Get default nominal volts and capacity from motorcontroller
     //capacity=(motorController->capacity);//If we do NOT have a JLD505, we will use these.
@@ -107,7 +109,7 @@ void EVIC::handleCanFrame(const CAN_message_t &frame)
     Logger::debug("EVIC received msg: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
                   frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
                   frame.buf[5],frame.buf[6],frame.buf[7]);
-
+    setAlive();
     switch (frame.id)
     {
 
@@ -167,7 +169,7 @@ void EVIC::handleCanFrame(const CAN_message_t &frame)
 
 void EVIC::handleTick()
 {
-
+    checkAlive(4000);
     if(testMode==0)
     {
         sendCmdCurtis();

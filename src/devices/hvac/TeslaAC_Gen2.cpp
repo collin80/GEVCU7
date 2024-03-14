@@ -14,6 +14,8 @@ void TeslaACGen2Controller::handleCanFrame(const CAN_message_t &frame)
     uint16_t statusBits;
     uint8_t compressorState;
 
+    setAlive();
+
     switch (frame.id)
     {
     case 0x223: //state of the compressor
@@ -122,6 +124,8 @@ void TeslaACGen2Controller::setup()
 
     setAttachedCANBus(config->canbusNum);
 
+    setAlive();
+
     attachedCANBus->attach(this, 0x203, 0x7CF, false); //need 0x223 and 0x233
     tickHandler.attach(this, CFG_TICK_INTERVAL_COMPRESSOR);
 
@@ -132,6 +136,8 @@ void TeslaACGen2Controller::setup()
 void TeslaACGen2Controller::handleTick()
 {
     HVACController::handleTick(); //kick the ball up to papa
+
+    checkAlive(4000);
 
     TeslaACGen2Configuration *config = (TeslaACGen2Configuration *)getConfiguration();
     targetTempC = config->targetTemperature;

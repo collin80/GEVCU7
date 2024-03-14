@@ -28,6 +28,8 @@ void OvarDCDCController::setup()
 
     setAttachedCANBus(config->canbusNum);
 
+    setAlive();
+
     //watch for the DC/DC status message
     attachedCANBus->attach(this, 0x1806F4D5, 0x1FFFFFFF, true);
     tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
@@ -43,6 +45,8 @@ void OvarDCDCController::handleCanFrame(const CAN_message_t &frame)
     Logger::debug("Ovar DCDC: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
                   frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
                   frame.buf[5],frame.buf[6],frame.buf[7]);
+
+    setAlive();
 
     if (frame.id == 0x1806F4D5)
     {
@@ -62,6 +66,8 @@ void OvarDCDCController::handleCanFrame(const CAN_message_t &frame)
 void OvarDCDCController::handleTick()
 {
     DCDCController::handleTick(); //kick the ball up to papa
+
+    checkAlive(4000);
 
     sendCmd();   //Send our Delphi voltage control command
 }

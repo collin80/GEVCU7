@@ -51,8 +51,6 @@ DmocMotorController::DmocMotorController() : MotorController() {
 
     operationState = DISABLED;
     actualState = DISABLED;
-    online = 0;
-    activityCount = 0;
 //	maxTorque = 2000;
     commonName = "DMOC645 Inverter";
     shortName = "DMOC645";
@@ -98,6 +96,7 @@ void DmocMotorController::setup() {
     setSelectedGear(NEUTRAL);
     setOpState(DISABLED );
     ms=millis();
+    setAlive();
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC);
 }
@@ -113,7 +112,7 @@ void DmocMotorController::setup() {
 void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
     int RotorTemp, invTemp, StatorTemp;
     int temp;
-    online = true; //if a frame got to here then it passed the filter and must have been from the DMOC
+    setAlive(); //if a frame got to here then it passed the filter and must have been from the DMOC
 
     Logger::debug(DMOC645, "CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
 
@@ -131,11 +130,9 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
         else {
             temperatureMotor = (StatorTemp - 40);
         }
-        activityCount++;
         break;
     case 0x23A: //torque report
         torqueActual = (((frame.buf[0] * 256) + frame.buf[1]) - 30000) / 10.0f;
-        activityCount++;
         break;
 
     case 0x23B: //speed and current operation status
@@ -187,7 +184,6 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
             break;
         }
         Logger::debug(DMOC645, "Reported OpState: %d", temp);
-        activityCount++;
         break;
 
         //case 0x23E: //electrical status
@@ -197,7 +193,6 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
     case 0x650: //HV bus status
         dcVoltage = ((frame.buf[0] * 256) + frame.buf[1]) / 10.0f;
         dcCurrent = (((frame.buf[2] * 256) + frame.buf[3]) - 5000) / 10.0f; //offset is 500A, unit = .1A
-        activityCount++;
         break;
     }
 }
@@ -209,33 +204,21 @@ void DmocMotorController::handleTick() {
 
     MotorController::handleTick(); //kick the ball up to papa
 
-    if (activityCount > 0)
+    checkAlive(1000);
+
+    if (isOperational)
     {
-        activityCount--;
-        if (activityCount > 60) activityCount = 60;
-        if (activityCount > 40) //If we are receiving regular CAN messages from DMOC, this will very quickly get to over 40. We'll limit
-            // it to 60 so if we lose communications, within 20 ticks we will decrement below this value.
         {
             //Logger::debug(DMOC645, "Enable Input Active? %u         Reverse Input Active? %u" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
             //if(getEnableIn()<0)setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
             //if(getReverseIn()<0)setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
         }
+        running = true;
     }
     else {
+        running = false;
         setSelectedGear(NEUTRAL); //We will stay in NEUTRAL until we get at least 40 frames ahead indicating continous communications.
     }
-
-    if(!online)  //This routine checks to see if we have received any frames from the inverter.  If so, ONLINE would be true and
-    {   //we set the RUNNING light on.  If no frames are received for 2 seconds, we set running OFF.
-        if ((millis()-ms)>2000)
-        {
-            running=false; // We haven't received any frames for over 2 seconds.  Otherwise online would be true.
-            ms=millis();   //Reset our 2 second timer
-        }
-    }
-    else running=true;
-    online=false;//This flag will be set to 1 by received frames.
-
 
     sendCmd1();  //This actually sets our GEAR and our actualstate cycle
     sendCmd2();  //This is our torque command

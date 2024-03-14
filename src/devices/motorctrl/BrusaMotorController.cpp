@@ -76,6 +76,8 @@ void BrusaMotorController::setup() {
     canHandlerIsolated.attach(this, CAN_MASKED_ID_1, CAN_MASK_1, false);
     canHandlerIsolated.attach(this, CAN_MASKED_ID_2, CAN_MASK_2, false);
 
+    setAlive();
+
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_BRUSA);
 }
 
@@ -88,6 +90,8 @@ void BrusaMotorController::setup() {
 void BrusaMotorController::handleTick() {
     MotorController::handleTick(); // call parent
     tickCounter++;
+
+    checkAlive(1000);
 
     sendControl();	// send CTRL every 20ms
     if (tickCounter > 4) {
@@ -221,6 +225,7 @@ void BrusaMotorController::prepareOutputFrame(uint32_t id) {
  * the incoming message is processed.
  */
 void BrusaMotorController::handleCanFrame( const CAN_message_t &frame) {
+    setAlive();
     switch (frame.id) {
     case CAN_ID_STATUS:
         processStatus(frame.buf);

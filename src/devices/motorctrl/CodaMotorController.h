@@ -66,9 +66,7 @@ public:
     virtual void saveConfiguration();
 
 private:
-    byte online; //counter for whether DMOC appears to be operating
     byte alive;
-    int activityCount;
     byte sequence;
     uint16_t torqueCommand;
     void sendCmd1();
