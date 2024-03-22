@@ -33,6 +33,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define STATUSCSV_H_
 
 #include <Arduino.h>
+#include "SD.h"
 #include "../../config.h"
 #include "../../constants.h"
 #include "../Device.h"
@@ -49,6 +50,8 @@ class StatusCSVConfiguration: public DeviceConfiguration {
 public:
     uint16_t ticksPerUpdate;
     uint32_t enabledStatusEntries[NUM_ENTRIES_IN_TABLE]; //4 bytes per entry
+    uint8_t bAutoStart;
+    uint8_t bFileOutput;
     char enableString[100];
     char disableString[100];
 };
@@ -73,10 +76,16 @@ private:
     uint32_t tickCounter;
     bool haveEnabledEntries;
     bool isEnabled;
+    bool fileInitialized;
+    bool needHeader;
+    FsFile logFile;
+    uint32_t lastWriteTime;
 
     void handleSerialSwitch();
     void enableStatusHash(char * str);
     void disableStatusHash(char * str);
+    void initializeFile();
+    void flushFile();
 };
 
 #endif

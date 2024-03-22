@@ -28,6 +28,15 @@
 
 #include "StatusCSV.h"
 #include "CanHandler.h"
+#include "RingBuf.h"
+
+extern bool sdCardWorking;
+#define RING_BUF_CAPACITY 16 * 1024
+#define LOG_FILENAME "StatusOutput"
+#define MAX_LOGFILES 200
+
+// RingBuf for File type FsFile.
+DMAMEM RingBuf<FsFile, RING_BUF_CAPACITY> csvRingBuf;
 
 /*
  * Constructor.
@@ -40,6 +49,9 @@ StatusCSV::StatusCSV() : Device()
     tickCounter = 0;
     haveEnabledEntries = false;
     isEnabled = false;
+    lastWriteTime = 0;
+    fileInitialized = false;
+    needHeader = true;
 }
 
 void StatusCSV::earlyInit()
@@ -69,11 +81,77 @@ void StatusCSV::setup() {
     cfgEntries.push_back(entry);
     entry = {"STATUS-DIS", "Status entries to disable (or ALL)", &config->disableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr};
     cfgEntries.push_back(entry);
+    entry = {"STATUS-AUTO", "Automatically start sending status lines? (0 = No 1 = Yes)", &config->bAutoStart, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 0x1}, 1, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"STATUS-FILE", "Also send output to sdCard? (0 = No 1 = Yes)", &config->bFileOutput, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 1}, 1, nullptr};
+    cfgEntries.push_back(entry);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_STATUS);
 
     config->enableString[0] = 0;
     config->disableString[0] = 0;
+
+    if (config->bAutoStart == 1)
+    {
+        isEnabled = true;
+    }
+}
+
+void StatusCSV::initializeFile()
+{
+    char fn1[100];
+    char fn2[100];
+    //basically, rename all files one number higher than they were then start a new log with no numbers
+    //as the current log
+    for (int i = MAX_LOGFILES - 1; i > 0; i--)
+    {
+        snprintf(fn1, 200, "%s%d.csv", LOG_FILENAME, i);
+        snprintf(fn2, 200, "%s%d.csv", LOG_FILENAME, i - 1);
+        SD.sdfs.remove(fn1); //delete any file that may have been there
+        SD.sdfs.rename(fn2, fn1); //rename the file to the name we just (maybe) deleted
+    }
+    snprintf(fn1, 200, "%s1.csv", LOG_FILENAME);
+    snprintf(fn2, 200, "%s.csv", LOG_FILENAME);
+    SD.sdfs.remove(fn1);
+    SD.sdfs.rename(fn2, fn1);
+
+    logFile = SD.sdfs.open(fn2, O_RDWR | O_CREAT | O_TRUNC);
+    if (!logFile) {
+        Serial.println("CSV status file creation failed\n");
+        fileInitialized = false;
+        return;
+    }
+    else Serial.println("CSV status output has been opened for writing.");
+    fileInitialized = true;
+    // File must be pre-allocated to avoid huge
+    // delays searching for free clusters.
+    /*
+    if (!file.preAllocate(LOG_FILE_SIZE)) {
+        Serial.println("preAllocate failed\n");
+        file.close();
+        return;
+    }
+    else Serial.println("File Pre_Alloc OK");
+    */
+    
+    // initialize the RingBuf.
+    csvRingBuf.begin(&logFile);
+    //Serial.println("Initialized RingBuff");
+}
+
+void StatusCSV::flushFile()
+{
+    size_t n = csvRingBuf.bytesUsed();
+    int ret = 0;
+    int writeBytes = min(n, 512u);
+    ret = csvRingBuf.writeOut(writeBytes);
+    if (writeBytes != ret) {
+        Serial.printf("Writeout failed. Want to write %u bytes but wrote %u\n", writeBytes, ret);
+        logFile.close();
+        fileInitialized = false;
+        return;
+    }
+    else logFile.flush(); //make sure it is updated on disk
 }
 
 //This method handles periodic tick calls received from the tasker.
@@ -81,6 +159,11 @@ void StatusCSV::handleTick()
 {
     StatusEntry *ent = nullptr;
     int c;
+
+    if (config->bFileOutput && sdCardWorking && !fileInitialized)
+    {
+        initializeFile();
+    }
 
     if (config->enableString[0] > 0)
     {
@@ -105,20 +188,42 @@ void StatusCSV::handleTick()
         if ((c == 's') || (c =='S'))
         {
             isEnabled = !isEnabled;
-            if (isEnabled)
+        }
+    }
+
+    if (isEnabled && needHeader)
+    {
+        needHeader = false;
+        for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
+        {
+            if (!config->enabledStatusEntries[i]) continue;
+            ent = deviceManager.findStatusEntryByHash(config->enabledStatusEntries[i]);
+            if (ent)
             {
-                for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
+                SerialUSB1.print(ent->statusName);
+                SerialUSB1.write(',');
+                if (config->bFileOutput && sdCardWorking)
                 {
-                    if (!config->enabledStatusEntries[i]) continue;
-                    ent = deviceManager.findStatusEntryByHash(config->enabledStatusEntries[i]);
-                    if (ent)
-                    {
-                        SerialUSB1.print(ent->statusName);
-                        SerialUSB1.write(',');
-                    }
+                    csvRingBuf.print(ent->statusName);
+                    csvRingBuf.write(',');
                 }
-                SerialUSB1.println();
             }
+        }
+        SerialUSB1.println();
+        if (config->bFileOutput && sdCardWorking) csvRingBuf.println();
+    }
+
+    if (sdCardWorking)
+    {
+        size_t n = csvRingBuf.bytesUsed();
+        //Serial.println(n);
+        //delay(100);
+        if ( ( (n >= 512) || ((millis() - lastWriteTime) > 1000) ) && !logFile.isBusy())
+        {
+            // Not busy only allows one sector before possible busy wait.
+            // Write one sector from RingBuf to file.
+            flushFile();
+            lastWriteTime = millis();
         }
     }
 
@@ -133,11 +238,18 @@ void StatusCSV::handleTick()
             ent = deviceManager.findStatusEntryByHash(config->enabledStatusEntries[i]);
             if (ent)
             {
-                SerialUSB1.print(ent->getValueAsString());
+                String val = ent->getValueAsString();
+                SerialUSB1.print(val);
                 SerialUSB1.write(',');
+                if (config->bFileOutput && sdCardWorking)
+                {
+                    csvRingBuf.print(val);
+                    csvRingBuf.write(',');
+                }
             }
         }
         SerialUSB1.println();
+        if (config->bFileOutput && sdCardWorking) csvRingBuf.println();
     }
 }
 
@@ -280,6 +392,9 @@ void StatusCSV::loadConfiguration() {
     {
         memset((uint8_t *)&config->enabledStatusEntries, 0, sizeof(config->enabledStatusEntries));
     }
+    prefsHandler->read("AutoStart", &config->bAutoStart, 0);
+    prefsHandler->read("FileOutput", &config->bFileOutput, 0);
+
 }
 
 void StatusCSV::saveConfiguration() {
@@ -293,6 +408,8 @@ void StatusCSV::saveConfiguration() {
     {
         Logger::error("Could not write enabled status fields register!");
     }
+    prefsHandler->write("AutoStart", config->bAutoStart);
+    prefsHandler->write("FileOutput", config->bFileOutput);
 
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
