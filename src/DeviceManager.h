@@ -45,6 +45,7 @@ public:
     DeviceManager();    // private constructor
     void addDevice(Device *device);
     void removeDevice(Device *device);
+    void sortDeviceTable();
     void addStatusEntry(StatusEntry entry);
     void removeStatusEntry(StatusEntry entry);
     void removeStatusEntry(String statusName);

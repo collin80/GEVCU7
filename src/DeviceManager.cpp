@@ -52,7 +52,7 @@ DeviceManager::DeviceManager() {
  * Add the specified device to the list of registered devices
  */
 void DeviceManager::addDevice(Device *device) {
-    if (findDevice(device) == -1) {
+    if (findDevice(device) == -1) { //first check to make sure we haven't already added it.
         int8_t i = findDevice(NULL);
         if (i != -1) {
             devices[i] = device;
@@ -103,6 +103,26 @@ void DeviceManager::removeDevice(Device *device) {
     case DEVICE_NONE:
     case DEVICE_HVAC:
         break;
+    }
+}
+
+//device table is small. Just using a very simple and easy sort algorithm (bubble sort). At 600MHz it's going to complete in a flash
+//and it only has to happen once. No need to get cute here.
+void DeviceManager::sortDeviceTable()
+{
+    for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES - 1; i++)
+    {
+        if (devices[i] == nullptr) break;
+        for (int j = i + 1; j < CFG_DEV_MGR_MAX_DEVICES; j++)
+        {
+            if (devices[j] == nullptr) break;
+            if (devices[i]->getId() > devices[j]->getId())//swap!
+            {
+                Device *dev = devices[i];
+                devices[i] = devices[j];
+                devices[j] = dev;
+            }
+        }
     }
 }
 

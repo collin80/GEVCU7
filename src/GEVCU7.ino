@@ -300,6 +300,8 @@ FLASHMEM void setup() {
     SerialUSB1.begin(1000000);
 #endif
 
+    deviceManager.sortDeviceTable();
+
     //pretty early in boot we want to know if the previous try crashed
     crashHandler.captureCrashDataOnStartup();
 
