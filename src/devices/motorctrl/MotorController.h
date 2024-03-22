@@ -53,6 +53,9 @@ public:
     uint16_t regenTaperUpper; //upper limit where regen tapering starts
     uint16_t regenTaperLower; //lower RPM limit below which no regen will happen
 
+    float mphConvFactor;
+    uint32_t odometer; //store this in hundredths of a mile
+
     //well, these might be able to be in the motor controller class. But, really people
     //could have many ways to select a gear - discrete inputs like this, or via a CAN gearbox
     //or via an analog input that detects the position of a shifter. So, really this belongs
@@ -156,6 +159,8 @@ public:
     float getTorqueRequested();
     float getTorqueActual();
     float getTorqueAvailable();
+    uint32_t getOdometerReading();
+    float getMPH();
     int preMillis();
 
     float getDcVoltage();
@@ -202,6 +207,8 @@ private:
     Gears selectedGear;
     char gearText[16];
     PowerMode powerMode;
+    uint32_t lastOdoAccum;
+    double odo_accum;
 };
 
 #endif

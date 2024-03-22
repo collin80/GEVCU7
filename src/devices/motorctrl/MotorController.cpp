@@ -89,6 +89,8 @@ void MotorController::setup() {
     cfgEntries.push_back(entry);
     entry = {"TAPERLO", "Regen taper lower RPM (0 - 20000)", &config->regenTaperLower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr};
     cfgEntries.push_back(entry);
+    entry = {"MPHFACTOR", "Set factor to multiply RPM by to get MPH", &config->mphConvFactor, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1.0}, 4, nullptr};
+    cfgEntries.push_back(entry);
 
     statusBitfield.bitfield = 0;
 
@@ -150,6 +152,31 @@ void MotorController::handleTick() {
     //Calculate killowatts and kilowatt hours
     mechanicalPower = dcVoltage * dcCurrent / 1000.0f; //In kilowatts.
 
+    //do odometer calculations
+    if (lastOdoAccum == 0)
+    {
+        lastOdoAccum = micros();
+    }
+    else
+    {
+        //distance traveled is MPH 
+        //1MPH * 1 hr = 1 Mile so here we've got MPH and time which will be MUCH smaller than an hour
+        //the time since last tick is (micros() - lastAccum) / a million in seconds. 1 second is 
+        //1 / 3600th of an hour
+        //so, take MPH and multiply by (interval in microseconds / 3.6 billion)
+        double interval = (micros() - lastOdoAccum) / 3600000000.0;
+        odo_accum += (abs(getSpeedActual()) * config->mphConvFactor) / interval;
+        //now, the odometer in config is in hundedths of a mile so keep adding those as much as possible
+        //the while is almost superfluous as it is essentially physically impossible to gain 0.01 miles
+        //in the tick interval. So, this could only happen if it missed a couple of ticks and you were
+        //going WAY too fast.
+        while (odo_accum > 0.01)
+        {
+            config->odometer++;
+            odo_accum -= 0.01;
+        }
+    }
+
     //Throttle check
     Throttle *accelerator = deviceManager.getAccelerator();
     Throttle *brake = deviceManager.getBrake();
@@ -165,6 +192,13 @@ void MotorController::handleTick() {
         checkEnableInput();
         checkGearInputs();
     }
+}
+
+float MotorController::getMPH()
+{
+    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
+
+    return abs(getSpeedActual()) * config->mphConvFactor;
 }
 
 /*
@@ -404,6 +438,12 @@ bool MotorController::isReady() {
     return false;
 }
 
+uint32_t MotorController::getOdometerReading()
+{
+    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
+    return config->odometer;
+}
+
 void MotorController::loadConfiguration() {
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
 
@@ -421,6 +461,8 @@ void MotorController::loadConfiguration() {
         prefsHandler->read("RegenTaperUpper", &config->regenTaperUpper, 500);
         prefsHandler->read("RegenTaperLower", &config->regenTaperLower, 75);
         prefsHandler->read("FwdDIN", &config->forwardIn, 255);
+        prefsHandler->read("MPHFactor", &config->mphConvFactor, 0.5f);
+        prefsHandler->read("odometer", &config->odometer, 0);
         if (config->regenTaperLower < 0 || config->regenTaperLower > 10000 ||
             config->regenTaperUpper < config->regenTaperLower || config->regenTaperUpper > 10000) {
             config->regenTaperLower = 75;
@@ -445,7 +487,9 @@ void MotorController::saveConfiguration() {
     prefsHandler->write("FwdDIN", config->forwardIn);
     prefsHandler->write("RegenTaperLower", config->regenTaperLower);
     prefsHandler->write("RegenTaperUpper", config->regenTaperUpper);
-    
+    prefsHandler->write("MPHFactor", config->mphConvFactor);
+    prefsHandler->write("odometer", config->odometer);
+
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
     //loadConfiguration();
