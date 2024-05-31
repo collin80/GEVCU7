@@ -45,14 +45,11 @@ void CrashHandler::captureCrashDataOnStartup()
     if ( CrashReport )
     {
         lastBootCrashed = true;
-        if (bc->bitmask)
+        for (int i = 0; i < 6; i++)
         {
-            for (int i=0; i < 6; i++)
+            if (bc->bitmask & (1 << i))
             {
-                if (bc->bitmask & (1 << i))
-                {
-                    storedCrumbs[i] = bc->value[i];
-                }
+                storedCrumbs[i] = bc->value[i];
             }
         }
     }
@@ -125,6 +122,7 @@ void CrashHandler::addBreadcrumb(uint32_t crumb)
     bc->value[3] = bc->value[4];
     bc->value[4] = bc->value[5];
     bc->value[5] = crumb;
+    bc->bitmask = (bc->bitmask >> 1) | (1<<5);
     //have to flush to RAM or it will stay in cache. Here is where our delay really triggers
     arm_dcache_flush((void *)bc, sizeof(struct crashreport_breadcrumbs_struct));
 }
