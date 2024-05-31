@@ -277,9 +277,8 @@ FLASHMEM void setup() {
     WDT_timings_t config;
     //GEVCU might loop very rapidly sometimes so windowing mode would be tough. Revisit later
     //config.window = 100; /* in milliseconds, 32ms to 522.232s, must be smaller than timeout */
-    config.timeout = 5000; /* in milliseconds, 32ms to 522.232s */
+    config.timeout = 5000.0; /* in milliseconds, 32ms to 522.232s */
     config.callback = wdtCallback;
-    //wdt.begin(config);
 
     pinMode(BLINK_LED, OUTPUT);
     pinMode(SD_DETECT, INPUT_PULLUP);
@@ -383,8 +382,6 @@ FLASHMEM void setup() {
         flashESP32("esp32_website.bin", 0x290000ull);
     }
 
-    wdt.feed();
-
     tickHandler.setup();
 
 	Wire.begin();
@@ -392,6 +389,11 @@ FLASHMEM void setup() {
 	memCache = new MemCache();
 	Logger::info("add MemCache (id: %X, %X)", MEMCACHE, memCache);
 	memCache->setup();
+
+    //need to turn this on somewhere. Moved it down pretty low in the power on setup so that things like 
+    //firmware updates don't require special handling with the watchdog (at least not power on fw updates)
+    //but, it's before any of the non-system device drivers load in case one of them has a bug.
+    //wdt.begin(config);
 
     //force the system device to be set enabled. ALWAYS. It would not be good if it weren't enabled!
     Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
@@ -445,7 +447,8 @@ FLASHMEM void setup() {
     //sendTestCANFrames();
     //testGEVCUHardware();
     //deviceManager.printAllStatusEntries();
-    //*(volatile uint32_t *)0x30000000 = 0; // causes Data_Access_Violation if you uncomment it. Only for testing crash handler
+    //    *(volatile uint32_t *)0x30000000 = 0; // causes Data_Access_Violation if you uncomment it. Only for testing crash handler
+
 }
 
 //there really isn't much in the loop here. Most everything is done via interrupts and timer ticks. If you have
@@ -486,6 +489,9 @@ void loop() {
         lastSentTest = millis();
     }*/
     //testGEVCUHardware();
+
+    //it should go without saying that uncommenting the below line will give you a bad time.
+    //if (millis() > 40000)     *(volatile uint32_t *)0x30000000 = 0; // causes Data_Access_Violation if you uncomment it. Only for testing crash handler
 }
 
 //Not interrupt driven but the callbacks should still happen quickly.
@@ -499,4 +505,15 @@ void serialEvent() {
 void serialEventUSB1()
 {
     canHandlerBus0.loop();
+}
+
+//this function blocks out a lot of code that would otherwise be generated to handle exceptions.
+//The exception handling code seriously bloats the binary. Maybe change what this function does
+//to be something better than blocking infinitely though.
+namespace __gnu_cxx
+{
+    void __verbose_terminate_handler()
+    {
+        while (1) asm ("WFI");
+    }
 }
