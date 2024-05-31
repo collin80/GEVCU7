@@ -60,9 +60,13 @@ MotorController::MotorController() : Device() {
     skipcounter = 0;
     testenableinput = 0;
     testreverseinput = 0;
+    odoReadingAtLastSave = 0;
+    lastOdoSave = 0;
+    lastOdoAccum = 0;
+    odo_accum = 0;
 }
 
-void MotorController::setup() {
+FLASHMEM void MotorController::setup() {
 
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
 
@@ -164,8 +168,15 @@ void MotorController::handleTick() {
         //the time since last tick is (micros() - lastAccum) / a million in seconds. 1 second is 
         //1 / 3600th of an hour
         //so, take MPH and multiply by (interval in microseconds / 3.6 billion)
-        double interval = (micros() - lastOdoAccum) / 3600000000.0;
-        odo_accum += (abs(getSpeedActual()) * config->mphConvFactor) / interval;
+        uint32_t timestamp = micros();
+        uint32_t interval = timestamp - lastOdoAccum;
+        lastOdoAccum = timestamp;
+
+        //speed is in RPM which is per minute while we want miles per hour. 
+        //But, miles are long. So, the conversion factor is likely to need to be pretty low.
+        double mph = abs(getSpeedActual()) * config->mphConvFactor;
+
+        odo_accum += (mph * interval) / 3600000000.0;
         //now, the odometer in config is in hundedths of a mile so keep adding those as much as possible
         //the while is almost superfluous as it is essentially physically impossible to gain 0.01 miles
         //in the tick interval. So, this could only happen if it missed a couple of ticks and you were
@@ -174,6 +185,18 @@ void MotorController::handleTick() {
         {
             config->odometer++;
             odo_accum -= 0.01;
+        }
+    }
+
+    //now, save the odometer reading every so often if it has changed
+    if (config->odometer > odoReadingAtLastSave)
+    {
+        if ((millis() - lastOdoSave) >= 60000) //save every minute 
+        {
+            lastOdoSave = millis();
+            prefsHandler->write("odometer", config->odometer);
+            prefsHandler->forceCacheWrite();
+            odoReadingAtLastSave = config->odometer;
         }
     }
 
@@ -192,6 +215,41 @@ void MotorController::handleTick() {
         checkEnableInput();
         checkGearInputs();
     }
+}
+
+float MotorController::getSlewedTorque()
+{
+    MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();
+    //if we're asking for regen but are going slow or backward of the motoring direction then
+    //zero out the request for regen. Otherwise, allow regen
+    //if ((torqueRequested < 0) && (speedActual < 200)) torqueRequested = 0;
+
+    //now, take torqueRequested and compare it to torqueCommand. If it is farther away than our slew rate
+    //then just move toward target by slew rate. Otherwise set it directly
+    float slewInc = config->torqueSlewRate / (1000000.0f / getTickInterval());
+    if (slewInc < 100.0f) slewInc = 100.0f; //just for sanity. Even a stupidly low value set to torqueSlewRate will still do... something.
+    if (torqueRequested > 0)
+    {
+        if (torqueRequested > slewedTorque) slewedTorque += slewInc;
+        else 
+        {
+            slewedTorque -= (slewInc * 10.0f);
+            if (slewedTorque < torqueRequested) slewedTorque = torqueRequested;
+        }
+    }
+    else if (torqueRequested < 0)
+    {
+        if (torqueRequested < slewedTorque) slewedTorque -= slewInc;
+        else 
+        {
+            slewedTorque += (slewInc * 10.0f);
+            if (slewedTorque > torqueRequested) slewedTorque = torqueRequested;
+        }
+    }
+
+    if (torqueRequested == 0) slewedTorque = 0;
+
+    return slewedTorque;
 }
 
 float MotorController::getMPH()
@@ -463,6 +521,8 @@ void MotorController::loadConfiguration() {
         prefsHandler->read("FwdDIN", &config->forwardIn, 255);
         prefsHandler->read("MPHFactor", &config->mphConvFactor, 0.5f);
         prefsHandler->read("odometer", &config->odometer, 0);
+        odoReadingAtLastSave = config->odometer;
+        lastOdoSave = millis();
         if (config->regenTaperLower < 0 || config->regenTaperLower > 10000 ||
             config->regenTaperUpper < config->regenTaperLower || config->regenTaperUpper > 10000) {
             config->regenTaperLower = 75;

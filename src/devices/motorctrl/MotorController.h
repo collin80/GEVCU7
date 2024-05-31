@@ -159,6 +159,7 @@ public:
     float getTorqueRequested();
     float getTorqueActual();
     float getTorqueAvailable();
+    float getSlewedTorque();
     uint32_t getOdometerReading();
     float getMPH();
     int preMillis();
@@ -189,6 +190,7 @@ protected:
     int16_t throttleRequested; // -1000 to 1000 (per mille of throttle level)
     int16_t speedRequested; // in rpm
     int16_t speedActual; // in rpm
+    float slewedTorque;
     float torqueRequested; // in Nm
     float torqueActual; // in Nm
     float torqueAvailable; // the maximum available torque in Nm
@@ -209,6 +211,8 @@ private:
     PowerMode powerMode;
     uint32_t lastOdoAccum;
     double odo_accum;
+    uint32_t lastOdoSave;
+    uint32_t odoReadingAtLastSave;
 };
 
 #endif
