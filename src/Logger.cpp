@@ -274,7 +274,8 @@ void Logger::console(const char *message, ...) {
     va_start(args, message);
     char buff[200];
     vsprintf(buff, message, args);
-    Serial.println(buff);
+    if (Serial) Serial.println(buff);
+    if (esp32) esp32->sendLogString(buff);
     va_end(args);
 }
 
@@ -363,8 +364,7 @@ void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list 
     //Serial.println(outputString);
     vsnprintf(buff, 200, format, args);
     outputString += buff;
-    //outputString += "\n";
-    Serial.println(outputString);
+    if (Serial) Serial.println(outputString);
     if (sdCardWorking) rb.println(outputString);
     if (esp32) esp32->sendLogString(outputString); //if ESP32 module is loaded then try to send output to telnet as well
 }

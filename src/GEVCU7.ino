@@ -306,13 +306,15 @@ FLASHMEM void setup() {
 
     crashHandler.addBreadcrumb(ENCODE_BREAD("START"));
 
-    Serial.print("Build number: ");
-    Serial.println(CFG_BUILD_NUM);
-    Serial.print("Build Date: ");
-    Serial.print(__DATE__);
-    Serial.print(" at ");
-    Serial.println(__TIME__);
-
+    if (Serial)
+    {
+        Serial.print("Build number: ");
+        Serial.println(CFG_BUILD_NUM);
+        Serial.print("Build Date: ");
+        Serial.print(__DATE__);
+        Serial.print(" at ");
+        Serial.println(__TIME__);
+    }
     sdCardInitFailed = false;
 
 #ifndef ASSUME_SDCARD_INSERTED
@@ -325,19 +327,19 @@ FLASHMEM void setup() {
     if (sdCardPresence > 1)
     {
 #endif
-        Serial.print("Attempting to mount sdCard ");
+        if (Serial) Serial.print("Attempting to mount sdCard ");
 	    //init SD card early so we can use it for logging everything else if needed.
         if (!SD.sdfs.begin(SdioConfig(FIFO_SDIO)))
 	    {
     	    //sdCard.initErrorHalt(&Serial);
-            Serial.println("- Could not initialize sdCard");
+            if (Serial) Serial.println("- Could not initialize sdCard");
             sdCardWorking = false;
             sdCardInitFailed = true;
   	    }
         else 
         {
             sdCardWorking = true;
-            Serial.println(" OK!");
+            if (Serial) Serial.println(" OK!");
             Logger::initializeFile();
             //if the system crashed we ought to decode all the breadcrumbs and save them into the logfile.
             //Maybe within the above function?
@@ -346,7 +348,7 @@ FLASHMEM void setup() {
     }
     else
     {
-        Serial.println("No sdCard detected.");
+        if (Serial) Serial.println("No sdCard detected.");
         sdCardWorking = false;
     }
 #endif
@@ -360,11 +362,11 @@ FLASHMEM void setup() {
         FsFile file;
         file = SD.sdfs.open("GEVCU7.hex", O_READ);
         if (!file) {
-            Serial.println("No teensy firmware to flash. Skipping.");
+            if (Serial) Serial.println("No teensy firmware to flash. Skipping.");
         }
         else
         {
-            Serial.println("Found teensy firmware. Flashing it");
+            if (Serial) Serial.println("Found teensy firmware. Flashing it");
             setup_flasherx();
             start_upgrade(&file);
             file.close();
@@ -487,7 +489,8 @@ void loop() {
     {
         sendTestCANFrames();
         lastSentTest = millis();
-    }*/
+    }
+    */
     //testGEVCUHardware();
 
     //it should go without saying that uncommenting the below line will give you a bad time.
