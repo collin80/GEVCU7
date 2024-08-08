@@ -29,6 +29,7 @@
 #include "StatusCSV.h"
 #include "CanHandler.h"
 #include "RingBuf.h"
+#include "devices/esp32/ESP32Driver.h"
 
 extern bool sdCardWorking;
 #define RING_BUF_CAPACITY 16 * 1024
@@ -84,6 +85,8 @@ void StatusCSV::setup() {
     entry = {"STATUS-AUTO", "Automatically start sending status lines? (0 = No 1 = Yes)", &config->bAutoStart, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 0x1}, 1, nullptr};
     cfgEntries.push_back(entry);
     entry = {"STATUS-FILE", "Also send output to sdCard? (0 = No 1 = Yes)", &config->bFileOutput, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 1}, 1, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"STATUS-ESP", "Also send output to ESP32? (0 = No 1 = Yes)", &config->bESPOutput, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 1}, 1, nullptr};
     cfgEntries.push_back(entry);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_STATUS);
@@ -158,7 +161,9 @@ void StatusCSV::flushFile()
 void StatusCSV::handleTick()
 {
     StatusEntry *ent = nullptr;
+    esp32 = static_cast<ESP32Driver *>(deviceManager.getDeviceByID(0x0800));
     int c;
+    String builder;
 
     if (config->bFileOutput && sdCardWorking && !fileInitialized)
     {
@@ -194,23 +199,20 @@ void StatusCSV::handleTick()
     if (isEnabled && needHeader)
     {
         needHeader = false;
+        builder = "";
         for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
         {
             if (!config->enabledStatusEntries[i]) continue;
             ent = deviceManager.findStatusEntryByHash(config->enabledStatusEntries[i]);
             if (ent)
             {
-                SerialUSB1.print(ent->statusName);
-                SerialUSB1.write(',');
-                if (config->bFileOutput && sdCardWorking)
-                {
-                    csvRingBuf.print(ent->statusName);
-                    csvRingBuf.write(',');
-                }
+                builder += ent->statusName + ",";                
             }
         }
-        SerialUSB1.println();
-        if (config->bFileOutput && sdCardWorking) csvRingBuf.println();
+        builder += "\n";
+        SerialUSB1.print(builder);
+        if (config->bFileOutput && sdCardWorking) csvRingBuf.print(builder);
+        if (esp32 && config->bESPOutput) esp32->sendStatusCSV(builder);
     }
 
     if (sdCardWorking)
@@ -231,6 +233,7 @@ void StatusCSV::handleTick()
     if (++tickCounter > config->ticksPerUpdate)
     {
         tickCounter = 0;
+        builder = "";
         //do processing
         for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
         {
@@ -239,18 +242,19 @@ void StatusCSV::handleTick()
             if (ent)
             {
                 String val = ent->getValueAsString();
-                SerialUSB1.print(val);
-                SerialUSB1.write(',');
-                if (config->bFileOutput && sdCardWorking)
-                {
-                    csvRingBuf.print(val);
-                    csvRingBuf.write(',');
-                }
+                builder += val + ",";
             }
         }
-        SerialUSB1.println();
-        if (config->bFileOutput && sdCardWorking) csvRingBuf.println();
+        SerialUSB1.print(builder);
+        if (config->bFileOutput && sdCardWorking) csvRingBuf.print(builder);
+        if (esp32 && config->bESPOutput) esp32->sendStatusCSV(builder);
     }
+}
+
+void StatusCSV::toggleOutput()
+{
+    isEnabled = !isEnabled;
+    needHeader = true;
 }
 
 void StatusCSV::enableStatusHash(char * str)
@@ -394,7 +398,7 @@ void StatusCSV::loadConfiguration() {
     }
     prefsHandler->read("AutoStart", &config->bAutoStart, 0);
     prefsHandler->read("FileOutput", &config->bFileOutput, 0);
-
+    prefsHandler->read("ESPOutput", &config->bESPOutput, 0);
 }
 
 void StatusCSV::saveConfiguration() {
@@ -410,6 +414,7 @@ void StatusCSV::saveConfiguration() {
     }
     prefsHandler->write("AutoStart", config->bAutoStart);
     prefsHandler->write("FileOutput", config->bFileOutput);
+    prefsHandler->write("ESPOutput", config->bESPOutput);
 
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();

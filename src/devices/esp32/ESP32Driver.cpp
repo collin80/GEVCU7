@@ -2,6 +2,7 @@
 #include "gevcu_port.h"
 #include "../misc/SystemDevice.h"
 #include "../../SerialConsole.h"
+#include "devices/display/StatusCSV.h"
 
 extern SerialConsole *serialConsole;
 
@@ -213,12 +214,17 @@ void ESP32Driver::setup()
     entry = {"ESP32-MODE", "Set ESP32 Mode (0 = Create AP, 1 = Connect to SSID)", &config->esp32_mode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
     cfgEntries.push_back(entry);
 
+    entry = {"ESP32-DEBUG", "Enable debugging at module level (0 = obey log level, 1 = force debugging on)", &config->debugMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    cfgEntries.push_back(entry);
+
     Device::setup(); // run the parent class version of this function
 
-    Serial2.begin(115200);
-    Serial2.setTimeout(2);
-    Serial2.addMemoryForRead(serialReadBuffer, sizeof(serialReadBuffer));
-    Serial2.addMemoryForWrite(serialWriteBuffer, sizeof(serialWriteBuffer));
+    //for some reason nothing works right if you set this higher than 115200 but it doesn't seem like corruption of the characters.
+    //Text just... vanishes into thin air. This seems to suggest that one of the ends is going full tilt and overrunning buffers
+    //Serial2.addMemoryForRead(serialReadBuffer, sizeof(serialReadBuffer));
+    //Serial2.addMemoryForWrite(serialWriteBuffer, sizeof(serialWriteBuffer));
+    Serial2.begin(230400);
+    //Serial2.setTimeout(2);
 
     fileSender = new SerialFileSender(&Serial2);
 
@@ -274,14 +280,22 @@ void ESP32Driver::sendLogString(String str)
     Serial2.println("~" + str); //~ prefix means this is a telnet message
 }
 
+void ESP32Driver::sendStatusCSV(String str)
+{
+    if (!systemAlive) return; //can't do anything until the system is actually up
+    Serial2.println("`" + str); //` prefix means this is a StatusCSV message which should go to the second telnet interface
+}
+
 //the serial callback is not actually interrupt driven but is called from yield()
 //which could get called frequently (and always in the main loop if nothing else)
 void ESP32Driver::processSerial()
 {
+    ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
     if (!systemEnabled) return;
     while (Serial2.available())
     {
         char c = Serial2.read();
+        //if (config->debugMode) Logger::console("Got char from ESP32: %i", c);
         if (fileSender->isActive())
         {
             fileSender->processCharacter(c);
@@ -291,10 +305,11 @@ void ESP32Driver::processSerial()
             if (c == 0xD0) fileSender->processCharacter(c);
             else if (c == '\n')
             {
-                Logger::debug("ESP32: %s", bufferedLine.c_str());
+                if (config->debugMode) Logger::console("ESP32: %s", bufferedLine.c_str());
                 if (bufferedLine.indexOf("BOOTOK") > -1)
                 {
                     systemAlive = true;
+                    Logger::info("ESP32 Booted OK");
                     sendWirelessConfig();
                 }
 
@@ -330,15 +345,24 @@ void ESP32Driver::processSerial()
                 if (bufferedLine[0] == '~')
                 {
                     //send the whole thing (minus the ~) as input to the normal serial console
-                    for (int l = 1; l < bufferedLine.length(); l++)
+                    for (unsigned int l = 1; l < bufferedLine.length(); l++)
                     {
                         serialConsole->injectChar(bufferedLine[l]);
+                    }
+                    serialConsole->injectChar('\n');
+                }
+                if (bufferedLine[0] == '`')
+                {
+                    if (bufferedLine[1] == 's' || bufferedLine[1] == 'S')
+                    {
+                        StatusCSV *csv = static_cast<StatusCSV *>(deviceManager.getDeviceByID(0x4500));
+                        if (csv) csv->toggleOutput();
                     }
                 }
 
                 bufferedLine = "";
             }
-            else bufferedLine += c;
+            else if (c < 128) bufferedLine += c;
         }
     }    
 }
@@ -358,12 +382,16 @@ void ESP32Driver::sendWirelessConfig()
     Serial2.println();
 
     //shall we send it to the serial console for debugging?
-    //serializeJsonPretty(doc, Serial);
-    //Serial.println();
+    if (config->debugMode)
+    {
+        serializeJsonPretty(doc, Serial);
+        Serial.println();
+    }
 }
 
 void ESP32Driver::sendDeviceList()
 {
+    ESP32Configuration *config = (ESP32Configuration *)getConfiguration();
     DynamicJsonDocument doc(10000);
 
     deviceManager.createJsonDeviceList(doc);
@@ -372,12 +400,16 @@ void ESP32Driver::sendDeviceList()
     Serial2.println();
 
     //shall we send it to the serial console for debugging?
-    serializeJsonPretty(doc, Serial);
-    Serial.println();
+    if (config->debugMode)
+    {
+        serializeJsonPretty(doc, Serial);
+        Serial.println();
+    }
 }
 
 void ESP32Driver::sendDeviceDetails(uint16_t deviceID)
 {
+    ESP32Configuration *config = (ESP32Configuration *)getConfiguration();
     Device *dev = nullptr;
     DynamicJsonDocument doc(10000);
 
@@ -391,8 +423,11 @@ void ESP32Driver::sendDeviceDetails(uint16_t deviceID)
     Serial2.println();
 
     //shall we send it to the serial console for debugging?
-    //serializeJsonPretty(doc, Serial);
-    //Serial.println();
+    if (config->debugMode)
+    {
+        serializeJsonPretty(doc, Serial);
+        Serial.println();
+    }
 }
 
 void ESP32Driver::processConfigReply(JsonDocument* doc)
@@ -423,6 +458,7 @@ void ESP32Driver::loadConfiguration() {
     prefsHandler->read("WIFIPW", (char *)config->ssid_pw, "Default123");
     prefsHandler->read("HostName", (char *)config->hostName, "gevcu7");
     prefsHandler->read("WiFiMode", &config->esp32_mode, 0); //create an AP
+    prefsHandler->read("DebugMode", &config->debugMode, 0);
 
     Logger::debug("SSID: %s", config->ssid);
     Logger::debug("PW: %s", config->ssid_pw);
@@ -440,6 +476,7 @@ void ESP32Driver::saveConfiguration() {
     prefsHandler->write("WIFIPW", (const char *)config->ssid_pw, 64);
     prefsHandler->write("HostName", (const char *)config->hostName, 64);
     prefsHandler->write("WiFiMode", config->esp32_mode);
+    prefsHandler->write("DebugMode", config->debugMode);
     //prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
 }

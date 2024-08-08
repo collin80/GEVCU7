@@ -24,6 +24,7 @@ public:
     uint8_t ssid_pw[64];
     uint8_t hostName[64];
     uint8_t esp32_mode;
+    uint8_t debugMode;
 };
 
 class ESP32Driver : public Device
@@ -36,6 +37,7 @@ public:
     ESP32Driver();
     void processSerial();
     void sendLogString(String str);
+    void sendStatusCSV(String str);
 
     DeviceId getId();
     uint32_t getTickInterval();

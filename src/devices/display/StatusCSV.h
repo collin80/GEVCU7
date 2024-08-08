@@ -52,9 +52,12 @@ public:
     uint32_t enabledStatusEntries[NUM_ENTRIES_IN_TABLE]; //4 bytes per entry
     uint8_t bAutoStart;
     uint8_t bFileOutput;
+    uint8_t bESPOutput;
     char enableString[100];
     char disableString[100];
 };
+
+class ESP32Driver;
 
 class StatusCSV: public Device {
 public:
@@ -67,6 +70,7 @@ public:
     DeviceType getType();
     DeviceId getId();
     bool isHashMonitored(uint32_t hash);
+    void toggleOutput();
 
     void loadConfiguration();
     void saveConfiguration();
@@ -80,6 +84,7 @@ private:
     bool needHeader;
     FsFile logFile;
     uint32_t lastWriteTime;
+    ESP32Driver* esp32;
 
     void handleSerialSwitch();
     void enableStatusHash(char * str);
