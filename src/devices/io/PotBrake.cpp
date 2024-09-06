@@ -49,9 +49,14 @@ void PotBrake::setup() {
 
     Logger::info("add device: PotBrake (id: %X, %X)", POTBRAKEPEDAL, this);
 
+    //Note, always call loadConfiguration before the getConfiguration line or you will have a bad time.
+    loadConfiguration();
     PotBrakeConfiguration *config = (PotBrakeConfiguration *) getConfiguration();
+    
+    //don't call the base class here as it creates config names that would overlap the pot throttle. Do everything custom here.
+    //Throttle::setup(); //call base class
 
-    Throttle::setup(); //call base class
+    cfgEntries.reserve(20);
 
     ConfigEntry entry;
     entry = {"B1ADC", "Set brake ADC pin", &config->AdcPin1, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
@@ -68,7 +73,6 @@ void PotBrake::setup() {
     //set digital ports to inputs and pull them up all inputs currently active low
     //pinMode(THROTTLE_INPUT_BRAKELIGHT, INPUT_PULLUP); //Brake light switch
 
-    loadConfiguration();
     tickHandler.attach(this, CFG_TICK_INTERVAL_POT_THROTTLE);
 }
 
@@ -144,7 +148,7 @@ int16_t PotBrake::calculatePedalPosition(RawSignalData *rawSignal) {
  * brake based regen.
  */
 int16_t PotBrake::mapPedalPosition(int16_t pedalPosition) {
-    ThrottleConfiguration *config = (ThrottleConfiguration *) getConfiguration();
+    PotBrakeConfiguration *config = (PotBrakeConfiguration *) getConfiguration();
     int16_t brakeLevel, range;
 
     range = config->maximumRegen - config->minimumRegen;
