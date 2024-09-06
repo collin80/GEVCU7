@@ -51,6 +51,7 @@ DmocMotorController::DmocMotorController() : MotorController() {
 
     operationState = DISABLED;
     actualState = DISABLED;
+    inhibitStateMachine = true;
 //	maxTorque = 2000;
     commonName = "DMOC645 Inverter";
     shortName = "DMOC645";
@@ -98,6 +99,12 @@ void DmocMotorController::setup() {
     ms=millis();
     setAlive();
 
+    //DMOC is extremely picky about wanting CAN messages immediately upon boot up. So, don't
+    //wait for a tick, send all the messages right now as soon as we can!
+    sendCmd1();  //This actually sets our GEAR and our actualstate cycle
+    sendCmd2();  //This is our torque command
+    sendCmd3();
+
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC);
 }
 
@@ -115,7 +122,6 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
     setAlive(); //if a frame got to here then it passed the filter and must have been from the DMOC
 
     Logger::debug(DMOC645, "CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
-
 
     switch (frame.id) {
     case 0x651: //Temperature status
@@ -144,11 +150,14 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
 
         case 0: //Initializing
             actualState = DISABLED;
+            inhibitStateMachine = true;
             faulted=false;
             break;
 
         case 1: //disabled
             actualState = DISABLED;
+            inhibitStateMachine = false;
+            isOperational = true;
             faulted=false;
             break;
 
@@ -205,13 +214,13 @@ void DmocMotorController::handleTick() {
     MotorController::handleTick(); //kick the ball up to papa
 
     checkAlive(1000);
-
+/*
     if (isOperational)
     {
         {
-            //Logger::debug(DMOC645, "Enable Input Active? %u         Reverse Input Active? %u" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
-            //if(getEnableIn()<0)setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
-            //if(getReverseIn()<0)setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
+            Logger::debug(DMOC645, "Enable Input Active? %u         Reverse Input Active? %u" ,systemIO.getDigitalIn(getEnableIn()),systemIO.getDigitalIn(getReverseIn()));
+            if(getEnableIn() == 255) setOpState(ENABLE); //If we HAVE an enableinput 0-3, we'll let that handle opstate. Otherwise set it to ENABLE
+            if(getReverseIn() == 255) setSelectedGear(DRIVE); //If we HAVE a reverse input, we'll let that determine forward/reverse.  Otherwise set it to DRIVE
         }
         running = true;
     }
@@ -219,7 +228,7 @@ void DmocMotorController::handleTick() {
         running = false;
         setSelectedGear(NEUTRAL); //We will stay in NEUTRAL until we get at least 40 frames ahead indicating continous communications.
     }
-
+*/
     sendCmd1();  //This actually sets our GEAR and our actualstate cycle
     sendCmd2();  //This is our torque command
     sendCmd3();
@@ -255,12 +264,15 @@ void DmocMotorController::sendCmd1() {
 
     //handle proper state transitions
     newstate = DISABLED;
-    if (actualState == DISABLED && (operationState == STANDBY || operationState == ENABLE))
-        newstate = STANDBY;
-    if ((actualState == STANDBY || actualState == ENABLE) && operationState == ENABLE)
-        newstate = ENABLE;
-    if (operationState == POWERDOWN)
-        newstate = POWERDOWN;
+    if (!inhibitStateMachine)
+    {
+        if (actualState == DISABLED && (operationState == STANDBY || operationState == ENABLE))
+            newstate = STANDBY;
+        if ((actualState == STANDBY || actualState == ENABLE) && operationState == ENABLE)
+            newstate = ENABLE;
+        if (operationState == POWERDOWN)
+            newstate = POWERDOWN;
+    }
 
     if (actualState == ENABLE) 
     {
@@ -311,7 +323,7 @@ void DmocMotorController::sendCmd2() {
 
     torqueCommand = 30000; //set offset  for zero torque commanded
 
-    Logger::debug(DMOC645, "Throttle requested: %i", throttleRequested);
+    Logger::debug(DMOC645, "Throttle requested: %i   Actual State: %i   Gear: %i", throttleRequested, actualState, currentGear);
 
     torqueRequested = 0;
     if (actualState == ENABLE) { //don't even try sending torque commands until the DMOC reports it is ready

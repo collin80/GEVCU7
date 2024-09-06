@@ -85,6 +85,7 @@ private:
     int step;
     byte alive;
     uint16_t torqueCommand;
+    uint8_t inhibitStateMachine;
     void timestamp();
 
     void sendCmd1();
