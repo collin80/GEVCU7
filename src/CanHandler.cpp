@@ -368,7 +368,7 @@ void CanHandler::setGVRETMode(bool mode)
 
 void CanHandler::sendFrameToUSB(const CAN_message_t &msg, int busNum)
 {
-    if (!binOutput) return;
+    //if (!binOutput) return;
     if (!gvretMode) return;
     uint8_t buff[20];
     uint32_t now = micros();
@@ -396,7 +396,7 @@ void CanHandler::sendFrameToUSB(const CAN_message_t &msg, int busNum)
 
 void CanHandler::sendFrameToUSB(const CANFD_message_t &msg, int busNum)
 {
-    if (!binOutput) return;
+    //if (!binOutput) return;
     if (!gvretMode) return;
     uint8_t buff[70];
     uint32_t now = micros();

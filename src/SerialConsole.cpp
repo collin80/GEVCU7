@@ -32,6 +32,7 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 extern std::vector<ConfigEntry> sysCfgEntries;
 extern SdFs sdCard;
 extern bool sdCardPresent;
+extern uint32_t bootTime;
 
 uint8_t systype;
 
@@ -276,6 +277,7 @@ FLASHMEM void SerialConsole::printMenu() {
     //Show build # here as well in case people are using the native port and don't get to see the start up messages
     Logger::console("Build number: %u", CFG_BUILD_NUM);
     Logger::console("Build Date: %s at %s", __DATE__, __TIME__);
+    Logger::console("Boot duration: %i", bootTime);
 
     if (motorController) 
     {

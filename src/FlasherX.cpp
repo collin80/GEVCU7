@@ -47,6 +47,9 @@
 #include <string.h>		// strlen(), etc.
 #include "FlashTxx.h"		// TLC/T3x/T4x/TMM flash primitives
 #include "FlasherX.h"
+#include <Watchdog_t4.h>
+
+extern WDT_T4<WDT3> wdt;
 
 const int ledPin = 13;		// LED
 Stream *serial = &Serial;	// Serial (USB) or Serial1, Serial2, etc. (UART)
@@ -110,6 +113,7 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
   while (!hex.eof)  {
 
     read_ascii_line( file, line, sizeof(line) );
+    wdt.feed();
 
     if (parse_hex_line( (const char*)line, hex.data, &hex.addr, &hex.num, &hex.code ) == 0) {
       serial->printf( "abort - bad hex line %s\n", line );
@@ -183,6 +187,8 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
     file->getName(filename, 40);
     file->close();
     SD.sdfs.remove(filename);
+
+    wdt.feed();
 
   // move new program from buffer to flash, free buffer, and reboot
   flash_move( FLASH_BASE_ADDR, buffer_addr, hex.max-hex.min );

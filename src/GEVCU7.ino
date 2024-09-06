@@ -150,8 +150,19 @@ byte i = 0;
 uint8_t sdCardPresence; //0 = not inserted, positive numbers indicate it has been inserted for increasing time (up to a limit)
 bool sdCardWorking; //does it appear that the sdcard is currently working properly and able to be used?
 bool sdCardInitFailed; //got a presence signal but trying to init it failed. Quit trying until next insertion
+uint32_t bootTime;
 
 WDT_T4<WDT3> wdt; //use the RTWDT which should be the safest one
+
+//if not creating intentional start up delays then squash the default start up delay
+#ifndef DEBUG_STARTUP_DELAY
+extern "C" void startup_middle_hook(void);
+extern "C" volatile uint32_t systick_millis_count;
+FLASHMEM void startup_middle_hook(void) {
+    // OPTIONAL FASTER STARTUP: force millis() to be 300 to skip startup delays
+    systick_millis_count = 300;
+}
+#endif
 
 /*
 Here lies where the old "createObjects" function was. There is no need for that.
@@ -295,10 +306,12 @@ FLASHMEM void setup() {
     //whichever is shorter. This basically gives you a 2 second delay upon start up but means
     //you will see the early program output.
 #ifdef DEBUG_STARTUP_DELAY
+    uint32_t timeBeforeSerial = millis();
     Serial.begin(1000000);
     SerialUSB1.begin(1000000);
+    uint32_t timeAfterSerial = millis();
 #endif
-
+    
     deviceManager.sortDeviceTable();
 
     //pretty early in boot we want to know if the previous try crashed
@@ -395,7 +408,7 @@ FLASHMEM void setup() {
     //need to turn this on somewhere. Moved it down pretty low in the power on setup so that things like 
     //firmware updates don't require special handling with the watchdog (at least not power on fw updates)
     //but, it's before any of the non-system device drivers load in case one of them has a bug.
-    //wdt.begin(config);
+    wdt.begin(config);
 
     //force the system device to be set enabled. ALWAYS. It would not be good if it weren't enabled!
     Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
@@ -410,8 +423,9 @@ FLASHMEM void setup() {
     //Also, the system device has to be initialized a bit early.    
     sysDev->setup();
 
+    //log level is set by system device driver just above ^^^^^
     Logger::console("LogLevel: %i", sysConfig->logLevel);
-	//Logger::setLoglevel((Logger::LogLevel)sysConfig->logLevel);
+
 	systemIO.setup();
 	canHandlerBus0.setup();
 	canHandlerBus1.setup();
@@ -440,6 +454,13 @@ FLASHMEM void setup() {
     //deviceManager.sendMessage(DEVICE_WIFI, ADABLUE, MSG_CONFIG_CHANGE, NULL); //Load config into BLE interface
 
 	Logger::info("System Ready");
+    bootTime = millis();
+#ifdef DEBUG_STARTUP_DELAY
+    Logger::info("Start up delay was %ims", timeAfterSerial - timeBeforeSerial);
+#endif
+    //for testing start up speed. Pin 40 is connected to digital input 8 which is easy to grab at the top of a chip
+    //pinMode(40, OUTPUT);
+    //digitalWrite(40, LOW);
     crashHandler.addBreadcrumb(ENCODE_BREAD("BOOTD"));
 
     //just for testing. Don't uncomment for production roms
@@ -479,6 +500,9 @@ void loop() {
     //if (btDevice) btDevice->loop();
 
     canEvents();
+
+    //Reads SerialUSB1 (if statusCSV isn't active) 
+    canHandlerBus0.loop();
     
     wdt.feed(); //must feed the watchdog every so often or it'll get angry
 
@@ -507,7 +531,6 @@ void serialEvent() {
 
 void serialEventUSB1()
 {
-    canHandlerBus0.loop();
 }
 
 //this function blocks out a lot of code that would otherwise be generated to handle exceptions.

@@ -23,6 +23,10 @@
 #include <assert.h>
 #include "../../Logger.h"
 #include "gevcu_port.h"
+#include <Watchdog_t4.h>
+
+extern WDT_T4<WDT3> wdt;
+
 
 #ifndef MAX
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
@@ -84,12 +88,17 @@ esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
 
     size_t size = file->fileSize();
 
+    wdt.feed();
+
     Logger::console("Erasing flash (this may take a while)...");
     err = esp_loader_flash_start(address, size, sizeof(payload));
     if (err != ESP_LOADER_SUCCESS) {
         Logger::console("Erasing flash failed with error %d.", err);
         return err;
     }
+
+    wdt.feed();
+
     Logger::console("Start programming %u bytes\n", size);
 
     size_t binary_size = size;
@@ -111,6 +120,8 @@ esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
         size -= to_read;
         //bin_addr += to_read;
         written += to_read;
+
+        wdt.feed();
 
         int progress = (int)(((float)written / binary_size) * 100);
         if (progress > (lastPercentage + 4))
