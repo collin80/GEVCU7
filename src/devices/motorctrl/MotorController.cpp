@@ -64,6 +64,7 @@ MotorController::MotorController() : Device() {
     lastOdoSave = 0;
     lastOdoAccum = 0;
     odo_accum = 0;
+    slewedTorque = 0.0;
 }
 
 FLASHMEM void MotorController::setup() {
@@ -227,27 +228,37 @@ float MotorController::getSlewedTorque()
     //now, take torqueRequested and compare it to torqueCommand. If it is farther away than our slew rate
     //then just move toward target by slew rate. Otherwise set it directly
     float slewInc = config->torqueSlewRate / (1000000.0f / getTickInterval());
-    if (slewInc < 100.0f) slewInc = 100.0f; //just for sanity. Even a stupidly low value set to torqueSlewRate will still do... something.
+    Logger::debug("slewInc %f  torqueTarget %f", slewInc, torqueRequested);
+    if (slewInc < 0.05f) slewInc = 0.05f; //just for sanity. Even a stupidly low value set to torqueSlewRate will still do... something.
     if (torqueRequested > 0)
     {
-        if (torqueRequested > slewedTorque) slewedTorque += slewInc;
+        if (torqueRequested > slewedTorque) 
+        {
+            slewedTorque += slewInc;
+            if (slewedTorque > torqueRequested) slewedTorque = torqueRequested;
+            Logger::debug("Going up %f", slewedTorque);
+        }
         else 
         {
-            slewedTorque -= (slewInc * 10.0f);
+            slewedTorque -= (slewInc * 5.0f);
             if (slewedTorque < torqueRequested) slewedTorque = torqueRequested;
         }
     }
-    else if (torqueRequested < 0)
+    else if (torqueRequested <= 0)
     {
-        if (torqueRequested < slewedTorque) slewedTorque -= slewInc;
+        if (torqueRequested < slewedTorque)
+        {
+            slewedTorque -= slewInc;
+            if (slewedTorque < torqueRequested) slewedTorque = torqueRequested;
+        }
         else 
         {
-            slewedTorque += (slewInc * 10.0f);
+            slewedTorque += (slewInc * 5.0f);
             if (slewedTorque > torqueRequested) slewedTorque = torqueRequested;
         }
     }
 
-    if (torqueRequested == 0) slewedTorque = 0;
+    //if (torqueRequested == 0) slewedTorque = 0;
 
     return slewedTorque;
 }
