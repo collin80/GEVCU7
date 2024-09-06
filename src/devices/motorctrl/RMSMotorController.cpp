@@ -516,7 +516,7 @@ void RMSMotorController::sendCmdFrame()
 	//Byte 0-1 = Torque command
 	//Byte 2-3 = Speed command (send 0, we don't do speed control)
 	//Byte 4 is Direction (0 = CW, 1 = CCW)
-	//Byte 5 = Bit 0 is Enable, Bit 1 = Discharge (Discharge capacitors)
+	//Byte 5 = Bit 0 is Enable, Bit 1 = Discharge (Discharge capacitors) Bit 2 = Go into speed mode (instead of torque)
 	//Byte 6-7 = Commanded Torque Limit (Send as 0 to accept EEPROM parameter unless we're setting the limit really low for some reason such as faulting or a warning)
 	
 	//Speed set as 0
