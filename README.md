@@ -21,7 +21,7 @@ You will need the following to have any hope of compiling and running the firmwa
 Follow these basic steps to get up and running:
 1. Download the code in this repo, either through git or by downloading a zip
 2. Download and install Visual Studio Code
-3. Go to the extensions tab in VSC and type in "PlatformIO". Install "PlatformIO IDE" from the verified PlatformIO author
+3. Go to the extensions tab in VSC and type in "PlatformIO". The extensions tab looks like four blocks where one is pulled away from the other threee (Also found in View menu). Install "PlatformIO IDE" from the verified PlatformIO author
 4. Once PlatformIO has fully installed it will want you to restart Visual Studio Code. Do so.
 5. Go the File menu and select "Open Folder". Open the folder where your GEVCU7 files are installed. This will cause the PlatformIO extension to find the platformio.ini file and begin to download the needed Teensy support files (Teensyduino). This will take some time. When it is finished there will be new PlatformIO controls at the bottom of the VSC window.
 6. Down there is a new icon that looks like a checkmark. This will let you compile GEVCU7. The Arrow icon next to it will cause it to compile and upload GEVCU7. 
