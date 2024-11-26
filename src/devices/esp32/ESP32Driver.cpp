@@ -175,6 +175,25 @@ struct {
 };
 */
 
+//An example of all the parameters that are possible to set right now. SHould probably make it configurable and
+//not hard coded.
+/*
+system state values:
+1 Initializing System
+2 Precharging System
+3 System Pre-Charged
+4 Battery Heating
+5 Charging
+6 Charged
+7 Ready
+8 Running
+9 Shutdown
+99 Error
+*/
+
+//something needs to calculate these. ESP32 can do timeRunning from millis but system state is more complicated
+// "systemState"
+// "timeRunning"
 
 ESP32Driver::ESP32Driver() : Device()
 {
@@ -184,11 +203,43 @@ ESP32Driver::ESP32Driver() : Device()
     desiredState = ESP32NS::RESET;
     systemAlive = false;
     systemEnabled = false;
+    didInitialStatus = false;
+    statusIdx = 0;
+    lastTime = 0;
+    websocket_json = new DynamicJsonDocument(3000);
 }
 
 void ESP32Driver::earlyInit()
 {
     prefsHandler = new PrefHandler(ESP32);
+}
+
+void ESP32Driver::packageAndSendEntry(StatusEntry *entry)
+{
+    if (!systemAlive) return;
+    //ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
+     
+    (*websocket_json)[entry->statusName] = entry->getValueAsString();
+    //serializeJson(doc, Serial2);
+    //Serial2.println();
+
+    //shall we send it to the serial console for debugging?
+    //if (config->debugMode)
+    //{
+    //    serializeJsonPretty(doc, Serial);
+    //    Serial.println();
+    //}
+}
+
+void ESP32Driver::handleMessage(uint32_t msgType, const void* message)
+{
+    Device::handleMessage(msgType, message); //call base class version as it does important stuff
+    if (msgType == MSG_CONFIG_CHANGE) //status entry has changed somewhere
+    {
+        //for now, basically always send out all changes
+        StatusEntry *entry = (StatusEntry *)message;//force the cast as we know it will be this type
+        packageAndSendEntry(entry);
+    }
 }
 
 void ESP32Driver::setup()
@@ -240,11 +291,14 @@ void ESP32Driver::setup()
     //code could be executing at any time. It's all around safer to have deterministic timing via the tick handler
     tickHandler.attach(this, 40000);
     crashHandler.addBreadcrumb(ENCODE_BREAD("ESPTT") + 0);
+    deviceManager.addStatusObserver(this); //we want all status updates sent to this object
+    lastTime = millis();
 }
 
 void ESP32Driver::disableDevice()
 {
     Device::disableDevice(); //do the common stuff first
+    deviceManager.removeStatusObserver(this);
     digitalWrite(ESP32_ENABLE, LOW); //put the esp32 into reset
     digitalWrite(ESP32_BOOT, HIGH); //use normal mode
     Serial2.end();
@@ -271,6 +325,53 @@ void ESP32Driver::handleTick() {
             currState = ESP32NS::NORMAL;
         }
     }
+
+    if (currState == ESP32NS::NORMAL && systemAlive)
+    {
+        if (!didInitialStatus)
+        {
+            StatusEntry *entry = deviceManager.FindStatusEntryByIdx(statusIdx++);
+            if (entry) packageAndSendEntry(entry);
+            else 
+            {
+                statusIdx = 0; //start over
+                didInitialStatus = true; //getting a nullptr means we hit the end of the list. Stop sending initial full update
+            }
+        }
+        if (millis() > (lastTime + 1000)) //every second send an update to the web server giving the uptime
+        {
+            lastTime = millis();
+            ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
+
+            String buff;
+            int totalSeconds = (lastTime / 1000);
+            int hours = totalSeconds / 3600;
+            int minutes = (totalSeconds / 60) % 60;
+            int seconds = totalSeconds % 60;
+            buff = "";
+            if (hours > 0) buff += String(hours) + ":";
+            if (minutes > 0)
+            {
+                if (minutes < 10) buff += "0";
+                buff += String(minutes) + ":";
+            }
+            if (seconds < 10) buff += "0";
+            buff += String(seconds);
+            (*websocket_json)["timeRunning"] = buff;
+            (*websocket_json)["systemState"] = 8;
+            serializeJson((*websocket_json), Serial2);
+            Serial2.println();
+
+            //shall we send it to the serial console for debugging?
+            if (config->debugMode)
+            {
+                serializeJsonPretty((*websocket_json), Serial);
+                Serial.println();
+            }
+            (*websocket_json).clear();
+        }
+    }
+
     crashHandler.updateBreadcrumb(2); //nothing above would add a breadcrumb so update the existing one
 }
 
@@ -296,11 +397,11 @@ void ESP32Driver::processSerial()
     {
         char c = Serial2.read();
         //if (config->debugMode) Logger::console("Got char from ESP32: %i", c);
-        if (fileSender->isActive())
-        {
-            fileSender->processCharacter(c);
-        }
-        else
+        //if (fileSender->isActive())
+        //{
+        //    fileSender->processCharacter(c);
+        //}
+        //else
         {
             if (c == 0xD0) fileSender->processCharacter(c);
             else if (c == '\n')
@@ -362,7 +463,7 @@ void ESP32Driver::processSerial()
 
                 bufferedLine = "";
             }
-            else if (c < 128) bufferedLine += c;
+            else if ((c < 128) && bufferedLine.length() < 100) bufferedLine += c;
         }
     }    
 }

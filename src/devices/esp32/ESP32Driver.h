@@ -31,6 +31,7 @@ class ESP32Driver : public Device
 {
 public:
     virtual void handleTick();
+    virtual void handleMessage(uint32_t msgType, const void* message);
     virtual void setup();
     void earlyInit();
     void disableDevice();
@@ -49,6 +50,7 @@ private:
     void sendDeviceList();
     void sendDeviceDetails(uint16_t deviceID);
     void processConfigReply(JsonDocument* doc);
+    void packageAndSendEntry(StatusEntry *entry);
 
     String bufferedLine;
     ESP32NS::ESP32_STATE currState;
@@ -57,6 +59,10 @@ private:
     bool systemEnabled;
     uint8_t serialReadBuffer[1024];
     uint8_t serialWriteBuffer[1024];
+    DynamicJsonDocument *websocket_json;
     SerialFileSender *fileSender;
+    bool didInitialStatus;
+    int statusIdx;
+    uint32_t lastTime;
 };
 
