@@ -37,11 +37,9 @@ void FaultHandler::setup()
 
     Logger::info("Initializing Fault Handler", FAULTSYS, this);
 
-    //loadFromEEPROM();
+    loadFromEEPROM();
 
-    //Use the heartbeat interval because it's slow and already exists so we can piggyback on the interrupt
-    //so as to not create more timers than necessary.
-    //tickHandler.attach(this, CFG_TICK_INTERVAL_HEARTBEAT);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_FAULTHANDLER);
 }
 
 
@@ -54,7 +52,6 @@ void FaultHandler::handleTick()
 
 uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code, bool ongoing = false)
 {
-    return 0; //this function is broken.
     bool incPtr = false;
     globalTime = baseTime + (millis() / 100);
 
@@ -66,7 +63,10 @@ uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code, bool ongoing =
         {
             found = true;
             //faultList[j].timeStamp = globalTime;
+            //Logger::error("Fault still ongoing");
             faultList[j].ongoing = ongoing;
+            //update the info in EEPROM
+            memCache->Write(EE_FAULT_LOG + EEFAULT_FAULTS_START + (sizeof(FAULT) * j), &faultList[j], sizeof(FAULT));
             break; //quit searching
         }
     }
@@ -74,16 +74,16 @@ uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code, bool ongoing =
     //nothing ongoing to register a new one
     if (!found)
     {
+        //Logger::error("New fault");
         faultList[faultWritePointer].timeStamp = globalTime;
         faultList[faultWritePointer].ack = false;
         faultList[faultWritePointer].device = device;
         faultList[faultWritePointer].faultCode = code;
         faultList[faultWritePointer].ongoing = ongoing;
+        //write to EEPROM cache
+        memCache->Write(EE_FAULT_LOG + EEFAULT_FAULTS_START + (sizeof(FAULT) * faultWritePointer), &faultList[faultWritePointer], sizeof(FAULT));
         incPtr = true;
     }
-
-    //write back to EEPROM cache
-    memCache->Write(EE_FAULT_LOG + EEFAULT_FAULTS_START + sizeof(FAULT) * faultWritePointer, &faultList[faultWritePointer], sizeof(FAULT));
 
     if (incPtr)
     {
@@ -96,6 +96,8 @@ uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code, bool ongoing =
         //Also announce fault on the console
         Logger::error(FAULTSYS, "Fault %x raised by device %x at uptime %i", code, device, globalTime);
     }
+
+    return faultWritePointer;
 }
 
 void FaultHandler::cancelOngoingFault(uint16_t device, uint16_t code)
@@ -130,10 +132,12 @@ void FaultHandler::loadFromEEPROM()
     memCache->Read(EE_FAULT_LOG, &validByte);
     if (validByte == 0xB2) //magic byte value for a valid fault cache
     {
+        Logger::debug("Fault system found valid EEPROM records. Loading them.");
         memCache->Read(EE_FAULT_LOG + EEFAULT_READPTR, &faultReadPointer);
         memCache->Read(EE_FAULT_LOG + EEFAULT_WRITEPTR, &faultWritePointer);
         memCache->Read(EE_FAULT_LOG + EEFAULT_RUNTIME, &globalTime);
         baseTime = globalTime;
+        Logger::debug("Loaded basetime: %i", baseTime);
         for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
         {
             memCache->Read(EE_FAULT_LOG + EEFAULT_FAULTS_START + sizeof(FAULT) * i, &faultList[i], sizeof(FAULT));
@@ -141,6 +145,7 @@ void FaultHandler::loadFromEEPROM()
     }
     else //reinitialize the fault cache storage
     {
+        Logger::debug("No valid fault records exist. Initializing the fault EEPROM.");
         validByte = 0xB2;
         memCache->Write(EE_FAULT_LOG, validByte);
         memCache->Write(EE_FAULT_LOG + EEFAULT_READPTR, (uint16_t)0);
@@ -181,19 +186,19 @@ void FaultHandler::writeFaultToEEPROM(int faultnum)
     }
 }
 
-bool FaultHandler::getNextFault(FAULT *fault)
+FAULT *FaultHandler::getNextFault()
 {
     uint16_t j;
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
         j = (faultReadPointer + i + 1) % CFG_FAULT_HISTORY_SIZE;
         if (faultList[j].ack == false) {
-            fault = &faultList[j];
             faultReadPointer = j;
-            return true;
+            return &faultList[j];            
         }
     }
-    return false;
+    Logger::info("No fault to return");
+    return nullptr;
 }
 
 bool FaultHandler::getFault(uint16_t fault, FAULT *outFault)

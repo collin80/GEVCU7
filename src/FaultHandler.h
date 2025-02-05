@@ -40,6 +40,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 extern MemCache *memCache;
 
+//this should likely be the same as the heartbeat to make sure they use the same timer
+#define CFG_TICK_INTERVAL_FAULTHANDLER                 2000000
+
 //structure to use for storing and retrieving faults.
 //Stores the info a fault record will contain.
 typedef struct {
@@ -56,7 +59,7 @@ public:
     FaultHandler(); //constructor
     uint16_t raiseFault(uint16_t device, uint16_t code, bool ongoing); //raise a new fault. Returns the fault # where this was stored
     void cancelOngoingFault(uint16_t device, uint16_t code); //if this fault was registered as ongoing then cancel it (set not ongoing) otherwise do nothing
-    bool getNextFault(FAULT*); //get the next un-ack'd fault. Will also get first fault if the first call and you forgot to call getFirstFault
+    FAULT* getNextFault(); //get the next un-ack'd fault. Will also get first fault if the first call and you forgot to call getFirstFault
     bool getFault(uint16_t fault, FAULT*);
     uint16_t getFaultCount();
     void handleTick();
