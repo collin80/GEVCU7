@@ -52,7 +52,18 @@ void Throttle::setup()
     cfgEntries.push_back(entry);
     entry = {"TFWD", "Tenths of a percent of pedal where forward motion starts", &config->positionForwardMotionStart, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TMAP", "Tenths of a percent of pedal where 50% throttle will be", &config->positionHalfPower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
+    //entry = {"TMAP", "Tenths of a percent of pedal where 50% throttle will be", &config->positionHalfPower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
+    entry = {"TMAP1IN", "Tenths of a percent of pedal input where first map point is", &config->mapPoints[0].inputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"TMAP1OUT", "Tenths of a percent of throttle output where first map point is", &config->mapPoints[0].outputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"TMAP2IN", "Tenths of a percent of pedal input where second map point is", &config->mapPoints[1].inputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"TMAP2OUT", "Tenths of a percent of throttle output where second map point is", &config->mapPoints[1].outputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"TMAP3IN", "Tenths of a percent of pedal input where third map point is", &config->mapPoints[2].inputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"TMAP3OUT", "Tenths of a percent of throttle output where third map point is", &config->mapPoints[2].outputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
     cfgEntries.push_back(entry);
     entry = {"TMINRN", "Percent of full torque to use for min throttle regen", &config->minimumRegen, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr};
     cfgEntries.push_back(entry);
@@ -135,7 +146,24 @@ int16_t Throttle::mapPedalPosition(int16_t pedalPosition) {
     }
 
     if (pedalPosition >= config->positionForwardMotionStart) {
-        if (pedalPosition <= config->positionHalfPower) {
+        //start of throttle map up to first map point
+        throttleLevel = map(pedalPosition, config->positionForwardMotionStart, config->mapPoints[0].inputPosition, 
+                                0, config->mapPoints[0].outputPosition);
+
+        if ( (pedalPosition >= config->mapPoints[0].inputPosition) && (config->mapPoints[1].inputPosition > config->mapPoints[0].inputPosition) ) 
+            throttleLevel = map(pedalPosition, config->mapPoints[0].inputPosition, config->mapPoints[1].inputPosition, 
+                                config->mapPoints[0].outputPosition, config->mapPoints[1].outputPosition);
+
+        if ( (pedalPosition >= config->mapPoints[1].inputPosition) && (config->mapPoints[2].inputPosition > config->mapPoints[1].inputPosition) ) 
+            throttleLevel = map(pedalPosition, config->mapPoints[1].inputPosition, config->mapPoints[2].inputPosition, 
+                                config->mapPoints[1].outputPosition, config->mapPoints[2].outputPosition);
+
+        if ( (pedalPosition >= config->mapPoints[2].inputPosition) && (config->mapPoints[2].inputPosition < 1000) ) 
+            throttleLevel = map(pedalPosition, config->mapPoints[2].inputPosition, 1000, 
+                                config->mapPoints[2].outputPosition, 1000);
+
+
+        /*if (pedalPosition <= config->positionHalfPower) {
             range = config->positionHalfPower - config->positionForwardMotionStart;
             value = pedalPosition - config->positionForwardMotionStart;
             if (range != 0) // prevent div by zero, should result in 0 throttle if half==startFwd
@@ -144,7 +172,8 @@ int16_t Throttle::mapPedalPosition(int16_t pedalPosition) {
             range = 1000 - config->positionHalfPower;
             value = pedalPosition - config->positionHalfPower;
             throttleLevel = 500 + 500 * value / range;
-        }
+        }*/
+
     }
     //Logger::debug("throttle level: %d", throttleLevel);
     
@@ -236,13 +265,19 @@ void Throttle::loadConfiguration() {
         prefsHandler->read("RegenMin", &config->positionRegenMinimum, 270);
         prefsHandler->read("RegenMax", &config->positionRegenMaximum, 0);
         prefsHandler->read("ForwardStart", &config->positionForwardMotionStart, 280);
-        prefsHandler->read("MapPoint", &config->positionHalfPower, 750);
+        //prefsHandler->read("MapPoint", &config->positionHalfPower, 750);
+        prefsHandler->read("MapPoint1I", &config->mapPoints[0].inputPosition, 750);
+        prefsHandler->read("MapPoint1O", &config->mapPoints[0].outputPosition, 500);
+        prefsHandler->read("MapPoint2I", &config->mapPoints[1].inputPosition, 750);
+        prefsHandler->read("MapPoint2O", &config->mapPoints[1].outputPosition, 500);
+        prefsHandler->read("MapPoint3I", &config->mapPoints[2].inputPosition, 750);
+        prefsHandler->read("MapPoint3O", &config->mapPoints[2].outputPosition, 500);
         prefsHandler->read("Creep", &config->creep, 0);
         prefsHandler->read("MinAccelRegen", &config->minimumRegen, 0);
         prefsHandler->read("MaxAccelRegen", &config->maximumRegen, 70);
     
-    Logger::debug(THROTTLE, "RegenMax: %i RegenMin: %i Fwd: %i Map: %i", config->positionRegenMaximum, config->positionRegenMinimum,
-                  config->positionForwardMotionStart, config->positionHalfPower);
+    //Logger::debug(THROTTLE, "RegenMax: %i RegenMin: %i Fwd: %i Map: %i", config->positionRegenMaximum, config->positionRegenMinimum,
+    //              config->positionForwardMotionStart, config->positionHalfPower);
     Logger::debug(THROTTLE, "MinRegen: %d MaxRegen: %d", config->minimumRegen, config->maximumRegen);
 }
 
@@ -257,7 +292,13 @@ void Throttle::saveConfiguration() {
     prefsHandler->write("RegenMin", config->positionRegenMinimum);
     prefsHandler->write("RegenMax", config->positionRegenMaximum);
     prefsHandler->write("ForwardStart", config->positionForwardMotionStart);
-    prefsHandler->write("MapPoint", config->positionHalfPower);
+    //prefsHandler->write("MapPoint", config->positionHalfPower);
+    prefsHandler->write("MapPoint1I", config->mapPoints[0].inputPosition);
+    prefsHandler->write("MapPoint1O", config->mapPoints[0].outputPosition);
+    prefsHandler->write("MapPoint2I", config->mapPoints[1].inputPosition);
+    prefsHandler->write("MapPoint2O", config->mapPoints[1].outputPosition);
+    prefsHandler->write("MapPoint3I", config->mapPoints[2].inputPosition);
+    prefsHandler->write("MapPoint3O", config->mapPoints[2].outputPosition);
     prefsHandler->write("Creep", config->creep);
     prefsHandler->write("MinAccelRegen", config->minimumRegen);
     prefsHandler->write("MaxAccelRegen", config->maximumRegen);

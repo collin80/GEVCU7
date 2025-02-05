@@ -69,6 +69,11 @@ struct RawSignalData {
     int32_t input3; // e.g. pot #3 (optional)
 };
 
+struct ThrottleMapPoint {
+    uint16_t inputPosition;
+    uint16_t outputPosition;
+};
+
 /*
  * A abstract class to hold throttle configuration parameters.
  * Can be extended by the subclass.
@@ -76,7 +81,8 @@ struct RawSignalData {
 class ThrottleConfiguration: public DeviceConfiguration {
 public:
     uint16_t positionRegenMaximum, positionRegenMinimum; // throttle position where regen is highest and lowest
-    uint16_t positionForwardMotionStart, positionHalfPower; // throttle position where forward motion starts and the mid point of throttle
+    uint16_t positionForwardMotionStart; // throttle position where forward motion starts and the mid point of throttle
+    ThrottleMapPoint mapPoints[3];
     uint8_t maximumRegen; // percentage of max torque allowable for regen at maximum level
     uint8_t minimumRegen; // percentage of max torque allowable for regen at minimum level
     uint8_t creep; // percentage of torque used for creep function (imitate creep of automatic transmission, set 0 to disable)
