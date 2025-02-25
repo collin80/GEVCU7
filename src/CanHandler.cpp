@@ -39,7 +39,6 @@ CAN3 is CAN-FD capable. GEVCU7A boards failed to get an FD transceiver though.
 
 Not using hardware filtering right now. CAN buses aren't really that fast and this is a
 very fast chip. But, still it might not be a bad idea to eventually try it.
-FIFOs are not available for CAN-FD mode but CAN-FD mode is not being attempted right now
 
 Should allow for the GEVCU7 board to be used with SavvyCAN for easy debugging. Maybe don't even
 support anything other than sending frames back and forth - no bus config? Set GEVCU to present
@@ -186,7 +185,7 @@ void CanHandler::setup()
             fdTimings.baudrate = realSpeed;
             fdTimings.baudrateFD = fdSpeed;
             fdTimings.clock = CLK_60MHz;
-            fdTimings.propdelay = 190;
+            fdTimings.propdelay = 190; //important to get pretty close. If you don't, you will get comm errors
             fdTimings.bus_length = 1;
             fdTimings.sample = 75;
             Can2.setBaudRateAdvanced(fdTimings, 1, 1);
@@ -1060,6 +1059,8 @@ void CanHandler::sendFrameFD(const CANFD_message_t& framefd)
     if (gvretMode) sendFrameToUSB(framefd, 2);
 }
 
+//supports multi-frame sending but doesn't observe flow control
+//or make any attempt to create delays between frames. Not ideal.
 void CanHandler::sendISOTP(int id, int length, uint8_t *data)
 {
     CAN_message_t frame;

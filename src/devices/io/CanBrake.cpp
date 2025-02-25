@@ -37,6 +37,8 @@ CanBrake::CanBrake() : Throttle() {
 
     commonName = "CANBus brake";
     shortName = "CANBrake";
+    deviceId = CANBRAKEPEDAL;
+    deviceType = DEVICE_BRAKE;
 }
 
 void CanBrake::earlyInit()
@@ -192,17 +194,6 @@ int16_t CanBrake::mapPedalPosition(int16_t pedalPosition) {
     brakeLevel -= 10 * config->minimumRegen;
 
     return brakeLevel;
-}
-
-DeviceId CanBrake::getId() {
-    return CANBRAKEPEDAL;
-}
-
-/*
- * Return the device type
- */
-DeviceType CanBrake::getType() {
-    return (DEVICE_BRAKE);
 }
 
 void CanBrake::loadConfiguration() {

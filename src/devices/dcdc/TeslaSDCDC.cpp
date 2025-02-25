@@ -4,6 +4,7 @@ TSDCDCController::TSDCDCController() : DCDCController()
 {
     commonName = "Tesla Model S DC-DC";
     shortName = "TS-DCDC";
+    deviceId = TESLA_S_DCDC;
 }
 
 /*
@@ -44,6 +45,18 @@ void TSDCDCController::handleCanFrame(const CAN_message_t &frame)
         {
             isFaulted = true;
             isEnabled = false;
+            if (frame.buf[0] & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
+            if (frame.buf[0] & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
+            if (frame.buf[0] & 4) faultHandler.raiseFault(getId(), DCDC_FAULT_OUTPUTV);
+            if (frame.buf[0] & 8) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
+            if (frame.buf[0] & 0x10) faultHandler.raiseFault(getId(), DCDC_FAULT_INPUTV);
+            if (frame.buf[0] & 0x20) faultHandler.raiseFault(getId(), DCDC_FAULT_OUTPUTV);
+            if (frame.buf[0] & 0x40) faultHandler.raiseFault(getId(), DCDC_FAULT_OUTPUTA);
+            if (frame.buf[0] & 0x80) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
+            if (frame.buf[1] & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
+            if (frame.buf[1] & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
+            if (frame.buf[1] & 4) faultHandler.raiseFault(getId(), DCDC_FAULT_OUTPUTV);
+            if (frame.buf[1] & 8) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
         }
     }
 }
@@ -102,10 +115,6 @@ void TSDCDCController::sendCmd()
     attachedCANBus->sendFrame(output);
     Logger::debug("Tesla S DC-DC cmd: %X %X %X ",output.id, output.buf[0], output.buf[1],output.buf[2]);
     crashHandler.addBreadcrumb(ENCODE_BREAD("TSDCC") + 1);
-}
-
-DeviceId TSDCDCController::getId() {
-    return (TESLA_S_DCDC);
 }
 
 uint32_t TSDCDCController::getTickInterval()

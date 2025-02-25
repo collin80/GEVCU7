@@ -65,7 +65,10 @@ void Heartbeat::handleTick() {
         digitalWrite(BLINK_LED, LOW);
     }
     led = !led;
-
+    
+    //Yes, that sick vomit taste in the back of your throat is valid. Why does the heartbeat code have a debugging
+    //routine for the throttle and system I/O? Well, it's an odd place but it works. Not sure of where better 
+    //to put a routine that outputs the system status on demand.
     if (throttleDebug) {
         MotorController *motorController = deviceManager.getMotorController();
         Throttle *accelerator = deviceManager.getAccelerator();

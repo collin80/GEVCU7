@@ -58,7 +58,6 @@ public:
 
     CodaMotorController();
     void timestamp();
-    DeviceId getId();
     uint32_t getTickInterval();
 
 

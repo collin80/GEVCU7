@@ -20,6 +20,8 @@ PowerkeyPad::PowerkeyPad(void)
 
 	commonName = "PowerKey Pro 2600";
     shortName = "PowerKey";
+	deviceId = POWERKEYPRO;
+	deviceType = DEVICE_IO;
 }
 
 void PowerkeyPad::earlyInit()
@@ -109,11 +111,6 @@ void PowerkeyPad::handleSDOResponse(SDO_FRAME &frame)
 void PowerkeyPad::handleMessage(uint32_t msgType, void* data)
 {
 	CANIODevice::handleMessage(msgType, data);
-}
-
-DeviceId PowerkeyPad::getId()
-{
-	return POWERKEYPRO;
 }
 
 void PowerkeyPad::setDigitalOutput(int which, bool hi)

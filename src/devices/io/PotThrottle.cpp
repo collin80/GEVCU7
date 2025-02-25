@@ -32,6 +32,7 @@
 PotThrottle::PotThrottle() : Throttle() {    
     commonName = "Potentiometer (analog) accelerator";
     shortName = "PotAccel";
+    deviceId = POTACCELPEDAL;
 }
 
 void PotThrottle::earlyInit()
@@ -116,7 +117,7 @@ bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
         if (status == OK)
             Logger::error(POTACCELPEDAL, "ERR_HIGH_T1: throttle 1 value out of range: %i", calcThrottle1);
         status = ERR_HIGH_T1;
-        faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_HIGH_A, true);
+        faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_HIGH_A);
         return false;
     }
     else
@@ -129,7 +130,7 @@ bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
         if (status == OK)
             Logger::error(POTACCELPEDAL, "ERR_LOW_T1: throttle 1 value out of range: %i ", calcThrottle1);
         status = ERR_LOW_T1;
-        faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_LOW_A, true);
+        faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_LOW_A);
         return false;
     }
     else
@@ -145,7 +146,7 @@ bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
             if (status == OK)
                 Logger::error(POTACCELPEDAL, "ERR_HIGH_T2: throttle 2 value out of range: %i", calcThrottle2);
             status = ERR_HIGH_T2;
-            faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_HIGH_B, true);
+            faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_HIGH_B);
             return false;
         }
         else
@@ -174,7 +175,7 @@ bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
                     Logger::error(POTACCELPEDAL, "Sum of throttle 1 (%i) and throttle 2 (%i) exceeds max variance from 1000 (%i)",
                                   calcThrottle1, calcThrottle2, ThrottleMaxErrValue);
                 status = ERR_MISMATCH;
-                faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB, true);
+                faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB);
                 return false;
             }
             else
@@ -186,14 +187,14 @@ bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
                 if (status == OK)
                     Logger::error(POTACCELPEDAL, "throttle 1 too high (%i) compared to 2 (%i)", calcThrottle1, calcThrottle2);
                 status = ERR_MISMATCH;
-                faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB, true);
+                faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB);
                 return false;
             }
             else if ((calcThrottle2 - ThrottleMaxErrValue) > calcThrottle1) { //then throttle2 is too large compared to 1
                 if (status == OK)
                     Logger::error(POTACCELPEDAL, "throttle 2 too high (%i) compared to 1 (%i)", calcThrottle2, calcThrottle1);
                 status = ERR_MISMATCH;
-                faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB, true);
+                faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB);
                 return false;
             }
             else
@@ -227,13 +228,6 @@ int16_t PotThrottle::calculatePedalPosition(RawSignalData *rawSignal) {
         calcThrottle1 = (calcThrottle1 + calcThrottle2) / 2; // now the average of the two
     }
     return calcThrottle1;
-}
-
-/*
- * Return the device ID
- */
-DeviceId PotThrottle::getId() {
-    return (POTACCELPEDAL);
 }
 
 /*

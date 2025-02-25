@@ -85,7 +85,6 @@ public:
 	void handleSDOResponse(SDO_FRAME &frame);
 
     void handleMessage(uint32_t, void*);
-	DeviceId getId();
 
 private:
 	int deviceID;

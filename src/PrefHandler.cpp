@@ -4,7 +4,7 @@
  * Abstracts away the particulars of how preferences are stored.
  * Transparently supports main and "last known good" storage and retrieval
  *
-Copyright (c) 2013 Collin Kidder, Michael Neuweiler, Charles Galpin
+Copyright (c) 2013-2025 Collin Kidder, Michael Neuweiler, Charles Galpin
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -206,6 +206,13 @@ void PrefHandler::LKG_mode(bool mode) {
     else lkg_address = EE_MAIN_OFFSET;
 }
 
+/*
+The whole system works on hashes now. All settings are stored as a hash of the setting name plus
+the length, followed by the actual data bytes. This allows for storing anything you want in preferences
+with nice descriptive names. Below are a series of functions that transparently implement this for the 
+actual drivers
+*/
+
 //given a hash value it looks for that in the table. If it finds
 //the hash it'll return 5 bytes higher which skips the hash and length
 //so the return location will be the start of the actual value itself.
@@ -256,6 +263,9 @@ uint32_t PrefHandler::findEmptySettingLoc()
     return 0xFFFFFFFFul;
 }
 
+//Uses the above two funcctions to input a key name and see where it is stored
+//(if it exists). Can create a new entry if desired. Returns the location of 
+//the setting. Not to be called by external code.
 uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
 {
     Logger::avalanche("Key look up for %s", key);
@@ -281,6 +291,9 @@ uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
     return address;
 }
 
+//Now we have the actual functions that drivers will call to read and write things
+
+//Given a key, write an 8 bit value with that key name
 bool PrefHandler::write(const char *key, uint8_t val) {
     uint32_t address = keyToAddress(key, true);
     uint8_t len;
@@ -370,7 +383,6 @@ bool PrefHandler::write(const char *key, double val) {
     //then return whether we could write the value into the memory cache    
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
-
 
 bool PrefHandler::write(const char *key, const char *val, size_t maxlen) {
     uint32_t address = keyToAddress(key, true);    
@@ -577,5 +589,3 @@ void PrefHandler::resetEEPROM()
     }
     memCache->FlushAllPages();
 }
-
-

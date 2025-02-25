@@ -27,8 +27,6 @@ public:
     void setup();
     void earlyInit();
     void handleTick();
-    DeviceId getId();
-    DeviceType getType();
     uint32_t getTickInterval();
 
     void loadConfiguration();

@@ -54,6 +54,7 @@ BrusaMotorController::BrusaMotorController() : MotorController() {
 
     commonName = "Brusa DMC5 Inverter";
     shortName = "DMC5";
+    deviceId = BRUSA_DMC5;
 }
 
 void BrusaMotorController::earlyInit()
@@ -325,13 +326,6 @@ void BrusaMotorController::processTemperature(const uint8_t data[]) {
 
     if (Logger::isDebug())
         Logger::debug(BRUSA_DMC5, "temperature: inverter: %fC, motor: %fC, system: %fC", (float)temperatureInverter, (float)temperatureMotor, (float)temperatureSystem);
-}
-
-/*
- * Return the device id of this device
- */
-DeviceId BrusaMotorController::getId() {
-    return BRUSA_DMC5;
 }
 
 /*

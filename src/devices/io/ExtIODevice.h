@@ -64,7 +64,6 @@ public:
     virtual void handleMessage(uint32_t, void*);
     void loadConfiguration();
     void saveConfiguration();
-    DeviceType getType();    
 
 protected:
 	int numDigitalOutputs;

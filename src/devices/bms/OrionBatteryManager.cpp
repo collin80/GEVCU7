@@ -33,6 +33,7 @@ OrionBatteryManager::OrionBatteryManager() : BatteryManager() {
     allowDischarge = false;
     commonName = "Orion BMS";
     shortName = "OrionBMS";
+    deviceId = ORIONBMS;
 }
 
 void OrionBatteryManager::earlyInit()
@@ -96,11 +97,6 @@ void OrionBatteryManager::handleTick() {
     checkAlive(4000);
     //sendKeepAlive();
 
-}
-
-DeviceId OrionBatteryManager::getId()
-{
-    return (ORIONBMS);
 }
 
 bool OrionBatteryManager::hasPackVoltage()

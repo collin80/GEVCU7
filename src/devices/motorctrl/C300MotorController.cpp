@@ -38,6 +38,7 @@ C300MotorController::C300MotorController() : MotorController() {
 //	maxTorque = 2000;
     commonName = "C300 Inverter";
     shortName = "C300Inv";
+    deviceId = C300INV;
 }
 
 void C300MotorController::earlyInit()
@@ -374,10 +375,6 @@ void C300MotorController::taperRegen()
         int32_t calc = (torqueRequested * taper) / range;
         torqueRequested = (int16_t)calc;
     }
-}
-
-DeviceId C300MotorController::getId() {
-    return (C300INV);
 }
 
 uint32_t C300MotorController::getTickInterval()

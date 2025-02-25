@@ -32,6 +32,8 @@
 Precharger::Precharger() : Device() {    
     commonName = "Precharge Controller";
     shortName = "Precharge";
+    deviceType = DEVICE_MISC;
+    deviceId = PRECHARGER;
     state = PRECHARGE_INIT;
     targetVoltage = 0;
     isPrecharged = false;
@@ -193,18 +195,6 @@ void Precharger::handleTick() {
         Logger::error("Precharge faulted! Ensuring precharge relay and main contactor are open!");
         break;
     }
-}
-
-/*
- * Return the device ID
- */
-DeviceId Precharger::getId() {
-    return (PRECHARGER);
-}
-
-DeviceType Precharger::getType()
-{
-    return DEVICE_MISC;
 }
 
 /*

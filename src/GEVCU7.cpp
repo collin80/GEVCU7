@@ -3,7 +3,7 @@
  New hardware version 7/20/2021 for Hardware 7.0
  Author: Collin Kidder
  
-Copyright (c) 2013-2021 Collin Kidder, Michael Neuweiler, Charles Galpin
+Copyright (c) 2013-2025 Collin Kidder, Michael Neuweiler, Charles Galpin
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -31,64 +31,17 @@ Notes on GEVCU7 conversion. This is somewhat a stream of consciousness but cover
 the state of the code and where I plan to take it.
 
 
-Quite far into the conversion process. it compiles
-now and most stuff should work. There have been two prototypes so far. The first
-one wasn't so good but the second is useable with minor hardware fixes. Then we made
-a third revision which is what is current. This revision does not have any required
-board level bodges to get it working. The one remaining thing is that some voltage
-bleeds through the 5V regulator and turns on the 12v light but a little bit dimly.
-
-
-Both the onboard ESP32 and the MicroMod adapter itself can be updated
-via files on the sdcard. 
-
-
-The board now presents as two serial ports. The first one is the standard
-serial console where settings can be changed. The second port is a GVRET compatible
-binary protocol port for use with SavvyCAN. This port will forward all traffic on
-all three buses to SavvyCAN for debugging and analysis. It should be possible to
-send traffic down any of the three buses from SavvyCAN as well.
-
-I'm considering dropping the secord serial port and consolidating that functionality
-to the first one on a trigger (probably 0xE7 like what puts GVRET into binary mode)
-as character 0xE7 should not normally be sent by text traffic. This gives room to
-set up as "MTP + Serial" which would allow for accessing the SDCard over USB without having
-to remove it. However, while testing has shown that this can work, it seems kind of touchy,
-the files get returned a little corrupted (maybe?) and changes won't really show up properly.
-It might be interesting but it seems to have its fair share of problems.
+This revision does not have any required board level bodges to get it working. 
+The one remaining thing is that some voltage bleeds through the 5V regulator and 
+turns on the 12v light but a little bit dimly. This is still happening in
+production hardware! Whoops! The fix is to add a diode so that 
+voltage cannot backfeed through the regulator.
  
-
 D0 in documentation is Teensy Pin 4 and is connected to DIG_INT (interrupt from 16 way I/O expander)
 D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card is inserted when line is low)
 
-
-I'm thinking to convert the tick interface to instead run each device as a thread using TeensyThreads which comes
-with the TeensyDuino install. These threads can then be preempted if necessary which keeps device latency more 
-predictable as then no device can tie up the system for too long. But, threads are only going to really work with
-normal functions not member functions of classes. This might still work if the TickHandler class has a trampoline 
-function that takes a pointer to an object whose class derives from Device. Then the handleTick function can be called 
-appropriately. This would necessitate that actually there be a function (still not in a class) that does nothing but 
-wait for a specific amount of time then calls handleTick. Likewise, the message passing could be done this same basic 
-way by having a function that spins waiting for a message then dispatches it. But, TeensyThreads doesn't really 
-support that so it may be a poor choice.
-
-Another advantage of this idea is the ability for the system to have more threads that monitor things,
-do logging, etc. But, having multiple threads that can preempt means that a lot of things would need to be thread safe
-which currently are not. So, this might be a pretty big and daunting change to make. But, generally an ECU will run
-an RTOS (real time operating system) for the explicit reason that it tends to be necessary to have dependable timing
-constraints for things in an ECU. So, don't discount this idea just yet. It may be something that happens. If it does
-happen it'll be mostly transparent to the actual drivers so nobody should have to worry about this except for me.
-
-The currently existing scheme is basically cooperative multi-tasking as there's a timer tick queue and it is 
-dispatched in order and so devices get callbacks at interval and CAN data can more or less be immediately
-sent to the CAN handler for a given device. There also is already existing a message passing system. Nothing
-in the whole system has any sort of sychronization but since most everything is cooperatively tasked
-that may be OK. Even the CAN messages are really only dispatched by the events calls in the main loop. So, really
-nothing that a device driver would do should ever step on other code. It's a bit "icky" that everything is
-cooperatively tasked but we're talking about a 600MHz processor running pretty basic code. Your device driver should
-not be taking that many cycles. The only thing to really watch out for is to never use wait loops like the "delay"
-function. Don't delay for 500ms, come back later. 
-
+Maybe consider switching to an RTOS but it seems like quite a large change and would probably break
+things all over the place. This is not an idea to take lightly. May never happen.
 
 There should be a way for the system to signal it wants to shut down and either stay down or reboot. In those cases,
 it should be possible for devices to render things safe. For instance, a motor controller driver would probably
@@ -113,9 +66,6 @@ to the rest of the car. Then you're hoping that GEVCU7 is stable enough to reall
 Otherwise nothing works at all. Though, if GEVCU7 dies nothing is really going to work that great in any event. If it is
 controlling the inverter then you aren't going unless it's working. So, this might be viable. 
 
-
-It is now possible to dump and load the entire EEPROM to/from SDCard. It's also possible to get both directions
-in JSON instead. This is much easier to work with.
 */
 
 #include "GEVCU.h"
@@ -174,10 +124,7 @@ link it. If you want secret device drivers just don't push them into public sour
 repositories. Now drivers are basically self contained.
 NOTE: This means that the preference handler should not be initialized until
 the setup() method and that the device manager must be already instantiated
-when the devices try to register. Hopefully this happens but if not it might
-be necessary to switch the device handler to a singleton and have it automatically
-create itself on first access.
-So far, so good. It seems this functionality is working properly.
+when the devices try to register. 
 */
 void initializeDevices() {
     //heartbeat is always enabled now
@@ -314,7 +261,7 @@ FLASHMEM void setup() {
     pinMode(ESP32_ENABLE, OUTPUT);
     pinMode(ESP32_BOOT, OUTPUT);
 
-    digitalWrite(ESP32_ENABLE, LOW);
+    digitalWrite(ESP32_ENABLE, LOW); //ESP32 starts turned off
     digitalWrite(ESP32_BOOT, HIGH);
 
     Logger::setLoglevel((Logger::LogLevel)0); //force debugging logging on during early start up
@@ -335,6 +282,7 @@ FLASHMEM void setup() {
     //pretty early in boot we want to know if the previous try crashed
     crashHandler.captureCrashDataOnStartup();
 
+    //breadcrumb system will give you a sort of stack trace if things crash
     crashHandler.addBreadcrumb(ENCODE_BREAD("START"));
 
     if (Serial)
@@ -444,6 +392,7 @@ FLASHMEM void setup() {
     //log level is set by system device driver just above ^^^^^
     Logger::console("LogLevel: %i", sysConfig->logLevel);
 
+    //initialize all the hardware I/O (CAN, digital, analog, etc)
 	systemIO.setup();
 	canHandlerBus0.setup();
 	canHandlerBus1.setup();
@@ -468,8 +417,6 @@ FLASHMEM void setup() {
     serialConsole = new SerialConsole(memCache, heartbeat);
     serialConsole->setup();
 	serialConsole->printMenu();
-	//btDevice = static_cast<ADAFRUITBLE *>(deviceManager.getDeviceByID(ADABLUE));
-    //deviceManager.sendMessage(DEVICE_WIFI, ADABLUE, MSG_CONFIG_CHANGE, NULL); //Load config into BLE interface
 
 	Logger::info("System Ready");
     bootTime = millis();
@@ -488,7 +435,10 @@ FLASHMEM void setup() {
     //sendTestCANFrames();
     //testGEVCUHardware();
     //deviceManager.printAllStatusEntries();
-    //    *(volatile uint32_t *)0x30000000 = 0; // causes Data_Access_Violation if you uncomment it. Only for testing crash handler
+
+    // causes Data_Access_Violation if you uncomment it. Only for testing crash handler
+    //I know you're tempted to try it. Don't, things will crash instantly at this next line.
+    //    *(volatile uint32_t *)0x30000000 = 0; 
 
 }
 
@@ -496,20 +446,9 @@ FLASHMEM void setup() {
 //timer queuing on then those tasks will be dispatched here. Otherwise the loop just cycles very rapidly while
 //all the real work is done via interrupt.
 void loop() {
-
-//Maybe may want to move the tickhandler process function to a different thread.
-//this call could wake up a variety of modules all of which might run code in their tick handlers
-//that do a lot of work. So, it's debateable whether that's a good idea to run it all on the main
-//thread.
 #ifdef CFG_TIMER_USE_QUEUING
 	tickHandler.process();
 #endif
-
-    //no direct calls here anymore. The serial connections are handled via interrupt callbacks.
-	//serialConsole->loop();
-    //canHandlerBus0.loop(); //the one loop actually handles incoming traffic for all three
-    //canHandlerBus1.loop(); //so no need to call these other two. It's redundant.
-    //canHandlerBus2.loop(); //technically you can call them but don't unless some actual need arises?!
     
     //This needs to be called to handle sdCard writing though.
     Logger::loop();
@@ -517,7 +456,7 @@ void loop() {
     //ESP32 would be our BT device now. Does it need a loop function?
     //if (btDevice) btDevice->loop();
 
-    canEvents();
+    canEvents(); //get messages on all three CAN buses and dispatch them
 
     //Reads SerialUSB1 (if statusCSV isn't active) 
     canHandlerBus0.loop();
@@ -535,7 +474,7 @@ void loop() {
     */
     //testGEVCUHardware();
 
-    //it should go without saying that uncommenting the below line will give you a bad time.
+    //it should go without saying that uncommenting the below line will give you a bad time... in 40 seconds
     //if (millis() > 40000)     *(volatile uint32_t *)0x30000000 = 0; // causes Data_Access_Violation if you uncomment it. Only for testing crash handler
 }
 

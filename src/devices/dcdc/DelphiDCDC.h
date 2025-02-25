@@ -57,7 +57,6 @@ public:
 
     DelphiDCDCController();
     void timestamp();
-    DeviceId getId();
     uint32_t getTickInterval();
 
     virtual void loadConfiguration();

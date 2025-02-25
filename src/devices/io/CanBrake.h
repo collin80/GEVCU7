@@ -51,8 +51,6 @@ public:
     void earlyInit();
     void handleTick();
     void handleCanFrame(const CAN_message_t &frame);
-    DeviceId getId();
-    DeviceType getType();
 
     RawSignalData *acquireRawSignal();
     void loadConfiguration();

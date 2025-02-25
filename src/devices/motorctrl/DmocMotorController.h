@@ -72,7 +72,6 @@ public:
     void setGear(Gears gear);
 
     DmocMotorController();
-    DeviceId getId();
     uint32_t getTickInterval();
     void taperRegen();
 

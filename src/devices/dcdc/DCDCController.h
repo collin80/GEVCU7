@@ -36,6 +36,23 @@
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
 
+enum DCDC_FAULTS
+{
+    DCDC_FAULT_INPUTV = 1000,
+    DCDC_FAULT_INPUTA,
+    DCDC_FAULT_OUTPUTV,
+    DCDC_FAULT_OUTPUTA,
+    DCDC_LAST_FAULT
+};
+
+static const char* DCDC_FAULT_DESCS[] =
+{
+    "DC Input Voltage Error",
+    "DC Input Amperage Error",
+    "DC Output Voltage Error",
+    "DC Output Current Fault"
+};
+
 /*
  * Class for DCDC specific configuration parameters
  */
@@ -53,10 +70,10 @@ public:
 
     DCDCController();
     void timestamp();
-    DeviceType getType();
     float getOutputVoltage();
     float getOutputCurrent();
     float getTemperature();
+    virtual const char* getFaultDescription(uint16_t faultcode);
 
     virtual void loadConfiguration();
     virtual void saveConfiguration();

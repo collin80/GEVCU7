@@ -1,5 +1,10 @@
 /*
- * MemCache.cpp
+ * MemCache.cpp - This is basically what it says. We have a 256k EEPROM chip with all of
+ the settings and faults. It has a large number of write cycles - around a million. But, 
+ still it would ordinarily be possible to burn up memory by writing too often. To combat this,
+ we use this memory cache. It caches EEPROM in RAM and only writes to EEPROM every so often or when
+ forced, either explicitly or if it needs to empty a page to read another one. This makes
+ EEPROM access faster (as it is cached) and writes less damaging (they're cached too)
  *
 Copyright (c) 2021 Collin Kidder, Michael Neuweiler, Charles Galpin
 

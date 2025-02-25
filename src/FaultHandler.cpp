@@ -50,7 +50,7 @@ void FaultHandler::handleTick()
     memCache->Write(EE_FAULT_LOG + EEFAULT_RUNTIME, globalTime);
 }
 
-uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code, bool ongoing = false)
+uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code)
 {
     bool incPtr = false;
     globalTime = baseTime + (millis() / 100);
@@ -64,7 +64,7 @@ uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code, bool ongoing =
             found = true;
             //faultList[j].timeStamp = globalTime;
             //Logger::error("Fault still ongoing");
-            faultList[j].ongoing = ongoing;
+            faultList[j].ongoing = true;
             //update the info in EEPROM
             memCache->Write(EE_FAULT_LOG + EEFAULT_FAULTS_START + (sizeof(FAULT) * j), &faultList[j], sizeof(FAULT));
             break; //quit searching
@@ -79,7 +79,7 @@ uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code, bool ongoing =
         faultList[faultWritePointer].ack = false;
         faultList[faultWritePointer].device = device;
         faultList[faultWritePointer].faultCode = code;
-        faultList[faultWritePointer].ongoing = ongoing;
+        faultList[faultWritePointer].ongoing = true;
         //write to EEPROM cache
         memCache->Write(EE_FAULT_LOG + EEFAULT_FAULTS_START + (sizeof(FAULT) * faultWritePointer), &faultList[faultWritePointer], sizeof(FAULT));
         incPtr = true;
@@ -111,7 +111,20 @@ void FaultHandler::cancelOngoingFault(uint16_t device, uint16_t code)
     }
 }
 
-uint16_t FaultHandler::getFaultCount()
+uint16_t FaultHandler::getStoredFaultCount()
+{
+    int count = 0;
+    for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
+    {
+        if (faultList[i].device != 0xFFFF)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
+uint16_t FaultHandler::getUnAckFaultCount()
 {
     int count = 0;
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
@@ -123,6 +136,7 @@ uint16_t FaultHandler::getFaultCount()
     }
     return count;
 }
+
 
 //the fault handler isn't a device per se and uses more memory than a device would normally be allocated so
 //it does not use PrefHandler
@@ -201,13 +215,12 @@ FAULT *FaultHandler::getNextFault()
     return nullptr;
 }
 
-bool FaultHandler::getFault(uint16_t fault, FAULT *outFault)
+FAULT* FaultHandler::getFault(uint16_t fault)
 {
     if (fault > 0 && fault < CFG_FAULT_HISTORY_SIZE) {
-        outFault = &faultList[fault];
-        return true;
+        return &faultList[fault];
     }
-    return false;
+    return nullptr;
 }
 
 uint16_t FaultHandler::setFaultACK(uint16_t fault)

@@ -33,14 +33,11 @@ BatteryManager::BatteryManager() : Device()
     packVoltage = 0;
     packCurrent = 0;
     SOC = 0;
+    deviceType = DEVICE_BMS;
 }
 
 BatteryManager::~BatteryManager()
 {
-}
-
-DeviceType BatteryManager::getType() {
-    return (DEVICE_BMS);
 }
 
 void BatteryManager::handleTick() {
@@ -129,4 +126,11 @@ void BatteryManager::saveConfiguration() {
 
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
+}
+
+const char* BatteryManager::getFaultDescription(uint16_t faultcode)
+{
+    if ((faultcode >= 1000) && (faultcode < BMS_LAST_FAULT) ) return BMS_FAULT_DESCS[faultcode];
+    return Device::getFaultDescription(faultcode); //try generic device class if we couldn't handle it
+    return nullptr; //no match, return nothing
 }

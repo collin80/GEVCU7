@@ -53,6 +53,8 @@ StatusCSV::StatusCSV() : Device()
     lastWriteTime = 0;
     fileInitialized = false;
     needHeader = true;
+    deviceId = STATUSCSV;
+    deviceType = DEVICE_MISC;
 }
 
 void StatusCSV::earlyInit()
@@ -361,14 +363,6 @@ void StatusCSV::handleSerialSwitch()
         canHandlerBus1.setGVRETMode(true);
         haveEnabledEntries = false;
     }
-}
-
-DeviceType StatusCSV::getType() {
-    return DEVICE_MISC;
-}
-
-DeviceId StatusCSV::getId() {
-    return (STATUSCSV);
 }
 
 bool StatusCSV::isHashMonitored(uint32_t hash)

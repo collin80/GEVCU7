@@ -1,7 +1,7 @@
 /*
  * Logger.cpp
  *
- Copyright (c) 2013 Collin Kidder, Michael Neuweiler, Charles Galpin
+ Copyright (c) 2013-2025 Collin Kidder, Michael Neuweiler, Charles Galpin
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -27,7 +27,10 @@
 /*
 The astute might realize that the log level can be set from -1 to 3 not just 0-3.
 -1 level is called avalanche and it is what it says. This is extra debugging.
-You will get a LOT of traffic on the serial console if you do this.
+You will get a LOT of traffic on the serial console if you do this. The processor
+is very fast and connected via USB2 high speed (480mbs) so it can soak you like a 
+firehose. Chances are the output of avalanche will really test the capabilities of
+your terminal program. Be cautious about enabling it.
 */
 
 #include "Logger.h"
@@ -320,7 +323,8 @@ boolean Logger::isDebug() {
 /*
  * Output a log message (called by debug(), info(), warn(), error(), console())
  *
- * Supports printf() like syntax:
+ * Supports printf() like syntax - in fact, uses the system printf functionality so you get
+ * everything supported by printf on the teensy.
  *
  */
 void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list args) {

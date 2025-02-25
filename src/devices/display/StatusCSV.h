@@ -67,8 +67,6 @@ public:
 
     virtual void setup(); //initialization on start up
     void earlyInit();
-    DeviceType getType();
-    DeviceId getId();
     bool isHashMonitored(uint32_t hash);
     void toggleOutput();
 

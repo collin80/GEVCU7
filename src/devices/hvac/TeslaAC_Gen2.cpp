@@ -6,6 +6,7 @@ TeslaACGen2Controller::TeslaACGen2Controller() : HVACController()
     shortName = "TSLAGEN2AC";
     canCool = true;
     pid = nullptr;
+    deviceId = TESLA_AC_GEN2;
 }
 
 void TeslaACGen2Controller::handleCanFrame(const CAN_message_t &frame)
@@ -185,10 +186,6 @@ void TeslaACGen2Controller::sendCmd()
     Logger::debug("Tesla A/C cmd: %X %X %X %X %X %X %X %X %X ",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7]);
     crashHandler.addBreadcrumb(ENCODE_BREAD("TG2AC") + 1);
-}
-
-DeviceId TeslaACGen2Controller::getId() {
-    return (TESLA_AC_GEN2);
 }
 
 uint32_t TeslaACGen2Controller::getTickInterval()

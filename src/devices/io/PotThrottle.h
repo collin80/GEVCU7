@@ -64,7 +64,6 @@ public:
     void setup();
     void earlyInit();
     void handleTick();
-    DeviceId getId();
     RawSignalData *acquireRawSignal();
 
     void loadConfiguration();

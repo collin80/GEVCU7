@@ -34,6 +34,7 @@ TestThrottle::TestThrottle() : Throttle() {
     shortName = "TestAccel";
     rampingDirection = true;
     rawSignal.input1 = 0;
+    deviceId = TESTACCEL;
 }
 
 void TestThrottle::earlyInit()
@@ -70,8 +71,8 @@ void TestThrottle::handleTick() {
 RawSignalData *TestThrottle::acquireRawSignal() {
     TestThrottleConfiguration *config = (TestThrottleConfiguration *) getConfiguration();
 
-    if (rampingDirection) rawSignal.input1 += 4;
-    else rawSignal.input1 -= 4;
+    if (rampingDirection) rawSignal.input1 += 1;
+    else rawSignal.input1 -= 1;
     
     if (rawSignal.input1 <= config->minimumLevel1) {
         rawSignal.input1 = config->minimumLevel1;
@@ -101,7 +102,7 @@ bool TestThrottle::validateSignal(RawSignalData *rawSignal) {
         if (status == OK)
             Logger::error(TESTACCEL, "ERR_HIGH_T1: throttle 1 value out of range: %i", calcThrottle1);
         status = ERR_HIGH_T1;
-        faultHandler.raiseFault(TESTACCEL, FAULT_THROTTLE_HIGH_A, true);
+        faultHandler.raiseFault(TESTACCEL, FAULT_THROTTLE_HIGH_A);
         return false;
     }
     else
@@ -113,7 +114,7 @@ bool TestThrottle::validateSignal(RawSignalData *rawSignal) {
         if (status == OK)
             Logger::error(TESTACCEL, "ERR_LOW_T1: throttle 1 value out of range: %i ", calcThrottle1);
         status = ERR_LOW_T1;
-        faultHandler.raiseFault(TESTACCEL, FAULT_THROTTLE_LOW_A, true);
+        faultHandler.raiseFault(TESTACCEL, FAULT_THROTTLE_LOW_A);
         return false;
     }
     else
@@ -139,13 +140,6 @@ int16_t TestThrottle::calculatePedalPosition(RawSignalData *rawSignal) {
     calcThrottle1 = normalizeInput(rawSignal->input1, config->minimumLevel1, config->maximumLevel1);
 
     return calcThrottle1;
-}
-
-/*
- * Return the device ID
- */
-DeviceId TestThrottle::getId() {
-    return (TESTACCEL);
 }
 
 /*

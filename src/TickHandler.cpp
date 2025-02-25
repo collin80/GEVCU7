@@ -177,7 +177,14 @@ FLASHMEM void TickHandler::detach(TickObserver* observer) {
         for (int observerIndex = 0; observerIndex < CFG_TIMER_NUM_OBSERVERS; observerIndex++) {
             if (timerEntry[timer].observer[observerIndex] == observer) {
                 Logger::debug("removing TickObserver (%X) as number %d from timer %d", observer, observerIndex, timer);
-                timerEntry[timer].observer[observerIndex] = NULL;
+                timerEntry[timer].observer[observerIndex] = nullptr;
+                //now have to see if there are any other observers. If so, don't stop the timer!
+                //For speed, just add up all pointer values and if they weren't all nullptr then the sum
+                //will be above 0.
+                uint32_t sum = 0;
+                for (int p = 0; p < CFG_TIMER_NUM_OBSERVERS; p++) sum += (uint32_t)timerEntry[timer].observer[p];
+                if (sum != 0) continue; 
+                //didn't continue above? Then nobody is listening. Stop the timer.
                 timers[timer]->stop();
             }
         }
@@ -196,12 +203,15 @@ int TickHandler::findTimer(long interval) {
     return -1;
 }
 
-//find a free slot that supports the requested interval
-//does not currently do anything about potential for a timer
-//to be a crappy resolution for a given interval. For instance,
-//a timer that supports 1000 days is probably not the same timer
-//that would be best to handle a 10ms interval. But, the library
-//doesn't really expose a minimum granularity for each timer...
+/* Find a free slot that supports the requested interval
+   does not currently do anything about potential for a timer
+   to be a crappy resolution for a given interval. For instance,
+   a timer that supports 1000 days is probably not the same timer
+   that would be best to handle a 10ms interval. But, the library
+   doesn't really expose a minimum granularity for each timer...
+   Timers are ordered by which we'd like to use first so
+   if we need to find a timer, we're going to use the most desireable first
+*/
 int TickHandler::findFreeTimer(uint64_t interval)
 {
     for (int i = 0; i < NUM_TIMERS; i++)

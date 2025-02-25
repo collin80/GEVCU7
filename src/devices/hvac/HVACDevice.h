@@ -51,7 +51,6 @@ public:
     virtual void setup();
 
     HVACController();
-    DeviceType getType();
     double getTemperature();
     double getWattage();
 

@@ -33,6 +33,7 @@ ThinkBatteryManager::ThinkBatteryManager() : BatteryManager() {
     allowDischarge = false;
     commonName = "Think City BMS";
     shortName = "ThinkBMS";
+    deviceId = THINKBMS;
 }
 
 void ThinkBatteryManager::earlyInit()
@@ -78,7 +79,7 @@ void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
         //we're not really interested in much here except whether init worked.
         if ((frame.buf[6] & 1) == 0)  //there was an initialization error!
         {
-            faultHandler.raiseFault(THINKBMS, FAULT_BMS_INIT, true);
+            faultHandler.raiseFault(THINKBMS, FAULT_BMS_INIT);
             allowCharge = false;
             allowDischarge = false;
         }
@@ -96,7 +97,7 @@ void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
     case 0x302: //System Data 1
         if ((frame.buf[0] & 1) == 1) //Byte 0 bit 0 = general error
         {
-            faultHandler.raiseFault(THINKBMS, FAULT_BMS_MISC, true);
+            faultHandler.raiseFault(THINKBMS, FAULT_BMS_MISC);
             allowDischarge = false;
             allowCharge = false;
         }
@@ -106,7 +107,7 @@ void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
         }
         if ((frame.buf[2] & 1) == 1) //Byte 2 bit 0 = general isolation error
         {
-            faultHandler.raiseFault(THINKBMS, FAULT_HV_BATT_ISOLATION, true);
+            faultHandler.raiseFault(THINKBMS, FAULT_HV_BATT_ISOLATION);
             allowDischarge = false;
             allowCharge = false;
         }
@@ -181,11 +182,6 @@ void ThinkBatteryManager::sendKeepAlive()
     output.len = 2;
     attachedCANBus->sendFrame(output);
     crashHandler.addBreadcrumb(ENCODE_BREAD("THBMS") + 3);
-}
-
-DeviceId ThinkBatteryManager::getId()
-{
-    return (THINKBMS);
 }
 
 bool ThinkBatteryManager::hasPackVoltage()

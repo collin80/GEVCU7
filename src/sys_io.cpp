@@ -111,11 +111,11 @@ FLASHMEM void SystemIO::setup() {
     analogReadRes(12);
     tickHandler.detach(this);
 
-    setup_ADC_params();
+    setup_ADC_params(); //brings up adc calibration params. Optional if you want to tune them
 
     pinMode(9, INPUT); //these 4 are digital inputs not
     pinMode(40, INPUT); //connected to PCA chip. They're direct
-    pinMode(41, INPUT);
+    pinMode(41, INPUT); //basically the last 4 digital inputs
     pinMode(42, INPUT);
 
     pinMode(3, OUTPUT); //PWM0 = ADC Select A
@@ -141,6 +141,7 @@ FLASHMEM void SystemIO::setup() {
     pinMode(A0, INPUT);
     pinMode(A1, INPUT);
 
+    //not using traditional Arduino analog routines. These special routines give better performance
     adc->adc0->setAveraging(4);                                             // set number of averages
     adc->adc0->setResolution(12);                                           // set bits of resolution
     adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::HIGH_SPEED );       // change the conversion speed
@@ -159,6 +160,10 @@ FLASHMEM void SystemIO::setup() {
     //been done. The system device has this same problem. It should be fixed properly at some point.
 }
 
+
+/* The status system acts as a central storehouse of all status related data in the whole system. It is
+   very likely someone might want to know the current status of all the I/O so we add entries for it all here.
+*/
 FLASHMEM void SystemIO::setupStatusEntries()
 {
     char buff[30];
@@ -337,6 +342,7 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
     }
         
     int neededMux = which % 4;
+    //we don't change the analog mux unless absolutely necessary
     if (neededMux != adcMuxSelect) //must change mux to read this
     {
         if (sysConfig->systemType != GEVCU7B)

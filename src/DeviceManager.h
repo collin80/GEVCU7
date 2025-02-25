@@ -69,8 +69,6 @@ public:
     Device *getDeviceByType(DeviceType);
     Device *getDeviceByIdx(int idx);
     void printDeviceList();
-    void updateWifi();
-    Device *updateWifiByID(DeviceId);
     const ConfigEntry* findConfigEntry(const char *settingName, Device **matchingDevice);
     void handleTick();
     void setup();

@@ -59,7 +59,6 @@ public:
     void setGear(Gears gear);
 
     CKMotorController();
-    DeviceId getId();
     uint32_t getTickInterval();
 
     virtual void loadConfiguration();

@@ -37,6 +37,7 @@ LeafMotorController::LeafMotorController() : MotorController() {
     actualState = DISABLED;
     commonName = "Leaf Inverter";
     shortName = "LEAFINV";
+    deviceId = LEAFINV;
 }
 
 void LeafMotorController::earlyInit()
@@ -266,10 +267,6 @@ byte LeafMotorController::calcChecksum(CAN_message_t &thisFrame) {
         }
     }
     thisFrame.buf[7] = crc;
-}
-
-DeviceId LeafMotorController::getId() {
-    return (LEAFINV);
 }
 
 uint32_t LeafMotorController::getTickInterval()

@@ -118,7 +118,6 @@ public:
     };
 
     MotorController();
-    DeviceType getType();
     void setup();
     void handleTick();
     uint32_t getTickInterval();

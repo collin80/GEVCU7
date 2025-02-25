@@ -54,6 +54,7 @@ CodaMotorController::CodaMotorController() : MotorController()
     sequence=0;
     commonName = "Coda UQM Powerphase 100 Inverter";
     shortName = "CodaUQM";
+    deviceId = CODAUQM;
 }
 
 void CodaMotorController::earlyInit()
@@ -306,11 +307,6 @@ void CodaMotorController::sendCmd2() {
                   output.buf[2], hours, minutes, seconds, milliseconds);
 
     warning=false;
-}
-
-
-DeviceId CodaMotorController::getId() {
-    return (CODAUQM);
 }
 
 uint32_t CodaMotorController::getTickInterval()

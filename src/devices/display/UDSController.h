@@ -114,7 +114,6 @@ public:
     void handleTick();
     void handleCanFrame(const CAN_message_t &frame);
     void handleIsoTP(const ISOTP_data &iso_config, const uint8_t *buf);
-    DeviceId getId();
 
     void loadConfiguration();
     void saveConfiguration();

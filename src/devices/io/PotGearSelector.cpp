@@ -28,6 +28,8 @@ PotGearSelector::PotGearSelector() : Device()
 {
     shortName = "PotGear";
     commonName = "Potentiometer Gear Selector";
+    deviceId = POTGEARSEL;
+    deviceType = DEVICE_MISC;
 }
 
 void PotGearSelector::earlyInit()
@@ -110,18 +112,9 @@ void PotGearSelector::handleTick() {
     }
 }
 
-DeviceId PotGearSelector::getId() {
-    return (POTGEARSEL);
-}
-
 uint32_t PotGearSelector::getTickInterval()
 {
     return TICK_POTGEAR;
-}
-
-DeviceType PotGearSelector::getType()
-{
-    return DEVICE_IO;
 }
 
 void PotGearSelector::loadConfiguration()

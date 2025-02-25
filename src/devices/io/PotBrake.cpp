@@ -33,6 +33,8 @@
 PotBrake::PotBrake() : Throttle() {
     commonName = "Potentiometer (analog) brake";
     shortName = "PotBrake";
+    deviceId = POTBRAKEPEDAL;
+    deviceType = DEVICE_BRAKE;
 }
 
 void PotBrake::earlyInit()
@@ -157,20 +159,6 @@ int16_t PotBrake::mapPedalPosition(int16_t pedalPosition) {
     Logger::avalanche(POTBRAKEPEDAL, "level: %d", brakeLevel);
 
     return brakeLevel;
-}
-
-/*
- * Return the device ID
- */
-DeviceId PotBrake::getId() {
-    return (POTBRAKEPEDAL);
-}
-
-/*
- * Return the device type
- */
-DeviceType PotBrake::getType() {
-    return (DEVICE_BRAKE);
 }
 
 /*

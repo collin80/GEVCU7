@@ -33,6 +33,7 @@ TestMotorController::TestMotorController() : MotorController() {
     setSelectedGear(DRIVE);
     commonName = "Test Inverter";
     shortName = "TestInverter";
+    deviceId = TESTINVERTER;
 }
 
 void TestMotorController::earlyInit()
@@ -86,13 +87,13 @@ void TestMotorController::handleTick() {
     }
     else
     {
-        if (currentGear == DRIVE)
+        //if (currentGear == DRIVE)
             torqueRequested = (((long) throttleRequested * (long) config->torqueMax) / 1000.0f);
-        if (currentGear == REVERSE)
-            torqueRequested = (((long) throttleRequested * -1 *(long) config->torqueMax) / 1000.0f);
+        //if (currentGear == REVERSE)
+        //    torqueRequested = (((long) throttleRequested * -1 *(long) config->torqueMax) / 1000.0f);
         
         torqueActual = ((torqueActual * 7) + (torqueRequested * 3)) / 10.0;
-        speedActual = torqueActual * 2;
+        speedActual = torqueActual * 20;
         if (speedActual < 0) speedActual = 0;
         
         speedRequested = 0;
@@ -103,7 +104,7 @@ void TestMotorController::handleTick() {
         dcCurrent += (torqueRequested - torqueActual) * 2;        
                 
     }
-    
+    dcVoltage = 360.0f - (dcCurrent);
     acCurrent = (dcCurrent * 40) / 30; //A bit more current than DC bus    
     
     //Both dc current and dc voltage are scaled up 10, mech power should be in 0.1kw increments
@@ -116,8 +117,8 @@ void TestMotorController::handleTick() {
     //Assume ambient temperature is 18C
     //These numbers are horrifically off from realistic physics at this point
     //but we're trying to aid debugging, not making a perfect physics model.
-    temperatureMotor = 180 + abs(mechanicalPower * 2);
-    temperatureInverter = 190 + abs(mechanicalPower * 3) / 2;
+    temperatureMotor = 18.0f + abs(mechanicalPower * 2);
+    temperatureInverter = 19.0f + abs(mechanicalPower * 3) / 2;
     temperatureSystem = (temperatureInverter + temperatureMotor) / 2;
     
     Logger::debug(TESTINVERTER, "PowerMode: %i, Gear: %i", currentMode, currentGear);
@@ -135,10 +136,6 @@ void TestMotorController::setGear(Gears gear) {
     }
     //should it be set to standby when selecting neutral? I don't know. Doing that prevents regen
     //when in neutral and I don't think people will like that.
-}
-
-DeviceId TestMotorController::getId() {
-    return (TESTINVERTER);
 }
 
 uint32_t TestMotorController::getTickInterval()

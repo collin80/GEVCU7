@@ -175,6 +175,8 @@ UDSController::UDSController() : Device() {
     generatedSeed = false;
     commonName = "UDS Controller";
     shortName = "UDS";
+    deviceId = UDSCONTROLLER;
+    deviceType = DEVICE_MISC;
 }
 
 void UDSController::earlyInit()
@@ -478,10 +480,6 @@ bool UDSController::validateResponse(const uint8_t *bytes)
 void UDSController::handleTick()
 {
 
-}
-
-DeviceId UDSController::getId() {
-    return UDSCONTROLLER;
 }
 
 void UDSController::loadConfiguration() {

@@ -72,8 +72,6 @@ public:
     void setup();
     void earlyInit();
     void handleTick();
-    DeviceId getId();
-    DeviceType getType();
 
     void loadConfiguration();
     void saveConfiguration();

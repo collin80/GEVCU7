@@ -57,7 +57,6 @@ public:
     void setGear(Gears gear);
 
     TestMotorController();
-    DeviceId getId();
     uint32_t getTickInterval();
 
     virtual void loadConfiguration();

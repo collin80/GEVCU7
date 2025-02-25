@@ -34,6 +34,7 @@ HVACController::HVACController() : Device()
     isFaulted = false;
     currentTemperature = 0.0f;
     wattage = 0.0f;
+    deviceType = DEVICE_HVAC;
 }
 
 void HVACController::setup()
@@ -55,11 +56,6 @@ void HVACController::setup()
 void HVACController::handleTick()
 {
     Device::handleTick(); //kick the ball up to papa
-}
-
-DeviceType HVACController::getType()
-{
-    return (DeviceType::DEVICE_HVAC);
 }
 
 double HVACController::getTemperature()

@@ -54,7 +54,6 @@ public:
     virtual void earlyInit();
 
     TCCHChargerController();
-    DeviceId getId();
     uint32_t getTickInterval();
 
     virtual void loadConfiguration();

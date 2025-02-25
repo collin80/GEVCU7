@@ -41,6 +41,7 @@ ChargeController::ChargeController() : Device()
     deviceTemperature = 0.0f;
     isEnabled = false;
     isFaulted = false;
+    deviceType = DEVICE_CHARGER;
 }
 
 void ChargeController::setup()
@@ -70,11 +71,6 @@ void ChargeController::setup()
 void ChargeController::handleTick() 
 {
     Device::handleTick(); //kick the ball up to papa
-}
-
-DeviceType ChargeController::getType()
-{
-    return (DeviceType::DEVICE_CHARGER);
 }
 
 float ChargeController::getOutputVoltage()
@@ -124,3 +120,9 @@ void ChargeController::saveConfiguration()
     prefsHandler->forceCacheWrite();
 }
 
+const char* ChargeController::getFaultDescription(uint16_t faultcode)
+{
+    if ((faultcode >= 1000) && (faultcode < CHARGER_LAST_FAULT) ) return CHARGER_FAULT_DESCS[faultcode];
+    return Device::getFaultDescription(faultcode); //try generic device class if we couldn't handle it
+    return nullptr; //no match, return nothing
+}

@@ -65,6 +65,8 @@ MotorController::MotorController() : Device() {
     lastOdoAccum = 0;
     odo_accum = 0;
     slewedTorque = 0.0;
+
+    deviceType = DEVICE_MOTORCTRL;
 }
 
 FLASHMEM void MotorController::setup() {
@@ -96,7 +98,9 @@ FLASHMEM void MotorController::setup() {
     cfgEntries.push_back(entry);
     entry = {"MPHFACTOR", "Set factor to multiply RPM by to get MPH", &config->mphConvFactor, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1.0}, 4, nullptr};
     cfgEntries.push_back(entry);
-
+    entry = {"ODO-READING", "How many miles should be on the odometer? (In hundredths of a mile)", &config->odometer, CFG_ENTRY_VAR_TYPE::UINT32, 0, 100000000ul, 0, nullptr};
+    cfgEntries.push_back(entry);
+    
     statusBitfield.bitfield = 0;
 
     StatusEntry stat;
@@ -385,10 +389,6 @@ bool MotorController::isFaulted() {
 
 bool MotorController::isWarning() {
     return warning;
-}
-
-DeviceType MotorController::getType() {
-    return (DEVICE_MOTORCTRL);
 }
 
 void MotorController::setOpState(OperationState op) {

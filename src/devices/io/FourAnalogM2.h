@@ -50,7 +50,6 @@ public:
     void earlyInit();
 
     void handleMessage(uint32_t, void*);
-	DeviceId getId();
 
 private:
 	int16_t values[4];

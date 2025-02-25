@@ -199,6 +199,8 @@ ESP32Driver::ESP32Driver() : Device()
 {
     commonName = "ESP32 Wifi/BT Module";
     shortName = "ESP32";
+    deviceId = ESP32;
+    deviceType = DEVICE_MISC;
     currState = ESP32NS::RESET;
     desiredState = ESP32NS::RESET;
     systemAlive = false;
@@ -534,11 +536,6 @@ void ESP32Driver::sendDeviceDetails(uint16_t deviceID)
 void ESP32Driver::processConfigReply(JsonDocument* doc)
 {
 
-}
-
-
-DeviceId ESP32Driver::getId() {
-    return (ESP32);
 }
 
 uint32_t ESP32Driver::getTickInterval()

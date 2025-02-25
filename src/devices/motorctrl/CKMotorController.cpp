@@ -38,6 +38,7 @@ CKMotorController::CKMotorController() : MotorController() {
 	aliveCounter = 0;
     commonName = "CK Inverter Ctrl Board";
     shortName = "CKInverter";
+    deviceId = CKINVERTER;
 }
 
 void CKMotorController::earlyInit()
@@ -214,11 +215,6 @@ void CKMotorController::setGear(Gears gear) {
     }
     //should it be set to standby when selecting neutral? I don't know. Doing that prevents regen
     //when in neutral and I don't think people will like that.
-}
-
-
-DeviceId CKMotorController::getId() {
-    return (CKINVERTER);
 }
 
 uint32_t CKMotorController::getTickInterval()

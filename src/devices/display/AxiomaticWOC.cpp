@@ -39,6 +39,8 @@ AxiomaticWOC::AxiomaticWOC() : Device()
 {
     commonName = "Axiomatic WOC";
     shortName = "AXIOWOC";
+    deviceId = AXIOWOC;
+    deviceType = DEVICE_DISPLAY;
 }
 
 void AxiomaticWOC::earlyInit()
@@ -146,17 +148,6 @@ void AxiomaticWOC::sendWakeCfg()
 
     attachedCANBus->sendFrame(output);
 }
-
-DeviceType AxiomaticWOC::getType()
-{
-    return DEVICE_DISPLAY;
-}
-
-DeviceId AxiomaticWOC::getId()
-{
-    return (AXIOWOC);
-}
-
 
 void AxiomaticWOC::loadConfiguration()
 {

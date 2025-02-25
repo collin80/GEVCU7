@@ -46,6 +46,8 @@ EVIC::EVIC() : Device()
 {
     commonName = "Andromeda Interfaces EVIC Display";
     shortName = "EVIC";
+    deviceId = EVICTUS;
+    deviceType = DEVICE_MISC;
 }
 
 void EVIC::earlyInit()
@@ -402,15 +404,6 @@ char *EVIC::getTimeRunning() {
     sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
     return buffer;
 }
-
-DeviceType EVIC::getType() {
-    return DEVICE_MISC;
-}
-
-DeviceId EVIC::getId() {
-    return (EVICTUS);
-}
-
 
 void EVIC::loadConfiguration() {
     //EVICConfiguration *config = (EVICConfiguration *)getConfiguration();

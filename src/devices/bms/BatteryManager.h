@@ -34,6 +34,47 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../Device.h"
 #include "../../DeviceManager.h"
 
+enum BMS_FAULTS
+{
+    BMS_FAULT_CELL_UNDERV = 1000,
+    BMS_FAULT_CELL_OVERV,
+    BMS_FAULT_CELL_OVERT,
+    BMS_FAULT_CELL_UNDERT,
+    BMS_FAULT_CELL_INBALANCE,
+    BMS_FAULT_BALANCING,
+    BMS_FAULT_CURR_SENSING,
+    BMS_FAULT_CURR_TOOPOS,
+    BMS_FAULT_CURR_TOONEG,
+    BMS_FAULT_CONTACTORA_STUCK_OPEN,
+    BMS_FAULT_CONTACTORA_STUCK_CLOSED,
+    BMS_FAULT_CONTACTORB_STUCK_OPEN,
+    BMS_FAULT_CONTACTORB_STUCK_CLOSED,
+    BMS_FAULT_PRECHARGE_STUCK_OPEN,
+    BMS_FAULT_PRECHARGE_STUCK_CLOSED,
+    BMS_FAULT_PRECHARGE_FAILURE,
+    BMS_LAST_FAULT
+};
+
+static const char* BMS_FAULT_DESCS[] =
+{
+    "One or more cells under min voltage",
+    "One or more cells over max voltage",
+    "One or more cells over max temperature",
+    "One or more cells under min temperature",
+    "Max to min cell variation too high",
+    "Fault in cell balancing",
+    "Fault in current sensing",
+    "Positive current is too large!",
+    "Negative ccurrent is too large!"
+    "Contactor A stuck open",
+    "Contactor A stuck closed",
+    "Contactor B stuck open",
+    "Contactor B stuck closed",
+    "Precharge contactor stuck open",
+    "Precharge contactor stuck closed",
+    "Precharge process has failed",
+};
+
 class BatteryManagerConfiguration : public DeviceConfiguration {
 public:
 };
@@ -51,12 +92,12 @@ public:
     float getLowestTemperature();
     float getChargeLimit();
     float getDischargeLimit();
-    DeviceType getType();
     void setup();
     void handleTick();
     
     void loadConfiguration();
     void saveConfiguration();
+    virtual const char* getFaultDescription(uint16_t faultcode);
     
     //a bunch of boolean functions. Derived classes must implment
     //these functions to tell everyone else what they support

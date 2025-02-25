@@ -53,7 +53,6 @@ public:
     void earlyInit();
     void handleTick();
     void handleCanFrame(const CAN_message_t &frame);
-    DeviceId getId();
     bool hasPackVoltage();
     bool hasPackCurrent();
     bool hasTemperatures();

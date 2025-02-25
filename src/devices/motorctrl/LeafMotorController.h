@@ -57,7 +57,6 @@ public:
     void setGear(Gears gear);
 
     LeafMotorController();
-    DeviceId getId();
     uint32_t getTickInterval();
     void taperRegen();
 

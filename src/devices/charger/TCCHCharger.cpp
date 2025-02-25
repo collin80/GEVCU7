@@ -4,6 +4,7 @@ TCCHChargerController::TCCHChargerController() : ChargeController()
 {
     commonName = "TCCH or Ovar HV Charger";
     shortName = "TCCHCHGR";
+    deviceId = TCCH_CHARGER;
 }
 
 void TCCHChargerController::earlyInit()
@@ -51,11 +52,11 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
 	    currentVoltage = (frame.buf[0] << 8) + (frame.buf[1]);
 	    currentAmps = (frame.buf[2] << 8) + (frame.buf[3]);
         status = frame.buf[4];
-        if (status & 1) Logger::error("Hardware failure of charger");
-        if (status & 2) Logger::error("Charger over temperature!");
-        if (status & 4) Logger::error("Input voltage out of spec!");
-        if (status & 8) Logger::error("Charger can't detect proper battery voltage");
-        if (status & 16) Logger::error("Comm timeout. Failed!");
+        if (status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);//Logger::error("Hardware failure of charger");
+        if (status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);//Logger::error("Charger over temperature!");
+        if (status & 4) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);//Logger::error("Input voltage out of spec!");
+        if (status & 8) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);//Logger::error("Charger can't detect proper battery voltage");
+        if (status & 16) faultHandler.raiseFault(getId(), COMM_TIMEOUT);//Logger::error("Comm timeout. Failed!");
         Logger::debug("Charger    V: %f  A: %f   Status: %u", currentVoltage / 10.0f, currentAmps / 10.0f, status);
 
         //these two are part of the base class and will automatically be shown to interested parties
@@ -69,6 +70,12 @@ void TCCHChargerController::handleTick()
     ChargeController::handleTick(); //kick the ball up to papa
 
     checkAlive(4000);
+
+    //temporary test code that faults at 50 seconds of up time for no reason at all.
+    if (millis() > 50000 && millis() < 55000)
+    {
+        faultHandler.raiseFault(getId(), 0xDEAD);
+    }
 
     sendCmd();   //Send our Delphi voltage control command
 }
@@ -98,10 +105,6 @@ void TCCHChargerController::sendCmd()
     Logger::debug("TCCH Charger cmd: %X %X %X %X %X %X %X %X %X ",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7]);
     crashHandler.addBreadcrumb(ENCODE_BREAD("TCCHC") + 1);
-}
-
-DeviceId TCCHChargerController::getId() {
-    return (TCCH_CHARGER);
 }
 
 uint32_t TCCHChargerController::getTickInterval()

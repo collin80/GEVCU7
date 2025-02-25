@@ -1,7 +1,7 @@
 /*
  * SerialConsole.cpp
  *
- Copyright (c) 2013 Collin Kidder, Michael Neuweiler, Charles Galpin
+ Copyright (c) 2013-2025 Collin Kidder, Michael Neuweiler, Charles Galpin
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -71,6 +71,8 @@ void SerialConsole::loop() {
     }
 }
 
+//A generic function that can print a configuration entry. Abstracts away having to specifically
+//code up support for every configuration option. Instead this can just print any of them.
 FLASHMEM void SerialConsole::printConfigEntry(const Device *dev, const ConfigEntry &entry)
 {
     String str = "   ";
@@ -81,6 +83,7 @@ FLASHMEM void SerialConsole::printConfigEntry(const Device *dev, const ConfigEnt
     if (entry.descFunc)
     {
         //TODO: Anyone know how to squash the compiler warning for this next line? I give up...
+        //It DOES work though. The compiler complains but the below line works perfectly!
         descString = CALL_MEMBER_FN(dev, entry.descFunc)();
         descPtr = descString.c_str();
     }
@@ -175,6 +178,8 @@ FLASHMEM void SerialConsole::printConfigEntry(const Device *dev, const ConfigEnt
     }
 }
 
+//likewise, part of generic support for configuration entries. Given a device,
+//we grab all its registered config entries then print them out all pretty like
 void SerialConsole::getConfigEntriesForDevice(Device *dev)
 {
     Logger::console("\n\n%s Configuration", dev->getCommonName());
@@ -188,8 +193,11 @@ void SerialConsole::getConfigEntriesForDevice(Device *dev)
 //have to run through all devices registered and for each enabled device
 //check whether it has the settingName in its configuration entries
 //If so process the config entry and return. Otherwise keep going.
-//doesn't yet actually tell the device to update EEPROM and doesn't output
-//anything yet if setting was a success. But, it's getting there.
+//The big flashing red light here is that it doesn't know which
+//device created a given setting so all devices must register
+//unique config item names so we can find the right one. There aren't
+//easy answers for how to make it more generic. We'd have to store
+//the device responsible somehow.
 void SerialConsole::updateSetting(const char *settingName, char *valu)
 {
     Device *deviceMatched;
@@ -256,7 +264,7 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
     if (result == 0) //value was stored
     {
         Logger::console("%s was set as value for parameter %s", valu, settingName);
-        deviceMatched->saveConfiguration();
+        deviceMatched->saveConfiguration(); //devices are responsible for doing their own saving and writing to eeprom
     }
     if (result == 1) //value was too low
     {
@@ -282,7 +290,7 @@ FLASHMEM void SerialConsole::printMenu() {
     if (motorController) 
     {
         Logger::console("Motor Controller Status: isRunning: %i  isFaulted: %i", 
-            motorController->isRunning(), motorController->isFaulted());  
+            motorController->isRunning(), motorController->isFaulted());
     }
     Logger::console("\n*************SYSTEM MENU *****************");
     Logger::console("Enable line endings of some sort (LF, CR, CRLF)");
@@ -296,6 +304,7 @@ FLASHMEM void SerialConsole::printMenu() {
     Logger::console("   NUKE=1 - Resets all device settings in EEPROM. You have been warned.");
 
     //This call causes the device manager to list all enabled and disabled devices
+    //nothing hard coded here, it can query the list of registered devices
     deviceManager.printDeviceList();
 
     //then go through each device entry in the list and see if the given device is enabled. 
@@ -308,6 +317,8 @@ FLASHMEM void SerialConsole::printMenu() {
             if (dev->isEnabled())
             {
                 getConfigEntriesForDevice(dev);
+
+                //a little bit of special handling for throttle and brake devices
                 if (dev == accelerator)
                 {
                     Logger::console("   z = detect throttle min/max, num throttles and subtype");
@@ -327,7 +338,7 @@ FLASHMEM void SerialConsole::printMenu() {
     Logger::console("   J = set all digital outputs low");
     Logger::console("   K = set all digital outputs high");
 
-    if (heartbeat != NULL) {
+    if (heartbeat != NULL) { //and heartbeat better not be null! It's always allocated. better to check though
         Logger::console("   L = show raw analog/digital input/output values (toggle)");
     }
     Logger::console("   OUTPUT=<0-7> - toggles state of specified digital output");
@@ -356,6 +367,7 @@ void SerialConsole::serialEvent() {
     }
 }
 
+//this gets called by things like the esp32 to inject characters from places like telnet
 void SerialConsole::injectChar(char c)
 {
     if (c == 10 || c == 13) { //command done. Parse it.
@@ -395,7 +407,7 @@ FLASHMEM void SerialConsole::handleConfigCmd() {
     i = 0;
 
     while (cmdBuffer[i] != '=' && i < ptrBuffer) {
-        cmdString.concat(String(cmdBuffer[i++]));
+        cmdString.concat(String((char)cmdBuffer[i++]));
     }
     i++; //skip the =
     if (i >= ptrBuffer)
@@ -419,6 +431,7 @@ FLASHMEM void SerialConsole::handleConfigCmd() {
             memCache->FlushAllPages();
             Logger::console("Successfully enabled device.(%X, %d) Trying to start it immediately!", newValue, newValue);
             Device *dev = deviceManager.getDeviceByID(newValue);
+            //Try to force the device to start up right now without any reboot necessary.
             if (dev)
             {
                 dev->forceEnableState(true);
@@ -501,7 +514,7 @@ FLASHMEM void SerialConsole::handleConfigCmd() {
         updateWifi = false;
     }
 
-    // send updates to ichip wifi
+    // send updates to ichip wifi - esp32 automatically does this behind the scenes so no need to message it.
     if (updateWifi) 
     {
         //deviceManager.sendMessage(DEVICE_WIFI, ICHIP2128, MSG_CONFIG_CHANGE, NULL);
@@ -586,6 +599,7 @@ FLASHMEM void SerialConsole::handleShortCmd() {
     }
 }
 
+//create a binary snapshot of the entire EEPROM and save it on the sdcard
 FLASHMEM void SerialConsole::generateEEPROMBinary()
 {
     // Open or create file - truncate existing file.
@@ -620,6 +634,7 @@ FLASHMEM void SerialConsole::generateEEPROMBinary()
     Logger::console("Successfully saved EEPROM to sdcard.");
 }
 
+//load binary snapshot of eeprom from sdcard
 FLASHMEM void SerialConsole::loadEEPROMBinary()
 {
     // Open or create file - truncate existing file.
@@ -660,6 +675,8 @@ FLASHMEM void SerialConsole::loadEEPROMBinary()
     Logger::console("Successfully updated EEPROM from sdCard. Please reboot now.");
 }
 
+//instead of binary, generate a pretty json file of all the enabled devices with all
+//their config items. Really easy to hand edit!
 FLASHMEM void SerialConsole::generateEEPROMJSON()
 {
     if (!file.open("gevcu7_settings.json", O_RDWR | O_CREAT | O_TRUNC)) {
@@ -687,6 +704,8 @@ FLASHMEM void SerialConsole::generateEEPROMJSON()
     Logger::console("Done saving json settings file.");
 }
 
+//You know that editable JSON file we made above? Load it from sdcard and parse it. Update
+//all configuration from that file. Handy so you can edit things externally and load the edited file.
 FLASHMEM void SerialConsole::loadEEPROMJSON()
 {
     DynamicJsonDocument doc(20000);

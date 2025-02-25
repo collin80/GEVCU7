@@ -4,9 +4,8 @@ DelphiDCDCController::DelphiDCDCController() : DCDCController()
 {
     commonName = "Delphi DC-DC Converter";
     shortName = "DelphiDCDC";
+    deviceId = DELPHI_DCDC;
 }
-
-
 
 void DelphiDCDCController::handleCanFrame(const CAN_message_t &frame)
 {
@@ -93,10 +92,6 @@ void DelphiDCDCController::sendCmd()
     Logger::debug("Delphi DC-DC cmd: %X %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
     crashHandler.addBreadcrumb(ENCODE_BREAD("DELPH") + 1);
-}
-
-DeviceId DelphiDCDCController::getId() {
-    return (DELPHI_DCDC);
 }
 
 uint32_t DelphiDCDCController::getTickInterval()

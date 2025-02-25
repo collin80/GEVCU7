@@ -277,7 +277,7 @@ void DeviceManager::dispatchToObservers(const StatusEntry &entry)
 }
 
 /*
-  Every tick we go through the entire list of status entries and see if there value has changed. 
+  Every tick we go through the entire list of status entries and see if their value has changed. 
   If it has we need to issue a message to registered listeners. It may bear consideration that 
   the observer callbacks should be done via a queue and not all at once instantly. This processor
   is extremely fast but some entries are going to update all of the time and thus we could end up
@@ -340,7 +340,7 @@ Throttle *DeviceManager::getAccelerator() {
     if (!throttle)
     {
         Logger::avalanche("getAccelerator() called but there is no registered accelerator!");
-        return 0; //NULL!
+        return nullptr;
     }
     return throttle;
 }
@@ -352,7 +352,7 @@ Throttle *DeviceManager::getBrake() {
     if (!brake)
     {
         Logger::avalanche("getBrake() called but there is no registered brake!");
-        return 0; //NULL!
+        return nullptr;
     }
     return brake;
 }
@@ -363,7 +363,7 @@ MotorController *DeviceManager::getMotorController() {
     if (!motorController)
     {
         Logger::avalanche("getMotorController() called but there is no registered motor controller!");
-        return 0; //NULL!
+        return nullptr;
     }
     return motorController;
 }
@@ -383,7 +383,7 @@ Device *DeviceManager::getDeviceByID(DeviceId id)
         }
     }
     Logger::avalanche("getDeviceByID - No device with ID: %X", (int)id);
-    return 0; //NULL!
+    return nullptr;
 }
 
 Device *DeviceManager::getDeviceByIdx(int idx)
@@ -394,7 +394,7 @@ Device *DeviceManager::getDeviceByIdx(int idx)
 
 /*
 The more object oriented version of the above function. Allows one to find the first device that matches
-a given type.
+a given type - Usually a much better idea than most other approaches.
 */
 Device *DeviceManager::getDeviceByType(DeviceType type)
 {
@@ -406,7 +406,7 @@ Device *DeviceManager::getDeviceByType(DeviceType type)
         }
     }
     Logger::avalanche("getDeviceByType - No devices of type: %X", (int)type);
-    return 0; //NULL!
+    return nullptr;
 }
 
 /*
@@ -490,6 +490,7 @@ void DeviceManager::__populateJsonEntry(DynamicJsonDocument &doc, Device *dev)
 {
     JsonObject devArr = doc.createNestedObject(dev->getShortName());
     devArr["DevID"] = dev->getId();
+
     const std::vector<ConfigEntry> *entries = dev->getConfigEntries();
     for (const ConfigEntry &ent : *entries)
     {
@@ -611,42 +612,6 @@ void DeviceManager::printDeviceList() {
             Logger::console("     0x%04X     %s", devices[i]->getId(), devices[i]->getCommonName());
         }
     }
-}
-
-//This is entirely worthless now. the ichip2128 hasn't existed in years and we aren't using it on GEVCU7.
-//Must refactor wifi code to call to the ESP32 on board.
-void DeviceManager::updateWifi() {
-/*
-    sendMessage(DEVICE_WIFI, ICHIP2128, MSG_CONFIG_CHANGE, NULL);  //Load all our other parameters first
-
-    char param [2][30];  //A two element array containing id and enable state
-    char *paramPtr[2] = { &param[0][0], &param[1][0] }; //A two element array of pointers, pointing to the addresses of row 1 and row 2 of array.
-    //paramPtr[0] then contains address of param row 0 element 0
-    //paramPtr[1] then contains address of param row 1 element 0.
-
-
-    for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++) { //Find all devices that are enabled and load into array
-        if (devices[i] && devices[i]->isEnabled())
-        {
-            sprintf(paramPtr[0],"x%X",devices[i]->getId());
-            sprintf(paramPtr[1],"255");
-            //   Logger::console(" Device: %s value %s", paramPtr[0], paramPtr[1]);
-
-            sendMessage(DEVICE_WIFI, ICHIP2128, MSG_SET_PARAM,  paramPtr);	//Send the array to ichip by id (ie 1031)  255 indicates enabled
-        }
-    }
-
-    for (int i = 0; i < CFG_DEV_MGR_MAX_DEVICES; i++) {    //Find all devices that are NOT enabled and load into array
-        if (devices[i] && !devices[i]->isEnabled())
-        {
-            sprintf(paramPtr[0],"x%X",devices[i]->getId());
-            sprintf(paramPtr[1],"0");
-            // Logger::console(" Device: %s value %s", paramPtr[0], paramPtr[1]);
-            sendMessage(DEVICE_WIFI, ICHIP2128, MSG_SET_PARAM,  paramPtr);        //Send array to ichip by id (ie 1002) 0 indicates disabled
-        }
-    }
-*/
-
 }
 
 //Create a permanent instance of the device manager useable from anywhere.

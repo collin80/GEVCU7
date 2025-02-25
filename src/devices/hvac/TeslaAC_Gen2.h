@@ -59,7 +59,6 @@ public:
 
     TeslaACGen2Controller();
     void timestamp();
-    DeviceId getId();
     uint32_t getTickInterval();
 
     virtual void loadConfiguration();

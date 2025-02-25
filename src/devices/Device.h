@@ -46,6 +46,37 @@ class DeviceConfiguration {
 
 };
 
+//generic device faults start at 0
+enum DEVICEFAULTS
+{
+    NO_FAULT = 0,
+    CAN_COMM_FAULT,
+    COMM_TIMEOUT,
+    DEVICE_NOT_ENABLED,
+    DEVICE_OVER_TEMP,
+    DEVICE_UNDER_TEMP,
+    DEVICE_OVERV,
+    DEVICE_UNDERV,
+    DEVICE_HARDWARE_FAULT,
+    GENERAL_FAULT,
+
+    LAST_FAULT_CODE
+};
+
+static const char* DEVICE_FAULT_DESCS[] =
+{
+    "No fault",
+    "CAN communications fault",
+    "Communications timeout",
+    "Device is not enabled",
+    "Over temperature limit",
+    "Under temperature limit",
+    "Over voltage",
+    "Under voltage",
+    "Hardware fault",
+    "General fault"
+};
+
 /*
  * A abstract class for all Devices.
  */
@@ -56,10 +87,10 @@ public:
     virtual void earlyInit();
     virtual void handleMessage(uint32_t, const void* );
     virtual void disableDevice();
-    virtual DeviceType getType();
-    virtual DeviceId getId();
     void handleTick();
     bool isEnabled();
+    DeviceId getId();
+    DeviceType getType();
     virtual uint32_t getTickInterval();
     const char* getCommonName();
     const char* getShortName();
@@ -72,11 +103,14 @@ public:
     void setConfiguration(DeviceConfiguration *);
     const std::vector<ConfigEntry> *getConfigEntries();
     const ConfigEntry* findConfigEntry(const char *settingName);
+    virtual const char* getFaultDescription(uint16_t faultcode);
 
 protected:
     PrefHandler *prefsHandler;
     const char *commonName;
     const char *shortName;
+    DeviceId deviceId;
+    DeviceType deviceType;
     std::vector<ConfigEntry> cfgEntries;
 
 private:

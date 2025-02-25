@@ -7,7 +7,7 @@
  * Note: Make sure with all pin defintions of your hardware that each pin number is
  *       only defined once.
 
- Copyright (c) 2013 Collin Kidder, Michael Neuweiler, Charles Galpin
+ Copyright (c) 2013-2025 Collin Kidder, Michael Neuweiler, Charles Galpin
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -62,7 +62,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * These values should normally not be changed.
  */
 #define CFG_DEV_MGR_MAX_DEVICES     60 // the maximum number of devices supported by the DeviceManager
-#define CFG_CAN_NUM_OBSERVERS	    16 // maximum number of device subscriptions per CAN bus
+#define CFG_CAN_NUM_OBSERVERS	    32 // maximum number of device subscriptions per CAN bus
 #define CFG_STATUS_NUM_OBSERVERS    4 //How many devices can register to get StatusEntry updates. Use sparingly!
 #define CFG_TIMER_NUM_OBSERVERS	    16 // the maximum number of supported observers per timer
 #define CFG_TIMER_USE_QUEUING	    // if defined, TickHandler uses a queuing buffer instead of direct calls from interrupts - MUCH safer!

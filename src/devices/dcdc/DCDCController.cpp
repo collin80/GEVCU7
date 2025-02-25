@@ -41,6 +41,7 @@ DCDCController::DCDCController() : Device()
     deviceTemperature = 0.0f;
     isEnabled = false;
     isFaulted = false;
+    deviceType = DEVICE_DCDC;
 }
 
 void DCDCController::setup()
@@ -70,11 +71,6 @@ void DCDCController::setup()
 void DCDCController::handleTick() 
 {
     Device::handleTick(); //kick the ball up to papa
-}
-
-DeviceType DCDCController::getType()
-{
-    return (DeviceType::DEVICE_DCDC);
 }
 
 float DCDCController::getOutputVoltage()
@@ -122,3 +118,9 @@ void DCDCController::saveConfiguration()
     prefsHandler->forceCacheWrite();
 }
 
+const char* DCDCController::getFaultDescription(uint16_t faultcode)
+{
+    if ((faultcode >= 1000) && (faultcode < DCDC_LAST_FAULT) ) return DCDC_FAULT_DESCS[faultcode];
+    return Device::getFaultDescription(faultcode); //try generic device class if we couldn't handle it
+    return nullptr; //no match, return nothing
+}

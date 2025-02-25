@@ -32,6 +32,8 @@
 HeatCoolController::HeatCoolController() : Device() {    
     commonName = "Heating and Cooling Controller";
     shortName = "HeatCool";
+    deviceId = HEATCOOL;
+    deviceType = DEVICE_MISC;
     isHeatOn = false;
     isPumpOn = false;
     for (int i = 0; i < COOL_ZONES; i++) isCoolOn[i] = false;
@@ -192,18 +194,6 @@ void HeatCoolController::handleTick() {
             }
         }
     }
-}
- 
-/*
- * Return the device ID
- */
-DeviceId HeatCoolController::getId() {
-    return (HEATCOOL);
-}
-
-DeviceType HeatCoolController::getType()
-{
-    return DEVICE_MISC;
 }
 
 /*

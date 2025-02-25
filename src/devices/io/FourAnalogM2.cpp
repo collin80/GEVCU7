@@ -21,6 +21,8 @@ FourAnalogM2::FourAnalogM2()
 
 	commonName = "4 Output Analog M2";
     shortName = "4ANA-M2";
+    deviceId = FOURANALOGM2;
+    deviceType = DEVICE_IO;
 }
 
 void FourAnalogM2::earlyInit()
@@ -61,11 +63,6 @@ void FourAnalogM2::setup()
 void FourAnalogM2::handleMessage(uint32_t msgType, void* data)
 {
 	ExtIODevice::handleMessage(msgType, data);
-}
-
-DeviceId FourAnalogM2::getId()
-{
-	return FOURANALOGM2;
 }
 
 void FourAnalogM2::setAnalogOutput(int which, int value)

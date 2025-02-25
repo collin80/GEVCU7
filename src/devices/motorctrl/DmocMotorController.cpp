@@ -55,6 +55,7 @@ DmocMotorController::DmocMotorController() : MotorController() {
 //	maxTorque = 2000;
     commonName = "DMOC645 Inverter";
     shortName = "DMOC645";
+    deviceId = DMOC645;
 }
 
 void DmocMotorController::earlyInit()
@@ -467,10 +468,6 @@ byte DmocMotorController::calcChecksum(const CAN_message_t &thisFrame) {
     i = cs + 3;
     cs = ((int) 256 - i);
     return cs;
-}
-
-DeviceId DmocMotorController::getId() {
-    return (DMOC645);
 }
 
 uint32_t DmocMotorController::getTickInterval()

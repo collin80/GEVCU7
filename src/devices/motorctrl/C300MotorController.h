@@ -53,7 +53,6 @@ public:
     void earlyInit();
 
     C300MotorController();
-    DeviceId getId();
     uint32_t getTickInterval();
     void taperRegen();
 

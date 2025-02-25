@@ -40,7 +40,6 @@ public:
     void sendLogString(String str);
     void sendStatusCSV(String str);
 
-    DeviceId getId();
     uint32_t getTickInterval();
 
     virtual void loadConfiguration();

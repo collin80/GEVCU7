@@ -28,8 +28,8 @@
 #include "../DeviceManager.h"
 
 Device::Device() {
-    deviceConfiguration = NULL;
-    prefsHandler = NULL;
+    deviceConfiguration = nullptr;
+    prefsHandler = nullptr;
     //since all derived classes eventually call this base method this will cause every device to auto register itself with the device manager
     deviceManager.addDevice(this);
     commonName = "Generic Device";
@@ -107,14 +107,6 @@ void Device::handleMessage(uint32_t msgType, const void* message) {
     }
 }
 
-DeviceType Device::getType() {
-    return DEVICE_NONE;
-}
-
-DeviceId Device::getId() {
-    return INVALID;
-}
-
 void Device::loadConfiguration() {
 }
 
@@ -153,6 +145,22 @@ const ConfigEntry* Device::findConfigEntry(const char *settingName)
         }
     }
     return nullptr;
+}
+
+const char* Device::getFaultDescription(uint16_t faultcode)
+{
+    if (faultcode < LAST_FAULT_CODE) return DEVICE_FAULT_DESCS[faultcode];
+    return nullptr;
+}
+
+DeviceId Device::getId()
+{
+    return deviceId;
+}
+
+DeviceType Device::getType()
+{
+    return deviceType;
 }
 
 

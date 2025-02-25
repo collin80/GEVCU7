@@ -40,6 +40,8 @@ extern bool sdCardInitFailed;
 SystemDevice::SystemDevice() : Device() {    
     commonName = "System";
     shortName = "SYS";
+    deviceId = SYSTEM;
+    deviceType = DEVICE_MISC;
     sysConfig = nullptr;
 }
 
@@ -133,18 +135,6 @@ void SystemDevice::handleTick()
         sdCardInitFailed = false;
         sdCardWorking = false;
     }
-}
-
-/*
- * Return the device ID
- */
-DeviceId SystemDevice::getId() {
-    return (SYSTEM);
-}
-
-DeviceType SystemDevice::getType()
-{
-    return DEVICE_MISC;
 }
 
 /*

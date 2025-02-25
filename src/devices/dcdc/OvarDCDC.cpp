@@ -4,6 +4,7 @@ OvarDCDCController::OvarDCDCController() : DCDCController()
 {
     commonName = "Ovar DC-DC Converter";
     shortName = "OvarDCDC";
+    deviceId = OVAR_DCDC;
 }
 
 void OvarDCDCController::earlyInit()
@@ -54,11 +55,11 @@ void OvarDCDCController::handleCanFrame(const CAN_message_t &frame)
 	    dcdcAmps = (frame.buf[2] << 8) + (frame.buf[3]);
         dcdcTemperature = frame.buf[4] - 40;
         dcdc_status = frame.buf[5];
-        if (dcdc_status & 1) Logger::error("DCDC has failed");
-        if (dcdc_status & 2) Logger::error("DCDC temperature abnormal");
-        if (dcdc_status & 4) Logger::error("DCDC Input voltage abnormal");
-        if (dcdc_status & 8) Logger::error("DCDC output voltage abnormal");
-        if (dcdc_status & 16) Logger::error("Comm timeout. Failed!");
+        if (dcdc_status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);//Logger::error("DCDC has failed");
+        if (dcdc_status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);//Logger::error("DCDC temperature abnormal");
+        if (dcdc_status & 4) faultHandler.raiseFault(getId(), DCDC_FAULT_INPUTV);//Logger::error("DCDC Input voltage abnormal");
+        if (dcdc_status & 8) faultHandler.raiseFault(getId(), DCDC_FAULT_OUTPUTV);//Logger::error("DCDC output voltage abnormal");
+        if (dcdc_status & 16) faultHandler.raiseFault(getId(), COMM_TIMEOUT); //Logger::error("Comm timeout. Failed!");
         Logger::debug("DCDC    V: %f  A: %f   Status: %u", dcdcVoltage / 10.0f, dcdcAmps / 10.0f, dcdc_status);
 	}
 }
@@ -93,10 +94,6 @@ void OvarDCDCController::sendCmd()
     Logger::debug("Ovar DC-DC cmd: %X %X %X %X %X %X %X %X %X",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7]);
     crashHandler.addBreadcrumb(ENCODE_BREAD("OVRDC") + 1);
-}
-
-DeviceId OvarDCDCController::getId() {
-    return (OVAR_DCDC);
 }
 
 uint32_t OvarDCDCController::getTickInterval()

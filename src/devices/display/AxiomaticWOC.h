@@ -61,8 +61,6 @@ public:
 
     virtual void setup(); //initialization on start up
     void earlyInit();
-    DeviceType getType();
-    DeviceId getId();
 
     void loadConfiguration();
     void saveConfiguration();

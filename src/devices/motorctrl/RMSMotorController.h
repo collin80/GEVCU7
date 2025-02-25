@@ -54,7 +54,6 @@ public:
     void earlyInit();
 
     RMSMotorController();
-    DeviceId getId();
     uint32_t getTickInterval();
 
     virtual void loadConfiguration();

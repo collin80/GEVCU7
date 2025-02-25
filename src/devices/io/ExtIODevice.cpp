@@ -1,12 +1,12 @@
 #include "ExtIODevice.h"
 
-
-ExtIODevice::ExtIODevice()
+ExtIODevice::ExtIODevice() : Device()
 {
 	numDigitalOutputs = 0;
 	numAnalogOutputs = 0;
 	numDigitalInputs = 0;
 	numAnalogInputs = 0;
+	deviceType = DEVICE_IO;
 }
 
 void ExtIODevice::setup()
@@ -17,11 +17,6 @@ void ExtIODevice::setup()
 void ExtIODevice::tearDown()
 {
 	//Device::tearDown();
-}
-
-DeviceType ExtIODevice::getType()
-{
-	return DEVICE_IO;
 }
 
 void ExtIODevice::handleMessage(uint32_t msg, void* data)

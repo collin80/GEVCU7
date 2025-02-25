@@ -37,6 +37,8 @@ CanThrottle::CanThrottle() : Throttle() {
 
     commonName = "CANBus accelerator";
     shortName = "CANAccel";
+    deviceId = CANACCELPEDAL;
+    deviceType = DEVICE_THROTTLE;
 }
 
 void CanThrottle::earlyInit()
@@ -170,10 +172,6 @@ int16_t CanThrottle::calculatePedalPosition(RawSignalData* rawSignal) {
     CanThrottleConfiguration *config = (CanThrottleConfiguration *) getConfiguration();
 
     return normalizeAndConstrainInput(rawSignal->input1, config->minimumLevel1, config->maximumLevel1);
-}
-
-DeviceId CanThrottle::getId() {
-    return CANACCELPEDAL;
 }
 
 void CanThrottle::loadConfiguration() {

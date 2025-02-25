@@ -108,7 +108,6 @@ public:
     void handleTick();
     virtual ThrottleStatus getStatus();
     virtual bool isFaulted();
-    virtual DeviceType getType();
     virtual void setup();
     virtual void earlyInit();
     

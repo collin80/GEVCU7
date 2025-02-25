@@ -35,6 +35,24 @@
 #include "../../TickHandler.h"
 #include "../../CanHandler.h"
 
+enum CHARGER_FAULTS
+{
+    CHARGER_FAULT_INPUTV = 1000,
+    CHARGER_FAULT_INPUTA,
+    CHARGER_FAULT_OUTPUTV,
+    CHARGER_FAULT_OUTPUTA,
+    CHARGER_LAST_FAULT
+};
+
+static const char* CHARGER_FAULT_DESCS[] =
+{
+    "AC Input Voltage Error",
+    "AC Input Amperage Error",
+    "DC Output Voltage Error",
+    "DC Output Current Fault"
+};
+
+
 /*
  * Class for HV charger specific configuration parameters
  */
@@ -52,10 +70,10 @@ public:
     virtual void setup();
 
     ChargeController();
-    DeviceType getType();
     float getOutputVoltage();
     float getOutputCurrent();
     float getTemperature();
+    virtual const char* getFaultDescription(uint16_t faultcode);
 
     virtual void loadConfiguration();
     virtual void saveConfiguration();

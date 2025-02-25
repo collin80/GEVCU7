@@ -62,8 +62,6 @@ public:
     virtual void setup(); //initialization on start up
     void earlyInit();
     void timestamp();
-    DeviceType getType();
-    DeviceId getId();
 
     char *getTimeRunning();
     void loadConfiguration();

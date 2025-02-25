@@ -45,6 +45,8 @@
 VehicleSpecific::VehicleSpecific() : Device() {    
     commonName = "VehicleSpecific";
     shortName = "Vehicle";
+    deviceId = VEHICLESPECIFIC;
+    deviceType = DEVICE_MISC;
     didInitialSetup = false;
     waitTicksStartup = (5000000ul / CFG_TICK_INTERVAL_VEHICLE);
 }
@@ -133,18 +135,6 @@ void VehicleSpecific::handleTick() {
         if (motor) motor->setSelectedGear(MotorController::REVERSE);
     }
     
-}
-
-/*
- * Return the device ID
- */
-DeviceId VehicleSpecific::getId() {
-    return (VEHICLESPECIFIC);
-}
-
-DeviceType VehicleSpecific::getType()
-{
-    return DEVICE_MISC;
 }
 
 /*

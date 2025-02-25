@@ -57,11 +57,12 @@ typedef struct {
 class FaultHandler : public TickObserver {
 public:
     FaultHandler(); //constructor
-    uint16_t raiseFault(uint16_t device, uint16_t code, bool ongoing); //raise a new fault. Returns the fault # where this was stored
+    uint16_t raiseFault(uint16_t device, uint16_t code); //raise a new fault. Returns the fault # where this was stored
     void cancelOngoingFault(uint16_t device, uint16_t code); //if this fault was registered as ongoing then cancel it (set not ongoing) otherwise do nothing
     FAULT* getNextFault(); //get the next un-ack'd fault. Will also get first fault if the first call and you forgot to call getFirstFault
-    bool getFault(uint16_t fault, FAULT*);
-    uint16_t getFaultCount();
+    FAULT* getFault(uint16_t fault);
+    uint16_t getStoredFaultCount();
+    uint16_t getUnAckFaultCount();
     void handleTick();
     void setup();
 

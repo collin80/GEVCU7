@@ -34,6 +34,7 @@
 Throttle::Throttle() : Device() {
     level = 0;
     status = OK;
+    deviceType = DEVICE_THROTTLE;
 }
 
 void Throttle::earlyInit()
@@ -232,13 +233,6 @@ Throttle::ThrottleStatus Throttle::getStatus() {
  */
 bool Throttle::isFaulted() {
     return status != OK;
-}
-
-/*
- * Return the device type
- */
-DeviceType Throttle::getType() {
-    return DEVICE_THROTTLE;
 }
 
 RawSignalData* Throttle::acquireRawSignal() {

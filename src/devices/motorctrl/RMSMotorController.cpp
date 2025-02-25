@@ -42,6 +42,7 @@ RMSMotorController::RMSMotorController() : MotorController()
     isLockedOut = true;
     commonName = "Rinehart Motion Systems Inverter";
     shortName = "RMSInverter";
+	deviceId = RINEHARTINV;
 }
 
 void RMSMotorController::earlyInit()
@@ -567,11 +568,6 @@ void RMSMotorController::sendCmdFrame()
     Logger::debug("CAN Command Frame: %X  %X  %X  %X  %X  %X  %X  %X",output.id, output.buf[0],
                   output.buf[1],output.buf[2],output.buf[3],output.buf[4],
 				  output.buf[5],output.buf[6],output.buf[7]);
-}
-
-DeviceId RMSMotorController::getId()
-{
-    return (RINEHARTINV);
 }
 
 uint32_t RMSMotorController::getTickInterval()

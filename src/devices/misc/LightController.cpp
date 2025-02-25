@@ -32,6 +32,8 @@
 LightController::LightController() : Device() {    
     commonName = "Light Controller";
     shortName = "LightCtrl";
+    deviceType = DEVICE_MISC;
+    deviceId = LIGHTCTRL;
 }
 
 void LightController::earlyInit()
@@ -107,18 +109,6 @@ void LightController::handleTick() {
         }
         else systemIO.setDigitalOutput(config->reverseLightOutput, false);
     }
-}
-
-/*
- * Return the device ID
- */
-DeviceId LightController::getId() {
-    return (LIGHTCTRL);
-}
-
-DeviceType LightController::getType()
-{
-    return DEVICE_MISC;
 }
 
 /*
