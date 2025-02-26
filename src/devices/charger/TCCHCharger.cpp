@@ -66,12 +66,6 @@ void TCCHChargerController::handleTick()
 
     checkAlive(4000);
 
-    //temporary test code that faults at 50 seconds of up time for no reason at all.
-    if (millis() > 50000 && millis() < 55000)
-    {
-        faultHandler.raiseFault(getId(), 0xDEAD);
-    }
-
     sendCmd();   //Send our Delphi voltage control command
 }
 
