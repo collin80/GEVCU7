@@ -41,11 +41,6 @@ CanBrake::CanBrake() : Throttle() {
     deviceType = DEVICE_BRAKE;
 }
 
-void CanBrake::earlyInit()
-{
-    prefsHandler = new PrefHandler(CANBRAKEPEDAL);
-}
-
 void CanBrake::setup() {
     crashHandler.addBreadcrumb(ENCODE_BREAD("CNBRK") + 0);
     tickHandler.detach(this);

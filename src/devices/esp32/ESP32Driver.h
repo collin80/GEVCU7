@@ -33,7 +33,6 @@ public:
     virtual void handleTick();
     virtual void handleMessage(uint32_t msgType, const void* message);
     virtual void setup();
-    void earlyInit();
     void disableDevice();
     ESP32Driver();
     void processSerial();

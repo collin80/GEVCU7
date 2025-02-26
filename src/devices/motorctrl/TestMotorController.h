@@ -53,7 +53,6 @@ public:
 public:
     virtual void handleTick();
     virtual void setup();
-    void earlyInit();
     void setGear(Gears gear);
 
     TestMotorController();

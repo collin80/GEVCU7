@@ -39,11 +39,6 @@ Precharger::Precharger() : Device() {
     isPrecharged = false;
 }
 
-void Precharger::earlyInit()
-{
-    prefsHandler = new PrefHandler(PRECHARGER);
-}
-
 /*
  * Setup the device.
  */

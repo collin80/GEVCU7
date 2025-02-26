@@ -36,11 +36,6 @@ LightController::LightController() : Device() {
     deviceId = LIGHTCTRL;
 }
 
-void LightController::earlyInit()
-{
-    prefsHandler = new PrefHandler(LIGHTCTRL);
-}
-
 /*
  * Setup the device.
  */

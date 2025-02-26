@@ -158,7 +158,6 @@ public:
     void handleTick();
     void handleCanFrame(const CAN_message_t &frame);
     void setup();
-    void earlyInit();
     uint32_t getTickInterval();
 
     void loadConfiguration();

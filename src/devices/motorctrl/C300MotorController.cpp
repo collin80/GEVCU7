@@ -41,11 +41,6 @@ C300MotorController::C300MotorController() : MotorController() {
     deviceId = C300INV;
 }
 
-void C300MotorController::earlyInit()
-{
-    prefsHandler = new PrefHandler(C300INV);
-}
-
 void C300MotorController::setup() {
     tickHandler.detach(this);
 

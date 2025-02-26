@@ -61,11 +61,6 @@ void TSDCDCController::handleCanFrame(const CAN_message_t &frame)
     }
 }
 
-void TSDCDCController::earlyInit()
-{
-    prefsHandler = new PrefHandler(TESLA_S_DCDC);
-}
-
 void TSDCDCController::setup()
 {
     //prefsHandler->setEnabledStatus(true);

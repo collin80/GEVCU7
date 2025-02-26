@@ -25,7 +25,6 @@ class PotGearSelector: public Device {
 public:
     PotGearSelector();
     void setup();
-    void earlyInit();
     void handleTick();
     uint32_t getTickInterval();
 

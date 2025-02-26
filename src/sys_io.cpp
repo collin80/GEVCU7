@@ -38,6 +38,8 @@ SystemIO::SystemIO() : Device()
 {
     commonName = "System IO";
     shortName = "IO";
+    deviceId = SYSIO;
+    deviceType = DEVICE_IO;
     for (int i = 0; i < NUM_EXT_IO; i++)
     {
         extendedDigitalOut[i].device = NULL;
@@ -90,11 +92,6 @@ FLASHMEM void SystemIO::setSystemType(SystemType systemType) {
 
 SystemType SystemIO::getSystemType() {
     return sysType;
-}
-
-void SystemIO::earlyInit()
-{
-    if (!prefsHandler) prefsHandler = new PrefHandler(SYSIO);
 }
 
 DeviceId SystemIO::getId() {

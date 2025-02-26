@@ -60,7 +60,6 @@ public:
     virtual void handleCanFrame(const CAN_message_t &frame);
 
     virtual void setup(); //initialization on start up
-    void earlyInit();
     void timestamp();
 
     char *getTimeRunning();

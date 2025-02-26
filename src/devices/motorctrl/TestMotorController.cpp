@@ -36,11 +36,6 @@ TestMotorController::TestMotorController() : MotorController() {
     deviceId = TESTINVERTER;
 }
 
-void TestMotorController::earlyInit()
-{
-    prefsHandler = new PrefHandler(TESTINVERTER);
-}
-
 void TestMotorController::setup() {
     tickHandler.detach(this);
 

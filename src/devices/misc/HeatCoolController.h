@@ -72,7 +72,6 @@ class HeatCoolController: public Device {
 public:
     HeatCoolController();
     void setup();
-    void earlyInit();
     void handleTick();
 
     void loadConfiguration();

@@ -39,11 +39,6 @@ HeatCoolController::HeatCoolController() : Device() {
     for (int i = 0; i < COOL_ZONES; i++) isCoolOn[i] = false;
 }
 
-void HeatCoolController::earlyInit()
-{
-    prefsHandler = new PrefHandler(HEATCOOL);
-}
-
 /*
  * Setup the device.
  */

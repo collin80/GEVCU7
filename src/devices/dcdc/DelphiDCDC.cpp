@@ -14,11 +14,6 @@ void DelphiDCDCController::handleCanFrame(const CAN_message_t &frame)
     Logger::debug("DelphiDCDC data: %X%X%X%X%X%X%X%X", frame.buf[0],frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
 }
 
-void DelphiDCDCController::earlyInit()
-{
-    prefsHandler = new PrefHandler(DELPHI_DCDC);
-}
-
 void DelphiDCDCController::setup()
 {
     //prefsHandler->setEnabledStatus(true);

@@ -51,7 +51,6 @@ class PotBrake: public Throttle {
 public:
     PotBrake();
     void setup();
-    void earlyInit();
     void handleTick();
 
     RawSignalData *acquireRawSignal();

@@ -45,11 +45,6 @@ RMSMotorController::RMSMotorController() : MotorController()
 	deviceId = RINEHARTINV;
 }
 
-void RMSMotorController::earlyInit()
-{
-    prefsHandler = new PrefHandler(RINEHARTINV);
-}
-
 void RMSMotorController::setup()
 {
     tickHandler.detach(this);

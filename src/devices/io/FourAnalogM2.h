@@ -47,7 +47,6 @@ public:
     void loadConfiguration();
     void saveConfiguration();
 	void setup();
-    void earlyInit();
 
     void handleMessage(uint32_t, void*);
 

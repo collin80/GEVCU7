@@ -84,7 +84,6 @@ public:
     SystemIO();
     
     void setup();
-    void earlyInit();
     void setup_ADC_params();
 
     DeviceId getId();

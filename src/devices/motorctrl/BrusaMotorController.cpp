@@ -57,11 +57,6 @@ BrusaMotorController::BrusaMotorController() : MotorController() {
     deviceId = BRUSA_DMC5;
 }
 
-void BrusaMotorController::earlyInit()
-{
-    prefsHandler = new PrefHandler(BRUSA_DMC5);
-}
-
 /*
  * Setup the device if it is enabled in configuration.
  */

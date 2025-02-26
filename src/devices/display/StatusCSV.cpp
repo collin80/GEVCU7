@@ -57,11 +57,6 @@ StatusCSV::StatusCSV() : Device()
     deviceType = DEVICE_MISC;
 }
 
-void StatusCSV::earlyInit()
-{
-    prefsHandler = new PrefHandler(STATUSCSV);
-}
-
 /*
  * Initialization of hardware and parameters
  */

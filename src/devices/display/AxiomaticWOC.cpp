@@ -43,11 +43,6 @@ AxiomaticWOC::AxiomaticWOC() : Device()
     deviceType = DEVICE_DISPLAY;
 }
 
-void AxiomaticWOC::earlyInit()
-{
-    prefsHandler = new PrefHandler(AXIOWOC);
-}
-
 /*
  * Initialization of hardware and parameters
  */

@@ -53,7 +53,6 @@ class LightController: public Device {
 public:
     LightController();
     void setup();
-    void earlyInit();
     void handleTick();
 
     void loadConfiguration();

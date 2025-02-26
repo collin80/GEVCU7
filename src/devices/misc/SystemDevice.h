@@ -48,7 +48,6 @@ class SystemDevice: public Device {
 public:
     SystemDevice();
     void setup();
-    void earlyInit();
     void handleTick();
 
     void loadConfiguration();

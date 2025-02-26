@@ -40,11 +40,6 @@ LeafMotorController::LeafMotorController() : MotorController() {
     deviceId = LEAFINV;
 }
 
-void LeafMotorController::earlyInit()
-{
-    prefsHandler = new PrefHandler(LEAFINV);
-}
-
 void LeafMotorController::setup() {
     tickHandler.detach(this);
 

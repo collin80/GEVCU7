@@ -45,11 +45,6 @@ SystemDevice::SystemDevice() : Device() {
     sysConfig = nullptr;
 }
 
-void SystemDevice::earlyInit()
-{
-    if (!prefsHandler) prefsHandler = new PrefHandler(SYSTEM);
-}
-
 /*
  * Setup the device.
  */

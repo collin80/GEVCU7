@@ -77,7 +77,6 @@ public:
     void loadConfiguration();
     void saveConfiguration();
 	void setup();
-    void earlyInit();
 
 	void handleCanFrame(const CAN_message_t &frame);
 	void handlePDOFrame(CAN_message_t &frame);

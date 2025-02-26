@@ -37,11 +37,6 @@ PotBrake::PotBrake() : Throttle() {
     deviceType = DEVICE_BRAKE;
 }
 
-void PotBrake::earlyInit()
-{
-    prefsHandler = new PrefHandler(POTBRAKEPEDAL);
-}
-
 /*
  * Setup the device.
  */

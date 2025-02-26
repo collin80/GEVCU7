@@ -66,7 +66,6 @@ public:
     virtual void handleTick();
 
     virtual void setup(); //initialization on start up
-    void earlyInit();
     bool isHashMonitored(uint32_t hash);
     void toggleOutput();
 

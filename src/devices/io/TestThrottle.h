@@ -53,7 +53,6 @@ class TestThrottle: public Throttle {
 public:
     TestThrottle();
     void setup();
-    void earlyInit();
     void handleTick();
     RawSignalData *acquireRawSignal();
 

@@ -32,11 +32,6 @@ PotGearSelector::PotGearSelector() : Device()
     deviceType = DEVICE_MISC;
 }
 
-void PotGearSelector::earlyInit()
-{
-    prefsHandler = new PrefHandler(POTGEARSEL);
-}
-
 void PotGearSelector::setup()
 {
     tickHandler.detach(this);

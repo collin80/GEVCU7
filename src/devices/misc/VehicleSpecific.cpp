@@ -51,11 +51,6 @@ VehicleSpecific::VehicleSpecific() : Device() {
     waitTicksStartup = (5000000ul / CFG_TICK_INTERVAL_VEHICLE);
 }
 
-void VehicleSpecific::earlyInit()
-{
-    prefsHandler = new PrefHandler(VEHICLESPECIFIC);
-}
-
 /*
  * Setup the device.
  */

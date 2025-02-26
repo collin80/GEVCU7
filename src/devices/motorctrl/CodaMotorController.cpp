@@ -57,11 +57,6 @@ CodaMotorController::CodaMotorController() : MotorController()
     deviceId = CODAUQM;
 }
 
-void CodaMotorController::earlyInit()
-{
-    prefsHandler = new PrefHandler(CODAUQM);
-}
-
 void CodaMotorController::setup()
 {
     tickHandler.detach(this);

@@ -36,11 +36,6 @@ OrionBatteryManager::OrionBatteryManager() : BatteryManager() {
     deviceId = ORIONBMS;
 }
 
-void OrionBatteryManager::earlyInit()
-{
-    prefsHandler = new PrefHandler(ORIONBMS);
-}
-
 void OrionBatteryManager::setup() {
     tickHandler.detach(this);
 

@@ -7,11 +7,6 @@ OvarDCDCController::OvarDCDCController() : DCDCController()
     deviceId = OVAR_DCDC;
 }
 
-void OvarDCDCController::earlyInit()
-{
-    prefsHandler = new PrefHandler(OVAR_DCDC);
-}
-
 void OvarDCDCController::setup()
 {
     //prefsHandler->setEnabledStatus(true);

@@ -70,7 +70,6 @@ class Precharger: public Device {
 public:
     Precharger();
     void setup();
-    void earlyInit();
     void handleTick();
 
     void loadConfiguration();

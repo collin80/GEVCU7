@@ -37,11 +37,6 @@ Throttle::Throttle() : Device() {
     deviceType = DEVICE_THROTTLE;
 }
 
-void Throttle::earlyInit()
-{
-
-}
-
 void Throttle::setup()
 {
     ThrottleConfiguration *config = (ThrottleConfiguration *) getConfiguration();

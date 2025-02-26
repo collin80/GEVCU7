@@ -109,7 +109,6 @@ public:
     virtual ThrottleStatus getStatus();
     virtual bool isFaulted();
     virtual void setup();
-    virtual void earlyInit();
     
     virtual RawSignalData *acquireRawSignal();
     void loadConfiguration();

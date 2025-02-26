@@ -41,11 +41,6 @@ CanThrottle::CanThrottle() : Throttle() {
     deviceType = DEVICE_THROTTLE;
 }
 
-void CanThrottle::earlyInit()
-{
-    prefsHandler = new PrefHandler(CANACCELPEDAL);
-}
-
 void CanThrottle::setup() {
     tickHandler.detach(this);
 

@@ -55,7 +55,6 @@ public:
     virtual void handleTick();
     virtual void handleCanFrame(const CAN_message_t &frame);
     virtual void setup();
-    void earlyInit();
     void setGear(Gears gear);
 
     CKMotorController();

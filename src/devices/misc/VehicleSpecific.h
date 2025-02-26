@@ -45,7 +45,6 @@ class VehicleSpecific: public Device {
 public:
     VehicleSpecific();
     void setup();
-    void earlyInit();
     void handleTick();
 
     void loadConfiguration();

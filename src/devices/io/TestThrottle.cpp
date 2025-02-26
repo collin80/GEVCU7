@@ -37,11 +37,6 @@ TestThrottle::TestThrottle() : Throttle() {
     deviceId = TESTACCEL;
 }
 
-void TestThrottle::earlyInit()
-{
-    prefsHandler = new PrefHandler(TESTACCEL);
-}
-
 /*
  * Setup the device.
  */

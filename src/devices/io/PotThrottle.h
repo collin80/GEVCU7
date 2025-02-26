@@ -62,7 +62,6 @@ class PotThrottle: public Throttle {
 public:
     PotThrottle();
     void setup();
-    void earlyInit();
     void handleTick();
     RawSignalData *acquireRawSignal();
 

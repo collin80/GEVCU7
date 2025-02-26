@@ -86,11 +86,6 @@ void TeslaACGen2Controller::handleCanFrame(const CAN_message_t &frame)
     Logger::debug("TeslaACGen2 data: %X%X%X%X%X%X%X%X", frame.buf[0],frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
 }
 
-void TeslaACGen2Controller::earlyInit()
-{
-    prefsHandler = new PrefHandler(TESLA_AC_GEN2);
-}
-
 void TeslaACGen2Controller::setup()
 {
     //prefsHandler->setEnabledStatus(true);

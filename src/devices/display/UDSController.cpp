@@ -179,11 +179,6 @@ UDSController::UDSController() : Device() {
     deviceType = DEVICE_MISC;
 }
 
-void UDSController::earlyInit()
-{
-    prefsHandler = new PrefHandler(UDSCONTROLLER);
-}
-
 void UDSController::setup() {
     //TickHandler::getInstance()->detach(this);
     

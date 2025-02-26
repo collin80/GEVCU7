@@ -211,11 +211,6 @@ ESP32Driver::ESP32Driver() : Device()
     websocket_json = new DynamicJsonDocument(3000);
 }
 
-void ESP32Driver::earlyInit()
-{
-    prefsHandler = new PrefHandler(ESP32);
-}
-
 void ESP32Driver::packageAndSendEntry(StatusEntry *entry)
 {
     if (!systemAlive) return;

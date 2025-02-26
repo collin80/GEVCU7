@@ -41,11 +41,6 @@ CKMotorController::CKMotorController() : MotorController() {
     deviceId = CKINVERTER;
 }
 
-void CKMotorController::earlyInit()
-{
-    prefsHandler = new PrefHandler(CKINVERTER);
-}
-
 void CKMotorController::setup() 
 {
     tickHandler.detach(this);

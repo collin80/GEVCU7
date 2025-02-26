@@ -50,11 +50,6 @@ EVIC::EVIC() : Device()
     deviceType = DEVICE_MISC;
 }
 
-void EVIC::earlyInit()
-{
-    prefsHandler = new PrefHandler(EVICTUS);
-}
-
 /*
  * Initialization of hardware and parameters
  */

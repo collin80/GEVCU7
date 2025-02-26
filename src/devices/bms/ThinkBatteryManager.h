@@ -50,7 +50,6 @@ class ThinkBatteryManager : public BatteryManager, CanObserver
 public:
     ThinkBatteryManager();
     void setup();
-    void earlyInit();
     void handleTick();
     void handleCanFrame(const CAN_message_t &frame);
     bool hasPackVoltage();

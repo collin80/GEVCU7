@@ -58,11 +58,6 @@ DmocMotorController::DmocMotorController() : MotorController() {
     deviceId = DMOC645;
 }
 
-void DmocMotorController::earlyInit()
-{
-    prefsHandler = new PrefHandler(DMOC645);
-}
-
 void DmocMotorController::setup() {
     tickHandler.detach(this);
 

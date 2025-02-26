@@ -42,8 +42,9 @@ void Device::setup()
 {
 }
 
-void Device::earlyInit() {
-
+void Device::earlyInit()
+{
+    if (!prefsHandler) prefsHandler = new PrefHandler(deviceId);
 }
 
 //when called this will unregister the device so it quits getting updates

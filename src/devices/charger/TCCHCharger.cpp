@@ -7,11 +7,6 @@ TCCHChargerController::TCCHChargerController() : ChargeController()
     deviceId = TCCH_CHARGER;
 }
 
-void TCCHChargerController::earlyInit()
-{
-    prefsHandler = new PrefHandler(TCCH_CHARGER);
-}
-
 void TCCHChargerController::setup()
 {
     //prefsHandler->setEnabledStatus(true);

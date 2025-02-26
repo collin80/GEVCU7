@@ -55,7 +55,6 @@ class CanThrottle: public Throttle, CanObserver {
 public:
     CanThrottle();
     void setup();
-    void earlyInit();
     void handleTick();
     void handleCanFrame(const CAN_message_t &frame);
 

@@ -36,11 +36,6 @@ ThinkBatteryManager::ThinkBatteryManager() : BatteryManager() {
     deviceId = THINKBMS;
 }
 
-void ThinkBatteryManager::earlyInit()
-{
-    prefsHandler = new PrefHandler(THINKBMS);
-}
-
 void ThinkBatteryManager::setup() {
     tickHandler.detach(this);
 

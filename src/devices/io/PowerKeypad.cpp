@@ -24,11 +24,6 @@ PowerkeyPad::PowerkeyPad(void)
 	deviceType = DEVICE_IO;
 }
 
-void PowerkeyPad::earlyInit()
-{
-    prefsHandler = new PrefHandler(POWERKEYPRO);
-}
-
 void PowerkeyPad::setup()
 {
     crashHandler.addBreadcrumb(ENCODE_BREAD("PWRKY") + 0);

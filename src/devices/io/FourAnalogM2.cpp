@@ -25,11 +25,6 @@ FourAnalogM2::FourAnalogM2()
     deviceType = DEVICE_IO;
 }
 
-void FourAnalogM2::earlyInit()
-{
-    prefsHandler = new PrefHandler(FOURANALOGM2);
-}
-
 void FourAnalogM2::setup()
 {
     crashHandler.addBreadcrumb(ENCODE_BREAD("4ANAO") + 0);

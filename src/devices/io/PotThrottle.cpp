@@ -35,11 +35,6 @@ PotThrottle::PotThrottle() : Throttle() {
     deviceId = POTACCELPEDAL;
 }
 
-void PotThrottle::earlyInit()
-{
-    prefsHandler = new PrefHandler(POTACCELPEDAL);
-}
-
 /*
  * Setup the device.
  */
