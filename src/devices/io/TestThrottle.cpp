@@ -97,24 +97,24 @@ bool TestThrottle::validateSignal(RawSignalData *rawSignal) {
         if (status == OK)
             Logger::error(TESTACCEL, "ERR_HIGH_T1: throttle 1 value out of range: %i", calcThrottle1);
         status = ERR_HIGH_T1;
-        faultHandler.raiseFault(TESTACCEL, FAULT_THROTTLE_HIGH_A);
+        faultHandler.raiseFault(deviceId, THROTTLE_FAULT_IN1_TOOHIGH);
         return false;
     }
     else
     {
-        faultHandler.cancelOngoingFault(TESTACCEL, FAULT_THROTTLE_HIGH_A);
+        faultHandler.cancelOngoingFault(deviceId, THROTTLE_FAULT_IN1_TOOHIGH);
     }
 
     if (calcThrottle1 < (0 - CFG_THROTTLE_TOLERANCE)) {
         if (status == OK)
             Logger::error(TESTACCEL, "ERR_LOW_T1: throttle 1 value out of range: %i ", calcThrottle1);
         status = ERR_LOW_T1;
-        faultHandler.raiseFault(TESTACCEL, FAULT_THROTTLE_LOW_A);
+        faultHandler.raiseFault(deviceId, THROTTLE_FAULT_IN1_TOOLOW);
         return false;
     }
     else
     {
-        faultHandler.cancelOngoingFault(TESTACCEL, FAULT_THROTTLE_LOW_A);
+        faultHandler.cancelOngoingFault(deviceId, THROTTLE_FAULT_IN1_TOOLOW);
     }
 
     // all checks passed -> throttle is ok

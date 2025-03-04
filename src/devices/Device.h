@@ -59,7 +59,9 @@ enum DEVICEFAULTS
     DEVICE_UNDERV,
     DEVICE_HARDWARE_FAULT,
     GENERAL_FAULT,
-
+    INITIALIZATION_FAULT,
+    DEVICE_12V_TOOHIGH,
+    DEVICE_12V_TOOLOW,
     LAST_FAULT_CODE
 };
 
@@ -74,7 +76,10 @@ static const char* DEVICE_FAULT_DESCS[] =
     "Over voltage",
     "Under voltage",
     "Hardware fault",
-    "General fault"
+    "General fault",
+    "Fault when initializing device",
+    "12V battery too high",
+    "12V battery too low",
 };
 
 /*

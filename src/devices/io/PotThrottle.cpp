@@ -110,28 +110,28 @@ bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
     if (calcThrottle1 > (1000 + CFG_THROTTLE_TOLERANCE))
     {
         if (status == OK)
-            Logger::error(POTACCELPEDAL, "ERR_HIGH_T1: throttle 1 value out of range: %i", calcThrottle1);
+            Logger::error(deviceId, "ERR_HIGH_T1: throttle 1 value out of range: %i", calcThrottle1);
         status = ERR_HIGH_T1;
-        faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_HIGH_A);
+        faultHandler.raiseFault(deviceId, THROTTLE_FAULT_IN1_TOOHIGH);
         return false;
     }
     else
     {
         if (calcThrottle1 > 1000) calcThrottle1 = 1000;
-        faultHandler.cancelOngoingFault(POTACCELPEDAL, FAULT_THROTTLE_HIGH_A);
+        faultHandler.cancelOngoingFault(deviceId, THROTTLE_FAULT_IN1_TOOHIGH);
     }
 
     if (calcThrottle1 < (0 - CFG_THROTTLE_TOLERANCE)) {
         if (status == OK)
-            Logger::error(POTACCELPEDAL, "ERR_LOW_T1: throttle 1 value out of range: %i ", calcThrottle1);
+            Logger::error(deviceId, "ERR_LOW_T1: throttle 1 value out of range: %i ", calcThrottle1);
         status = ERR_LOW_T1;
-        faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_LOW_A);
+        faultHandler.raiseFault(deviceId, THROTTLE_FAULT_IN1_TOOLOW);
         return false;
     }
     else
     {
         if (calcThrottle1 < 0) calcThrottle1 = 0;
-        faultHandler.cancelOngoingFault(POTACCELPEDAL, FAULT_THROTTLE_LOW_A);
+        faultHandler.cancelOngoingFault(deviceId, THROTTLE_FAULT_IN1_TOOLOW);
     }
 
     if (config->numberPotMeters > 1) {
@@ -139,69 +139,73 @@ bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
 
         if (calcThrottle2 > (1000 + CFG_THROTTLE_TOLERANCE)) {
             if (status == OK)
-                Logger::error(POTACCELPEDAL, "ERR_HIGH_T2: throttle 2 value out of range: %i", calcThrottle2);
+                Logger::error(deviceId, "ERR_HIGH_T2: throttle 2 value out of range: %i", calcThrottle2);
             status = ERR_HIGH_T2;
-            faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_HIGH_B);
+            faultHandler.raiseFault(deviceId, THROTTLE_FAULT_IN2_TOOHIGH);
             return false;
         }
         else
         {
             if (calcThrottle2 > 1000) calcThrottle2 = 1000;
-            faultHandler.cancelOngoingFault(POTACCELPEDAL, FAULT_THROTTLE_HIGH_B);
+            faultHandler.cancelOngoingFault(deviceId, THROTTLE_FAULT_IN2_TOOHIGH);
         }
 
         if (calcThrottle2 < (0 - CFG_THROTTLE_TOLERANCE)) {
             if (status == OK)
-                Logger::error(POTACCELPEDAL, "ERR_LOW_T2: throttle 2 value out of range: %i", calcThrottle2);
+                Logger::error(deviceId, "ERR_LOW_T2: throttle 2 value out of range: %i", calcThrottle2);
             status = ERR_LOW_T2;
-            faultHandler.cancelOngoingFault(POTACCELPEDAL, FAULT_THROTTLE_LOW_B);
+            faultHandler.cancelOngoingFault(deviceId, THROTTLE_FAULT_IN2_TOOLOW);
             return false;
         }
         else
         {
             if (calcThrottle2 < 0) calcThrottle2 = 0;
-            faultHandler.cancelOngoingFault(POTACCELPEDAL, FAULT_THROTTLE_LOW_B);
+            faultHandler.cancelOngoingFault(deviceId, THROTTLE_FAULT_IN2_TOOLOW);
         }
 
         if (config->throttleSubType == 2) {
             // inverted throttle 2 means the sum of the two throttles should be 1000
             if ( abs(1000 - calcThrottle1 - calcThrottle2) > ThrottleMaxErrValue) {
                 if (status == OK)
-                    Logger::error(POTACCELPEDAL, "Sum of throttle 1 (%i) and throttle 2 (%i) exceeds max variance from 1000 (%i)",
+                    Logger::error(deviceId, "Sum of throttle 1 (%i) and throttle 2 (%i) exceeds max variance from 1000 (%i)",
                                   calcThrottle1, calcThrottle2, ThrottleMaxErrValue);
                 status = ERR_MISMATCH;
-                faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB);
+                faultHandler.raiseFault(deviceId, THROTTLE_FAULT_MISMATCH);
                 return false;
             }
             else
             {
-                faultHandler.cancelOngoingFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB);
+                faultHandler.cancelOngoingFault(deviceId, THROTTLE_FAULT_MISMATCH);
             }
         } else {
             if ((calcThrottle1 - ThrottleMaxErrValue) > calcThrottle2) { //then throttle1 is too large compared to 2
                 if (status == OK)
-                    Logger::error(POTACCELPEDAL, "throttle 1 too high (%i) compared to 2 (%i)", calcThrottle1, calcThrottle2);
+                    Logger::error(deviceId, "throttle 1 too high (%i) compared to 2 (%i)", calcThrottle1, calcThrottle2);
                 status = ERR_MISMATCH;
-                faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB);
+                faultHandler.raiseFault(deviceId, THROTTLE_FAULT_MISMATCH);
                 return false;
             }
             else if ((calcThrottle2 - ThrottleMaxErrValue) > calcThrottle1) { //then throttle2 is too large compared to 1
                 if (status == OK)
-                    Logger::error(POTACCELPEDAL, "throttle 2 too high (%i) compared to 1 (%i)", calcThrottle2, calcThrottle1);
+                    Logger::error(deviceId, "throttle 2 too high (%i) compared to 1 (%i)", calcThrottle2, calcThrottle1);
                 status = ERR_MISMATCH;
-                faultHandler.raiseFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB);
+                faultHandler.raiseFault(deviceId, THROTTLE_FAULT_MISMATCH);
                 return false;
             }
             else
             {
-                faultHandler.cancelOngoingFault(POTACCELPEDAL, FAULT_THROTTLE_MISMATCH_AB);
+                faultHandler.cancelOngoingFault(deviceId, THROTTLE_FAULT_MISMATCH);
             }
         }
     }
 
     // all checks passed -> throttle is ok
     if (status != OK)
-        if (status != ERR_MISC) Logger::info(POTACCELPEDAL, (char *)Constants::normalOperation);
+        if (status != ERR_MISC)
+        {
+            Logger::info(deviceId, (char *)Constants::normalOperation);
+            faultHandler.cancelDeviceFaults(deviceId);
+        }
     status = OK;
     return true;
 }

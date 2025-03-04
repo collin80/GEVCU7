@@ -188,6 +188,7 @@ void Precharger::handleTick() {
         if (config->prechargeRelay != 255) systemIO.setDigitalOutput(config->prechargeRelay, false);
         if (config->mainRelay != 255) systemIO.setDigitalOutput(config->mainRelay, false);
         Logger::error("Precharge faulted! Ensuring precharge relay and main contactor are open!");
+        faultHandler.raiseFault(deviceId, BMS_FAULT_PRECHARGE_FAILURE);
         break;
     }
 }

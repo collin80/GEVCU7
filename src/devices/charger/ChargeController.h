@@ -52,7 +52,6 @@ static const char* CHARGER_FAULT_DESCS[] =
     "DC Output Current Fault"
 };
 
-
 /*
  * Class for HV charger specific configuration parameters
  */

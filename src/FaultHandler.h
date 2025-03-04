@@ -59,6 +59,8 @@ public:
     FaultHandler(); //constructor
     uint16_t raiseFault(uint16_t device, uint16_t code); //raise a new fault. Returns the fault # where this was stored
     void cancelOngoingFault(uint16_t device, uint16_t code); //if this fault was registered as ongoing then cancel it (set not ongoing) otherwise do nothing
+    void cancelDeviceFaults(uint16_t device);
+    void cancelAllFaults();
     FAULT* getNextFault(); //get the next un-ack'd fault. Will also get first fault if the first call and you forgot to call getFirstFault
     FAULT* getFault(uint16_t fault);
     uint16_t getStoredFaultCount();
@@ -67,6 +69,8 @@ public:
     void setup();
 
     uint16_t setFaultACK(uint16_t fault); //acknowledge the fault # - returns fault # if successful (0xFFFF otherwise)
+    uint16_t setAckForDevice(uint16_t device);
+    uint16_t ackAllFaults();
     uint16_t setFaultOngoing(uint16_t fault, bool ongoing); //set value of ongoing flag - returns fault # on success
 
 private:

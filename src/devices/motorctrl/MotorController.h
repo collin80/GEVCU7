@@ -43,6 +43,45 @@
 
 #define CFG_TICK_INTERVAL_MOTOR_CONTROLLER          40000
 
+enum MCTRL_FAULTS
+{
+    MCTRL_FAULT_MOTOR_OVERTEMP = 1000,
+    MCTRL_FAULT_INV_OVERTEMP,
+    MCTRL_FAULT_TORQ_UNABLE,
+    MCTRL_FAULT_HIGH_RPM,
+    MCTRL_FAULT_OVER_TORQ,
+    MCTRL_FAULT_ENABLE,
+    MCTRL_FAULT_DRIVE,
+    MCTRL_FAULT_REVERSE,
+    MCTRL_FAULT_POWER,
+    MCTRL_FAULT_OVERCURR,
+    MCTRL_FAULT_UNDERV,
+    MCTRL_FAULT_OVERV,
+    MCTRL_FAULT_REGEN,
+    MCTRL_FAULT_MOTOR_POS,
+    
+    MCTRL_LAST_FAULT
+};
+
+static const char* MCTRL_FAULT_DESCS[] =
+{
+    "Motor is over temperature",
+    "Inverter is over temperature",
+    "Unable to provide requested torque",
+    "RPM is too high",
+    "Output torque is higher than requested",
+    "Cannot enable motor controller",
+    "Cannot enter drive state",
+    "Cannot enter reverse state",
+    "Cannot provide requested power",
+    "Too much current being requested by drive unit",
+    "Incoming HV too low",
+    "Incoming HV too high",
+    "Cannot produce requested regen power",
+    "Motor position sensing error",
+
+};
+
 class MotorControllerConfiguration : public DeviceConfiguration {
 public:
     uint16_t speedMax; // in rpm
@@ -138,6 +177,7 @@ public:
     bool isWarning();
 
     uint32_t getStatusBitfield();
+    virtual const char* getFaultDescription(uint16_t faultcode);
 
     MotorStatus statusBitfield; // bitfield variable for use of the specific implementation
 

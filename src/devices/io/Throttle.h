@@ -39,6 +39,29 @@
 
 #define THROTTLE 0x1030
 
+enum THROTTLE_FAULTS
+{
+    THROTTLE_FAULT_IN1_TOOHIGH = 1000,
+    THROTTLE_FAULT_IN1_TOOLOW,
+    THROTTLE_FAULT_IN2_TOOHIGH,
+    THROTTLE_FAULT_IN2_TOOLOW,
+    THROTTLE_FAULT_IN3_TOOHIGH,
+    THROTTLE_FAULT_IN3_TOOLOW,
+    THROTTLE_FAULT_MISMATCH,   
+    THROTTLE_LAST_FAULT
+};
+
+static const char* THROTTLE_FAULT_DESCS[] =
+{
+    "Throttle input 1 is too high",
+    "Throttle input 1 is too low",
+    "Throttle input 2 is too high",
+    "Throttle input 2 is too low",
+    "Throttle input 3 is too high",
+    "Throttle input 3 is too low",
+    "Throttle inputs do not agree on position",
+};
+
 //These should be able to be removed.
 /*
 #define ThrottleRegenMinValue	270		//where does Regen stop (1/10 of percent)
@@ -109,6 +132,7 @@ public:
     virtual ThrottleStatus getStatus();
     virtual bool isFaulted();
     virtual void setup();
+    virtual const char* getFaultDescription(uint16_t faultcode);
     
     virtual RawSignalData *acquireRawSignal();
     void loadConfiguration();

@@ -140,26 +140,38 @@ bool CanBrake::validateSignal(RawSignalData* rawSignal) {
 
     if (ticksNoResponse >= CFG_CANTHROTTLE_MAX_NUM_LOST_MSG) {
         if (status == OK)
-            Logger::error(CANBRAKEPEDAL, "no response on position request received: %d ", ticksNoResponse);
+        {
+            faultHandler.raiseFault(deviceId, COMM_TIMEOUT);
+            Logger::error(deviceId, "no response on position request received: %d ", ticksNoResponse);
+        }
         status = ERR_MISC;
         return false;
     }
     if (rawSignal->input1 > (config->maximumLevel1 + CFG_THROTTLE_TOLERANCE)) {
         if (status == OK)
-            Logger::error(CANBRAKEPEDAL, (char *)Constants::valueOutOfRange, rawSignal->input1);
+        {
+            faultHandler.raiseFault(deviceId, THROTTLE_FAULT_IN1_TOOHIGH);
+            Logger::error(deviceId, (char *)Constants::valueOutOfRange, rawSignal->input1);
+        }
         status = ERR_HIGH_T1;
         return false;
     }
     if (rawSignal->input1 < (config->minimumLevel1 - CFG_THROTTLE_TOLERANCE)) {
         if (status == OK)
-            Logger::error(CANBRAKEPEDAL, (char *)Constants::valueOutOfRange, rawSignal->input1);
+        {
+            faultHandler.raiseFault(deviceId, THROTTLE_FAULT_IN1_TOOLOW);
+            Logger::error(deviceId, (char *)Constants::valueOutOfRange, rawSignal->input1);
+        }
         status = ERR_LOW_T1;
         return false;
     }
 
     // all checks passed -> brake is working
     if (status != OK)
-        Logger::info(CANBRAKEPEDAL, (char *)Constants::normalOperation);
+    {
+        faultHandler.cancelDeviceFaults(deviceId);
+        Logger::info(deviceId, (char *)Constants::normalOperation);
+    }
     status = OK;
     return true;
 }

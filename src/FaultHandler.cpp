@@ -104,10 +104,29 @@ void FaultHandler::cancelOngoingFault(uint16_t device, uint16_t code)
 {
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
-        if (faultList[i].ongoing && faultList[i].device == device && faultList[i].faultCode == code)
+        if (faultList[i].ongoing && (faultList[i].device == device) && (faultList[i].faultCode == code) )
         {
             setFaultOngoing(i, false);
         }
+    }
+}
+
+void FaultHandler::cancelDeviceFaults(uint16_t device)
+{
+    for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
+    {
+        if (faultList[i].ongoing && (faultList[i].device == device) )
+        {
+            setFaultOngoing(i, false);
+        }
+    }
+}
+
+void FaultHandler::cancelAllFaults()
+{
+    for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
+    {
+        setFaultOngoing(i, false);
     }
 }
 
@@ -232,6 +251,30 @@ uint16_t FaultHandler::setFaultACK(uint16_t fault)
         return fault;
     }
     return 0xFFFF;
+}
+
+uint16_t FaultHandler::setAckForDevice(uint16_t device)
+{
+    for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
+    {
+        if ( (faultList[i].device == device) && (faultList[i].ack == 0) )
+        {
+            faultList[i].ack = 1;
+            writeFaultToEEPROM(i);
+        }
+    }
+}
+
+uint16_t FaultHandler::ackAllFaults()
+{
+    for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
+    {
+        if ( faultList[i].ack == 0 )
+        {
+            faultList[i].ack = 1;
+            writeFaultToEEPROM(i);
+        }
+    }
 }
 
 uint16_t FaultHandler::setFaultOngoing(uint16_t fault, bool ongoing)

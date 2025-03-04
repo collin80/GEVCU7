@@ -52,6 +52,12 @@ enum BMS_FAULTS
     BMS_FAULT_PRECHARGE_STUCK_OPEN,
     BMS_FAULT_PRECHARGE_STUCK_CLOSED,
     BMS_FAULT_PRECHARGE_FAILURE,
+    BMS_FAULT_PACK_OVERV,
+    BMS_FAULT_PACK_UNDERV,
+    BMS_FAULT_PACK_OVERT,
+    BMS_FAULT_PACK_UNDERT,
+    BMS_FAULT_INT_ISO,
+    BMS_FAULT_EXT_ISO,
     BMS_LAST_FAULT
 };
 
@@ -65,7 +71,7 @@ static const char* BMS_FAULT_DESCS[] =
     "Fault in cell balancing",
     "Fault in current sensing",
     "Positive current is too large!",
-    "Negative ccurrent is too large!"
+    "Negative current is too large!"
     "Contactor A stuck open",
     "Contactor A stuck closed",
     "Contactor B stuck open",
@@ -73,6 +79,12 @@ static const char* BMS_FAULT_DESCS[] =
     "Precharge contactor stuck open",
     "Precharge contactor stuck closed",
     "Precharge process has failed",
+    "HV pack over voltage",
+    "HV pack under voltage",
+    "HV pack over temperature",
+    "HV pack under temperature",
+    "HV pack internal isolation fault",
+    "HV pack external isolation fault",
 };
 
 class BatteryManagerConfiguration : public DeviceConfiguration {

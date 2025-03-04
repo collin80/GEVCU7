@@ -166,6 +166,7 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
         case 3: //enabled
             actualState = ENABLE;
             faulted=false;
+            faultHandler.cancelDeviceFaults(deviceId);
             break;
 
         case 4: //Power Down
@@ -175,16 +176,19 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
 
         case 5: //Fault
             actualState = DISABLED;
+            faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
             faulted=true;
             break;
 
         case 6: //Critical Fault
             actualState = DISABLED;
+            faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
             faulted=true;
             break;
 
         case 7: //LOS
             actualState = DISABLED;
+            faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
             faulted=true;
             break;
         }

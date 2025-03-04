@@ -297,4 +297,9 @@ void Throttle::saveConfiguration() {
     Logger::console("Throttle configuration saved");
 }
 
-
+const char* Throttle::getFaultDescription(uint16_t faultcode)
+{
+    if ((faultcode >= 1000) && (faultcode < THROTTLE_LAST_FAULT) ) return THROTTLE_FAULT_DESCS[faultcode];
+    return Device::getFaultDescription(faultcode); //try generic device class if we couldn't handle it
+    return nullptr; //no match, return nothing
+}

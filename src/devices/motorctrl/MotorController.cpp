@@ -507,6 +507,14 @@ bool MotorController::isReady() {
     return false;
 }
 
+const char* MotorController::getFaultDescription(uint16_t faultcode)
+{
+    if ((faultcode >= 1000) && (faultcode < MCTRL_LAST_FAULT) ) return MCTRL_FAULT_DESCS[faultcode];
+    return Device::getFaultDescription(faultcode); //try generic device class if we couldn't handle it
+    return nullptr; //no match, return nothing
+}
+
+
 uint32_t MotorController::getOdometerReading()
 {
     MotorControllerConfiguration *config = (MotorControllerConfiguration *)getConfiguration();

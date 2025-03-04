@@ -126,6 +126,18 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         //byte 4 bits 0-1 = CAN Fault (HTF would we know that then?!)
         //Byte 4 bits 2-3 = motor temperature sensor fault
         //Byte 5 bits 4-5 = motor tuning fault (position faulty?)
+        if (frame.buf[0] & 0x00000011) faultHandler.raiseFault(deviceId, MCTRL_FAULT_HIGH_RPM);
+        if (frame.buf[0] & 0b00110000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_MOTOR_OVERTEMP);
+        if (frame.buf[1] & 0b00110000) faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
+        if (frame.buf[2] & 0b00110000) faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
+        if (frame.buf[2] & 0b11000000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_INV_OVERTEMP);
+        if (frame.buf[3] & 0b00000011) faultHandler.raiseFault(deviceId, MCTRL_FAULT_OVERCURR);
+        if (frame.buf[3] & 0b00001100) faultHandler.raiseFault(deviceId, MCTRL_FAULT_OVERV);
+        if (frame.buf[3] & 0b00110000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_UNDERV);
+        if (frame.buf[3] & 0b11000000) faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
+        if (frame.buf[4] & 0b00000011) faultHandler.raiseFault(deviceId, CAN_COMM_FAULT);
+        if (frame.buf[4] & 0b00001100) faultHandler.raiseFault(deviceId, MCTRL_FAULT_MOTOR_OVERTEMP);
+        if (frame.buf[5] & 0b00110000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_MOTOR_POS);
         break;
     //canada messages
     case 0x0C01D0EF:
@@ -193,6 +205,26 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
         //byte 2 bit 7: UDC lower limit alarm
         //byte 3 bit 0: UDC upper limit alarm
         //byte 4 bit 0: HV interlock status (0=Abnormal 1 = All OK)
+        if (frame.buf[0] & 0b00000001) faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
+        if (frame.buf[0] & 0b00000100) faultHandler.raiseFault(deviceId, MCTRL_FAULT_OVERV);
+        if (frame.buf[0] & 0b00001000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_UNDERV);
+        if (frame.buf[0] & 0b00010000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_HIGH_RPM);
+        if (frame.buf[0] & 0b00100000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_INV_OVERTEMP);
+        if (frame.buf[0] & 0b10000000) faultHandler.raiseFault(deviceId, CAN_COMM_FAULT);
+        if (frame.buf[1] & 0b00000001) faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
+        if (frame.buf[1] & 0b00000010) faultHandler.raiseFault(deviceId, INITIALIZATION_FAULT);
+        if (frame.buf[1] & 0b00001000) faultHandler.raiseFault(deviceId, DEVICE_12V_TOOHIGH);
+        if (frame.buf[1] & 0b00010000) faultHandler.raiseFault(deviceId, DEVICE_12V_TOOLOW);
+        if (frame.buf[1] & 0b00100000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_POWER);
+        if (frame.buf[1] & 0b01000000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_MOTOR_POS);
+        if (frame.buf[1] & 0b10000000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_OVERCURR);
+        if (frame.buf[2] & 0b00000001) faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
+        if (frame.buf[2] & 0b00000010) faultHandler.raiseFault(deviceId, MCTRL_FAULT_OVERCURR);
+        if (frame.buf[2] & 0b00001000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_OVERV);
+        if (frame.buf[2] & 0b01000000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_MOTOR_OVERTEMP);
+        if (frame.buf[2] & 0b10000000) faultHandler.raiseFault(deviceId, MCTRL_FAULT_UNDERV);
+        if (frame.buf[3] & 0b00000001) faultHandler.raiseFault(deviceId, MCTRL_FAULT_OVERV);
+        if (!frame.buf[4] & 0b00000001) faultHandler.raiseFault(deviceId, DEVICE_HARDWARE_FAULT);
         break;
     }
 }

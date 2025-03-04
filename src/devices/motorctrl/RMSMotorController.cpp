@@ -386,62 +386,61 @@ void RMSMotorController::handleCANMsgFaults(uint8_t *data)
 	if (postFaults != 0 || runFaults != 0) faulted = true;
 	else faulted = false;
 	
-	if (postFaults & 1) Logger::error("Desat Fault!");
-	if (postFaults & 2) Logger::error("HW Over Current Limit!");
-	if (postFaults & 4) Logger::error("Accelerator Shorted!");
-	if (postFaults & 8) Logger::error("Accelerator Open!");
-	if (postFaults & 0x10) Logger::error("Current Sensor Low!");
-	if (postFaults & 0x20) Logger::error("Current Sensor High!");
-	if (postFaults & 0x40) Logger::error("Module Temperature Low!");
-	if (postFaults & 0x80) Logger::error("Module Temperature High!");
-	if (postFaults & 0x100) Logger::error("Control PCB Low Temp!");
-	if (postFaults & 0x200) Logger::error("Control PCB High Temp!");
-	if (postFaults & 0x400) Logger::error("Gate Drv PCB Low Temp!");
-	if (postFaults & 0x800) Logger::error("Gate Drv PCB High Temp!");
-	if (postFaults & 0x1000) Logger::error("5V Voltage Low!");
-	if (postFaults & 0x2000) Logger::error("5V Voltage High!");
-	if (postFaults & 0x4000) Logger::error("12V Voltage Low!");
-	if (postFaults & 0x8000) Logger::error("12V Voltage High!");
-	if (postFaults & 0x10000ul) Logger::error("2.5V Voltage Low!");
-	if (postFaults & 0x20000ul) Logger::error("2.5V Voltage High!");
-	if (postFaults & 0x40000ul) Logger::error("1.5V Voltage Low!");
-	if (postFaults & 0x80000ul) Logger::error("1.5V Voltage High!");
-	if (postFaults & 0x100000ul) Logger::error("DC Bus Voltage High!");
-	if (postFaults & 0x200000ul) Logger::error("DC Bus Voltage Low!");
-	if (postFaults & 0x400000ul) Logger::error("Precharge Timeout!");
-	if (postFaults & 0x800000ul) Logger::error("Precharge Voltage Failure!");
-	if (postFaults & 0x1000000ul) Logger::error("EEPROM Checksum Invalid!");
-	if (postFaults & 0x2000000ul) Logger::error("EEPROM Data Out of Range!");
-	if (postFaults & 0x4000000ul) Logger::error("EEPROM Update Required!");
-	if (postFaults & 0x40000000ul) Logger::error("Brake Shorted!");
-	if (postFaults & 0x80000000ul) Logger::error("Brake Open!");	
+	if (postFaults & 1) faultHandler.raiseFault(deviceId, RMS_POST_DESAT);
+	if (postFaults & 2) faultHandler.raiseFault(deviceId, RMS_POST_OVERCURR);
+	if (postFaults & 4) faultHandler.raiseFault(deviceId, RMS_POST_ACCEL_SHORTED);
+	if (postFaults & 8) faultHandler.raiseFault(deviceId, RMS_POST_ACCEL_OPEN);
+	if (postFaults & 0x10) faultHandler.raiseFault(deviceId, RMS_POST_CURR_LOW);
+	if (postFaults & 0x20) faultHandler.raiseFault(deviceId, RMS_POST_CURR_HIGH);
+	if (postFaults & 0x40) faultHandler.raiseFault(deviceId, RMS_POST_MOD_TEMP_LOW);
+	if (postFaults & 0x80) faultHandler.raiseFault(deviceId, RMS_POST_MOD_TEMP_HIGH);
+	if (postFaults & 0x100) faultHandler.raiseFault(deviceId, RMS_POST_PCB_TEMP_LOW);
+	if (postFaults & 0x200) faultHandler.raiseFault(deviceId, RMS_POST_PCB_TEMP_HIGH);
+	if (postFaults & 0x400) faultHandler.raiseFault(deviceId, RMS_POST_GATEDRV_TEMP_LOW);
+	if (postFaults & 0x800) faultHandler.raiseFault(deviceId, RMS_POST_GATEDRV_TEMP_HIGH);
+	if (postFaults & 0x1000) faultHandler.raiseFault(deviceId, RMS_POST_5V_LOW);
+	if (postFaults & 0x2000) faultHandler.raiseFault(deviceId, RMS_POST_5V_HIGH);
+	if (postFaults & 0x4000) faultHandler.raiseFault(deviceId, RMS_POST_12V_LOW);
+	if (postFaults & 0x8000) faultHandler.raiseFault(deviceId, RMS_POST_12V_HIGH);
+	if (postFaults & 0x10000ul) faultHandler.raiseFault(deviceId, RMS_POST_25V_LOW);
+	if (postFaults & 0x20000ul) faultHandler.raiseFault(deviceId, RMS_POST_25V_HIGH);
+	if (postFaults & 0x40000ul) faultHandler.raiseFault(deviceId, RMS_POST_15V_LOW);
+	if (postFaults & 0x80000ul) faultHandler.raiseFault(deviceId, RMS_POST_15V_HIGH);
+	if (postFaults & 0x100000ul) faultHandler.raiseFault(deviceId, RMS_POST_HVDC_HIGH);
+	if (postFaults & 0x200000ul) faultHandler.raiseFault(deviceId, RMS_POST_HVDC_LOW);
+	if (postFaults & 0x400000ul) faultHandler.raiseFault(deviceId, RMS_POST_PRECHARGE_TIMEOUT);
+	if (postFaults & 0x800000ul) faultHandler.raiseFault(deviceId, RMS_POST_PRECHARGE_FAILURE);
+	if (postFaults & 0x1000000ul) faultHandler.raiseFault(deviceId, RMS_POST_EEPROM_CHECKSUM);
+	if (postFaults & 0x2000000ul) faultHandler.raiseFault(deviceId, RMS_POST_EEPROM_CORRUPT);
+	if (postFaults & 0x4000000ul) faultHandler.raiseFault(deviceId, RMS_POST_EEPROM_UPDATE);
+	if (postFaults & 0x40000000ul) faultHandler.raiseFault(deviceId, RMS_POST_BRAKE_SHORTED);
+	if (postFaults & 0x80000000ul) faultHandler.raiseFault(deviceId, RMS_POST_BRAKE_OPEN);
 	
-	if (runFaults & 1) Logger::error("Motor Over Speed!");
-	if (runFaults & 2) Logger::error("Over Current!");
-	if (runFaults & 4) Logger::error("Over Voltage!");
-	if (runFaults & 8) Logger::error("Inverter Over Temp!");
-	if (runFaults & 0x10) Logger::error("Accelerator Shorted!");
-	if (runFaults & 0x20) Logger::error("Accelerator Open!");
-	if (runFaults & 0x40) Logger::error("Direction Cmd Fault!");
-	if (runFaults & 0x80) Logger::error("Inverter Response Timeout!");
-	if (runFaults & 0x100) Logger::error("Hardware Desat Error!");
-	if (runFaults & 0x200) Logger::error("Hardware Overcurrent Fault!");
-	if (runFaults & 0x400) Logger::error("Under Voltage!");
-	if (runFaults & 0x800) Logger::error("CAN Cmd Message Lost!");
-	if (runFaults & 0x1000) Logger::error("Motor Over Temperature!");
-	if (runFaults & 0x10000ul) Logger::error("Brake Input Shorted!");
-	if (runFaults & 0x20000ul) Logger::error("Brake Input Open!");
-	if (runFaults & 0x40000ul) Logger::error("IGBT A Over Temperature!");
-	if (runFaults & 0x80000ul) Logger::error("IGBT B Over Temperature!");
-	if (runFaults & 0x100000ul) Logger::error("IGBT C Over Temperature!");
-	if (runFaults & 0x200000ul) Logger::error("PCB Over Temperature!");
-	if (runFaults & 0x400000ul) Logger::error("Gate Drive 1 Over Temperature!");
-	if (runFaults & 0x800000ul) Logger::error("Gate Drive 2 Over Temperature!");
-	if (runFaults & 0x1000000ul) Logger::error("Gate Drive 3 Over Temperature!");
-	if (runFaults & 0x2000000ul) Logger::error("Current Sensor Fault!");
-	if (runFaults & 0x40000000ul) Logger::error("Resolver Not Connected!");
-	if (runFaults & 0x80000000ul) Logger::error("Inverter Discharge Active!");
-	
+	if (runFaults & 1) faultHandler.raiseFault(deviceId, RMS_RUN_MOTOR_OVERSPEED);
+	if (runFaults & 2) faultHandler.raiseFault(deviceId, RMS_RUN_OVERCURR);
+	if (runFaults & 4) faultHandler.raiseFault(deviceId, RMS_RUN_OVERVOLT);
+	if (runFaults & 8) faultHandler.raiseFault(deviceId, RMS_RUN_INV_OVERTEMP);
+	if (runFaults & 0x10) faultHandler.raiseFault(deviceId, RMS_RUN_ACCEL_SHORTED);
+	if (runFaults & 0x20) faultHandler.raiseFault(deviceId, RMS_RUN_ACCEL_OPEN);
+	if (runFaults & 0x40) faultHandler.raiseFault(deviceId, RMS_RUN_DIRCMD);
+	if (runFaults & 0x80) faultHandler.raiseFault(deviceId, RMS_RUN_INV_RESPONSE_TIMEOUT);
+	if (runFaults & 0x100) faultHandler.raiseFault(deviceId, RMS_RUN_HWDESAT);
+	if (runFaults & 0x200) faultHandler.raiseFault(deviceId, RMS_RUN_HWOVERCURR);
+	if (runFaults & 0x400) faultHandler.raiseFault(deviceId, RMS_RUN_UNDERVOLT);
+	if (runFaults & 0x800) faultHandler.raiseFault(deviceId, RMS_RUN_COMM_LOST);
+	if (runFaults & 0x1000) faultHandler.raiseFault(deviceId, RMS_RUN_MOTOR_OVERTEMP);
+	if (runFaults & 0x10000ul) faultHandler.raiseFault(deviceId, RMS_RUN_BRAKE_SHORTED);
+	if (runFaults & 0x20000ul) faultHandler.raiseFault(deviceId, RMS_RUN_BRAKE_OPEN);
+	if (runFaults & 0x40000ul) faultHandler.raiseFault(deviceId, RMS_RUN_IGBTA_OVERTEMP);
+	if (runFaults & 0x80000ul) faultHandler.raiseFault(deviceId, RMS_RUN_IGBTB_OVERTEMP);
+	if (runFaults & 0x100000ul) faultHandler.raiseFault(deviceId, RMS_RUN_IGBTC_OVERTEMP);
+	if (runFaults & 0x200000ul) faultHandler.raiseFault(deviceId, RMS_RUN_PCB_OVERTEMP);
+	if (runFaults & 0x400000ul) faultHandler.raiseFault(deviceId, RMS_RUN_GATE1_OVERTEMP);
+	if (runFaults & 0x800000ul) faultHandler.raiseFault(deviceId, RMS_RUN_GATE2_OVERTEMP);
+	if (runFaults & 0x1000000ul) faultHandler.raiseFault(deviceId, RMS_RUN_GATE3_OVERTEMP);
+	if (runFaults & 0x2000000ul) faultHandler.raiseFault(deviceId, RMS_RUN_CURR_SENSE_FAULT);
+	if (runFaults & 0x40000000ul) faultHandler.raiseFault(deviceId, RMS_RUN_RESOLVER_MISSING);
+	if (runFaults & 0x80000000ul) faultHandler.raiseFault(deviceId, RMS_RUN_INV_DISCHARGE);
 }
 
 void RMSMotorController::handleCANMsgTorqueTimer(uint8_t *data)
@@ -591,6 +590,13 @@ void RMSMotorController::saveConfiguration()
     prefsHandler->write("CanbusNum", config->canbusNum);
 
     MotorController::saveConfiguration();
+}
+
+const char* RMSMotorController::getFaultDescription(uint16_t faultcode)
+{
+    if ((faultcode >= 2000) && (faultcode < RMS_LAST_FAULT) ) return RMS_FAULT_DESCS[faultcode];
+    return MotorController::getFaultDescription(faultcode); //try generic motor controller class if we couldn't handle it
+    return nullptr; //no match, return nothing
 }
 
 DMAMEM RMSMotorController rmsMC;
