@@ -38,7 +38,6 @@
 #include "../../Logger.h"
 #include "../../DeviceManager.h"
 #include "../../FaultHandler.h"
-#include "../../FaultCodes.h"
 
 #define HEATCOOL 0x3200
 #define CFG_TICK_INTERVAL_HEATCOOL     200000

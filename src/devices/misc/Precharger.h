@@ -38,7 +38,6 @@
 #include "../../Logger.h"
 #include "../../DeviceManager.h"
 #include "../../FaultHandler.h"
-#include "../../FaultCodes.h"
 
 #define PRECHARGER 0x3100
 #define CFG_TICK_INTERVAL_PRECHARGE     40000

@@ -36,7 +36,6 @@
 #include "../../Logger.h"
 #include "../../DeviceManager.h"
 #include "../../FaultHandler.h"
-#include "../../FaultCodes.h"
 
 #define VEHICLESPECIFIC 0x3000
 #define CFG_TICK_INTERVAL_VEHICLE                   100000

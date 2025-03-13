@@ -35,7 +35,6 @@
 #include "../../Logger.h"
 #include "../../DeviceManager.h"
 #include "../../FaultHandler.h"
-#include "../../FaultCodes.h"
 
 #define EXAMPLE 0x3100
 #define CFG_TICK_INTERVAL_EXAMPLE     200000

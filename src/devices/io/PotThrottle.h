@@ -35,7 +35,6 @@
 #include "../../Logger.h"
 #include "../../DeviceManager.h"
 #include "../../FaultHandler.h"
-#include "../../FaultCodes.h"
 
 #define POTACCELPEDAL 0x1031
 #define THROTTLE_INPUT_BRAKELIGHT  2

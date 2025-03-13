@@ -35,7 +35,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <Arduino.h>
 #include "config.h"
 #include "Logger.h"
-#include "FaultCodes.h"
 #include "MemCache.h"
 
 extern MemCache *memCache;

@@ -35,7 +35,6 @@
 #include "../../Logger.h"
 #include "../../DeviceManager.h"
 #include "../../FaultHandler.h"
-#include "../../FaultCodes.h"
 
 #define TESTACCEL 0x104F
 #define CFG_TICK_INTERVAL_POT_THROTTLE              40000

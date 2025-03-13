@@ -85,7 +85,7 @@ void CodaMotorController::handleCanFrame(const CAN_message_t &frame)
     setAlive(); //if a frame got to here then it passed the filter and must come from UQM
     if (!running) //if we're newly running then cancel faults if necessary.
     {
-        faultHandler.cancelOngoingFault(CODAUQM, FAULT_MOTORCTRL_COMM);
+        faultHandler.cancelOngoingFault(CODAUQM, COMM_TIMEOUT);
     }
     running = true;
     Logger::debug("UQM inverter msg: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],

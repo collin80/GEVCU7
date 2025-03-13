@@ -82,7 +82,7 @@ void RMSMotorController::handleCanFrame(const CAN_message_t &frame)
 	
     if (!running) //if we're newly running then cancel faults if necessary.
     {
-        faultHandler.cancelOngoingFault(RINEHARTINV, FAULT_MOTORCTRL_COMM);
+        faultHandler.cancelOngoingFault(RINEHARTINV, COMM_TIMEOUT);
     }
     
     running = true;

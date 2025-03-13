@@ -37,7 +37,6 @@
 #include "../../Logger.h"
 #include "../../DeviceManager.h"
 #include "../../FaultHandler.h"
-#include "../../FaultCodes.h"
 
 #define LIGHTCTRL 0x3300
 #define CFG_TICK_INTERVAL_LIGHTING     40000

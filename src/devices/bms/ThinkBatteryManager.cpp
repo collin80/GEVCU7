@@ -74,13 +74,13 @@ void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
         //we're not really interested in much here except whether init worked.
         if ((frame.buf[6] & 1) == 0)  //there was an initialization error!
         {
-            faultHandler.raiseFault(THINKBMS, FAULT_BMS_INIT);
+            faultHandler.raiseFault(THINKBMS, INITIALIZATION_FAULT);
             allowCharge = false;
             allowDischarge = false;
         }
         else
         {
-            faultHandler.cancelOngoingFault(THINKBMS, FAULT_BMS_INIT);
+            faultHandler.cancelOngoingFault(THINKBMS, INITIALIZATION_FAULT);
         }
         break;
     case 0x301: //System Data 0
@@ -92,23 +92,23 @@ void ThinkBatteryManager::handleCanFrame(const CAN_message_t &frame) {
     case 0x302: //System Data 1
         if ((frame.buf[0] & 1) == 1) //Byte 0 bit 0 = general error
         {
-            faultHandler.raiseFault(THINKBMS, FAULT_BMS_MISC);
+            faultHandler.raiseFault(THINKBMS, GENERAL_FAULT);
             allowDischarge = false;
             allowCharge = false;
         }
         else
         {
-            faultHandler.cancelOngoingFault(THINKBMS, FAULT_BMS_MISC);
+            faultHandler.cancelOngoingFault(THINKBMS, GENERAL_FAULT);
         }
         if ((frame.buf[2] & 1) == 1) //Byte 2 bit 0 = general isolation error
         {
-            faultHandler.raiseFault(THINKBMS, FAULT_HV_BATT_ISOLATION);
+            faultHandler.raiseFault(THINKBMS, BMS_FAULT_INT_ISO);
             allowDischarge = false;
             allowCharge = false;
         }
         else
         {
-            faultHandler.cancelOngoingFault(THINKBMS, FAULT_HV_BATT_ISOLATION);
+            faultHandler.cancelOngoingFault(THINKBMS, BMS_FAULT_INT_ISO);
         }
         //Min discharge voltage = bytes 4-5 - tenths of a volt
         //Max discharge current = bytes 6-7 - tenths of an amp
