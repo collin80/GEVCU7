@@ -61,4 +61,5 @@ public:
 
 private:
     void sendCmd();
+    OvarDCDCConfiguration *config;
 };

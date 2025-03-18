@@ -128,6 +128,7 @@ private:
     uint8_t challenge[4];
     bool inSecurityMode;
     bool generatedSeed;
+    UDSConfiguration *config;
 };
 
 #endif

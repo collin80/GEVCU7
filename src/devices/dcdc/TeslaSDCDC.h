@@ -62,6 +62,7 @@ public:
 
 private:
     void sendCmd();
+    TSDCDCConfiguration *config;
 };
 
 #endif /* TSDCDC_H_ */

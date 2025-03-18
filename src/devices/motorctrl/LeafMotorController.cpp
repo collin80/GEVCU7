@@ -48,8 +48,6 @@ void LeafMotorController::setup() {
     loadConfiguration();
     MotorController::setup(); // run the parent class version of this function
 
-    LeafMotorControllerConfiguration *config = (LeafMotorControllerConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName          helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"LEAFINV-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -140,7 +138,6 @@ void LeafMotorController::handleTick() {
 void LeafMotorController::sendFrame11A()
 {
     static int counter = 0;
-    LeafMotorControllerConfiguration *config = (LeafMotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
     Gears currentGear = getSelectedGear();
     output.len = 8;
@@ -270,7 +267,7 @@ uint32_t LeafMotorController::getTickInterval()
 }
 
 void LeafMotorController::loadConfiguration() {
-    LeafMotorControllerConfiguration *config = (LeafMotorControllerConfiguration *)getConfiguration();
+    config = (LeafMotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new LeafMotorControllerConfiguration();
@@ -283,7 +280,7 @@ void LeafMotorController::loadConfiguration() {
 }
 
 void LeafMotorController::saveConfiguration() {
-    LeafMotorControllerConfiguration *config = (LeafMotorControllerConfiguration *)getConfiguration();
+    config = (LeafMotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new LeafMotorControllerConfiguration();

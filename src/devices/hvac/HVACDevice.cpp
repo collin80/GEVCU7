@@ -39,7 +39,7 @@ HVACController::HVACController() : Device()
 
 void HVACController::setup()
 {
-    HVACConfiguration *config = (HVACConfiguration *)getConfiguration();
+    loadConfiguration();
 
     Device::setup(); // run the parent class version of this function3
 
@@ -70,7 +70,7 @@ double HVACController::getWattage()
 
 void HVACController::loadConfiguration()
 {
-    HVACConfiguration *config = (HVACConfiguration *)getConfiguration();
+    config = (HVACConfiguration *)getConfiguration();
 
     if (!config) {
         config = new HVACConfiguration();
@@ -84,7 +84,7 @@ void HVACController::loadConfiguration()
 
 void HVACController::saveConfiguration()
 {
-    HVACConfiguration *config = (HVACConfiguration *)getConfiguration();
+    config = (HVACConfiguration *)getConfiguration();
 
     Device::saveConfiguration();
 

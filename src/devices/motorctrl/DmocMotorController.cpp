@@ -66,8 +66,6 @@ void DmocMotorController::setup() {
     loadConfiguration();
     MotorController::setup(); // run the parent class version of this function
 
-    DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName          helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"DMOC-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -240,7 +238,6 @@ void DmocMotorController::handleTick() {
 
 //Commanded RPM plus state of key and gear selector
 void DmocMotorController::sendCmd1() {
-    DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
     OperationState newstate;
     Gears currentGear = getSelectedGear();
@@ -296,7 +293,6 @@ void DmocMotorController::sendCmd1() {
 
 void DmocMotorController::taperRegen()
 {
-    DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
     if (speedActual < config->regenTaperLower) torqueRequested = 0;
     else {        
         int32_t range = config->regenTaperUpper - config->regenTaperLower; //next phase is to not hard code this
@@ -308,7 +304,6 @@ void DmocMotorController::taperRegen()
 
 //Torque limits
 void DmocMotorController::sendCmd2() {
-    DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
     Gears currentGear = getSelectedGear();
     PowerMode currentMode = getPowerMode();
@@ -475,7 +470,7 @@ uint32_t DmocMotorController::getTickInterval()
 }
 
 void DmocMotorController::loadConfiguration() {
-    DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
+    config = (DmocMotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new DmocMotorControllerConfiguration();
@@ -488,7 +483,7 @@ void DmocMotorController::loadConfiguration() {
 }
 
 void DmocMotorController::saveConfiguration() {
-    DmocMotorControllerConfiguration *config = (DmocMotorControllerConfiguration *)getConfiguration();
+    config = (DmocMotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new DmocMotorControllerConfiguration();
@@ -509,8 +504,6 @@ void DmocMotorController::timestamp()
     // char buffer[9];
     //sprintf(buffer,"%02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds);
     // Serial<<buffer<<"\n";
-
-
 }
 
 DMAMEM DmocMotorController dmocMC;

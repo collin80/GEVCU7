@@ -65,6 +65,7 @@ public:
 protected:
 private:
     void sendKeepAlive();
+    OrionBatteryManagerConfiguration *config;
 };
 
 #endif

@@ -53,7 +53,6 @@ void TestMotorController::setup() {
 }
 
 void TestMotorController::handleTick() {
-    TestMotorControllerConfiguration *config = (TestMotorControllerConfiguration *)getConfiguration();
     Gears currentGear = getSelectedGear();
     PowerMode currentMode = getPowerMode();
 
@@ -139,7 +138,7 @@ uint32_t TestMotorController::getTickInterval()
 }
 
 void TestMotorController::loadConfiguration() {
-    TestMotorControllerConfiguration *config = (TestMotorControllerConfiguration *)getConfiguration();
+    config = (TestMotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new TestMotorControllerConfiguration();

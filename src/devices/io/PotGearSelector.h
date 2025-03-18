@@ -34,4 +34,5 @@ public:
 protected:
 
 private:
+    PotGearSelConfiguration *config;
 };

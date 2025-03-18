@@ -67,6 +67,8 @@ public:
 private:
     void sendLEDCmd();
     void sendWakeCfg();
+
+    AxiomaticWOCConfiguration *config;
 };
 
 #endif

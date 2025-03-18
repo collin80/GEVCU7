@@ -46,9 +46,7 @@ void PotBrake::setup() {
 
     Logger::info("add device: PotBrake (id: %X, %X)", POTBRAKEPEDAL, this);
 
-    //Note, always call loadConfiguration before the getConfiguration line or you will have a bad time.
     loadConfiguration();
-    PotBrakeConfiguration *config = (PotBrakeConfiguration *) getConfiguration();
     
     //don't call the base class here as it creates config names that would overlap the pot throttle. Do everything custom here.
     //Throttle::setup(); //call base class
@@ -85,7 +83,6 @@ void PotBrake::handleTick() {
  * Retrieve raw input signals from the brake hardware.
  */
 RawSignalData *PotBrake::acquireRawSignal() {
-    PotBrakeConfiguration *config = (PotBrakeConfiguration *) getConfiguration();
     rawSignal.input1 = systemIO.getAnalogIn(config->AdcPin1);
     return &rawSignal;
 }
@@ -94,8 +91,6 @@ RawSignalData *PotBrake::acquireRawSignal() {
  * Perform sanity check on the ADC input values.
  */
 bool PotBrake::validateSignal(RawSignalData *rawSignal) {
-    PotBrakeConfiguration *config = (PotBrakeConfiguration *) getConfiguration();
-
     if (rawSignal->input1 > (config->maximumLevel1 + CFG_THROTTLE_TOLERANCE)) {
         if (status == OK)
         {
@@ -130,7 +125,6 @@ bool PotBrake::validateSignal(RawSignalData *rawSignal) {
  * to the specified range and the type of potentiometer.
  */
 int16_t PotBrake::calculatePedalPosition(RawSignalData *rawSignal) {
-    PotBrakeConfiguration *config = (PotBrakeConfiguration *) getConfiguration();
     uint16_t calcBrake1, clampedLevel;
 
     if (config->maximumLevel1 == 0) //brake processing disabled if max is 0
@@ -154,7 +148,6 @@ int16_t PotBrake::calculatePedalPosition(RawSignalData *rawSignal) {
  * brake based regen.
  */
 int16_t PotBrake::mapPedalPosition(int16_t pedalPosition) {
-    PotBrakeConfiguration *config = (PotBrakeConfiguration *) getConfiguration();
     int16_t brakeLevel, range;
 
     range = config->maximumRegen - config->minimumRegen;
@@ -171,7 +164,7 @@ int16_t PotBrake::mapPedalPosition(int16_t pedalPosition) {
  * are chosen and the configuration is overwritten in the EEPROM.
  */
 void PotBrake::loadConfiguration() {
-    PotBrakeConfiguration *config = new PotBrakeConfiguration();
+    config = new PotBrakeConfiguration();
     setConfiguration(config);
 
     // we deliberately do not load config via parent class here !
@@ -190,7 +183,7 @@ void PotBrake::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void PotBrake::saveConfiguration() {
-    PotBrakeConfiguration *config = (PotBrakeConfiguration *) getConfiguration();
+    config = (PotBrakeConfiguration *) getConfiguration();
 
     // we deliberately do not save config via parent class here !
 

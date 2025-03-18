@@ -82,6 +82,7 @@ private:
     bool isHeatOn;
     bool isCoolOn[COOL_ZONES];
     bool isPumpOn;
+    HeatCoolConfiguration *config;
 };
 
 #endif

@@ -60,6 +60,7 @@ public:
 protected:
 
 private:
+    LightingConfiguration *config;
 };
 
 #endif

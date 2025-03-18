@@ -123,6 +123,7 @@ private:
     int16_t DCA;
     int8_t TEMPM;
     int8_t TEMPI;
+    EVICConfiguration *config;
 
     int tickCounter;
     char buffer[30]; // a buffer for various string conversions

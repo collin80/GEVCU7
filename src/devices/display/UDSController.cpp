@@ -63,7 +63,6 @@ void udsCallback(const ISOTP_data &iso_config, const uint8_t *buf)
 
 void UDSController::handleIsoTP(const ISOTP_data &iso_config, const uint8_t *buf)
 {
-    UDSConfiguration* config = (UDSConfiguration *)getConfiguration();
     ISOTP_data reply;
     uint32_t firmwareSize;
     uint32_t firmwareAddr;
@@ -186,8 +185,6 @@ void UDSController::setup() {
 
     loadConfiguration();
     Device::setup();
-
-    UDSConfiguration* config = (UDSConfiguration *)getConfiguration();
 
     cfgEntries.reserve(5);
 
@@ -478,7 +475,7 @@ void UDSController::handleTick()
 }
 
 void UDSController::loadConfiguration() {
-    UDSConfiguration *config = (UDSConfiguration *) getConfiguration();
+    config = (UDSConfiguration *) getConfiguration();
 
     if (!config) { // as lowest sub-class make sure we have a config object
         config = new UDSConfiguration();
@@ -498,7 +495,7 @@ void UDSController::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void UDSController::saveConfiguration() {
-    UDSConfiguration *config = (UDSConfiguration *) getConfiguration();
+    config = (UDSConfiguration *) getConfiguration();
 
     Device::saveConfiguration(); // call parent
 
@@ -510,5 +507,4 @@ void UDSController::saveConfiguration() {
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
 }
-
 

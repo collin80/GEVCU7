@@ -15,8 +15,6 @@ void OvarDCDCController::setup()
     loadConfiguration();
     DCDCController::setup(); // run the parent class version of this function
 
-    OvarDCDCConfiguration *config = (OvarDCDCConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"OVARDCDC-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -70,8 +68,6 @@ void OvarDCDCController::handleTick()
 
 void OvarDCDCController::sendCmd()
 {
-    OvarDCDCConfiguration *config = (OvarDCDCConfiguration *)getConfiguration();
-
     CAN_message_t output;
     output.len = 8;
     output.id = 0x1806D5F4;
@@ -97,7 +93,7 @@ uint32_t OvarDCDCController::getTickInterval()
 }
 
 void OvarDCDCController::loadConfiguration() {
-    OvarDCDCConfiguration *config = (OvarDCDCConfiguration *)getConfiguration();
+    config = (OvarDCDCConfiguration *)getConfiguration();
 
     if (!config) {
         config = new OvarDCDCConfiguration();
@@ -110,7 +106,7 @@ void OvarDCDCController::loadConfiguration() {
 }
 
 void OvarDCDCController::saveConfiguration() {
-    OvarDCDCConfiguration *config = (OvarDCDCConfiguration *)getConfiguration();
+    config = (OvarDCDCConfiguration *)getConfiguration();
 
     if (!config) {
         config = new OvarDCDCConfiguration();

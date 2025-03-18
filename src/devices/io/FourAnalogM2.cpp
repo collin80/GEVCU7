@@ -38,8 +38,6 @@ void FourAnalogM2::setup()
 
     loadConfiguration();
 
-    //FourAnaM2DeviceConfiguration *config = (FourAnaM2DeviceConfiguration *)getConfiguration();
-
     //ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     //entry = {"POWERKEY-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -90,7 +88,7 @@ int16_t FourAnalogM2::getAnalogOutput(int which)
 }
 
 void FourAnalogM2::loadConfiguration() {
-    FourAnaM2DeviceConfiguration *config = (FourAnaM2DeviceConfiguration *)getConfiguration();
+    config = (FourAnaM2DeviceConfiguration *)getConfiguration();
 
     if (!config) {
         config = new FourAnaM2DeviceConfiguration();
@@ -101,7 +99,7 @@ void FourAnalogM2::loadConfiguration() {
 }
 
 void FourAnalogM2::saveConfiguration() {
-    FourAnaM2DeviceConfiguration *config = (FourAnaM2DeviceConfiguration *)getConfiguration();
+    config = (FourAnaM2DeviceConfiguration *)getConfiguration();
 
     if (!config) {
         config = new FourAnaM2DeviceConfiguration();

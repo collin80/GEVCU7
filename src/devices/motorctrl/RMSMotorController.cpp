@@ -55,8 +55,6 @@ void RMSMotorController::setup()
 
     MotorController::setup(); // run the parent class version of this function
 
-    RMSMotorControllerConfiguration *config = (RMSMotorControllerConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName          helpText                              variable ref        Type                   Min Max Precision Funct
     entry = {"RMS-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -501,7 +499,6 @@ void RMSMotorController::handleTick() {
 
 void RMSMotorController::sendCmdFrame()
 {
-    RMSMotorControllerConfiguration *config = (RMSMotorControllerConfiguration *)getConfiguration();
 	Gears currentGear = getSelectedGear();
 
     CAN_message_t output;
@@ -571,7 +568,7 @@ uint32_t RMSMotorController::getTickInterval()
 
 void RMSMotorController::loadConfiguration()
 {
-    RMSMotorControllerConfiguration *config = (RMSMotorControllerConfiguration *)getConfiguration();
+    config = (RMSMotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new RMSMotorControllerConfiguration();
@@ -585,7 +582,7 @@ void RMSMotorController::loadConfiguration()
 
 void RMSMotorController::saveConfiguration()
 {
-    RMSMotorControllerConfiguration *config = (RMSMotorControllerConfiguration *)getConfiguration();
+    config = (RMSMotorControllerConfiguration *)getConfiguration();
     
     prefsHandler->write("CanbusNum", config->canbusNum);
 
@@ -594,7 +591,7 @@ void RMSMotorController::saveConfiguration()
 
 const char* RMSMotorController::getFaultDescription(uint16_t faultcode)
 {
-    if ((faultcode >= 2000) && (faultcode < RMS_LAST_FAULT) ) return RMS_FAULT_DESCS[faultcode];
+    if ((faultcode >= 2000) && (faultcode < RMS_LAST_FAULT) ) return RMS_FAULT_DESCS[faultcode-2000];
     return MotorController::getFaultDescription(faultcode); //try generic motor controller class if we couldn't handle it
     return nullptr; //no match, return nothing
 }

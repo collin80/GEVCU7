@@ -63,6 +63,7 @@ protected:
     bool isFaulted;
     double currentTemperature;
     double wattage;
+    HVACConfiguration *config;
 };
 
 

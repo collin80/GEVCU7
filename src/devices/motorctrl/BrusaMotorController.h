@@ -173,6 +173,7 @@ private:
     PowerMode powerMode; // the desired power mode
     uint8_t controlBitField; // the control bit field to send via DMC_CTRL in data[0]
     CAN_message_t outputFrame; // the output CAN frame;
+    BrusaMotorControllerConfiguration *config;
 
     void sendControl();
     void sendControl2();

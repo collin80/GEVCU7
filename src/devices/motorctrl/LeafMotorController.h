@@ -69,6 +69,8 @@ private:
     byte alive;
     uint16_t torqueCommand;
     long ms;
+    LeafMotorControllerConfiguration *config;
+
     void sendFrame11A(); //gear selection, car on/off
     void sendFrame1D4(); //torque request, charge status
     void sendFrame1DB(); //battery status msg 1

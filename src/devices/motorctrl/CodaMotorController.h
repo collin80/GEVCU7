@@ -48,8 +48,6 @@ public:
 
 class CodaMotorController: public MotorController, CanObserver {
 
-
-
 public:
     virtual void handleTick();
     virtual void handleCanFrame(const CAN_message_t &frame);
@@ -59,7 +57,6 @@ public:
     void timestamp();
     uint32_t getTickInterval();
 
-
     virtual void loadConfiguration();
     virtual void saveConfiguration();
 
@@ -67,6 +64,7 @@ private:
     byte alive;
     byte sequence;
     uint16_t torqueCommand;
+    CodaMotorControllerConfiguration *config;
     void sendCmd1();
     void sendCmd2();
     uint8_t genCodaCRC(uint8_t cmd, uint8_t torq_lsb, uint8_t torq_msb);

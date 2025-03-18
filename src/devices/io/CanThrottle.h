@@ -73,6 +73,7 @@ private:
     uint32_t responseId; // the CAN id with which the response is sent;
     uint32_t responseMask; // the mask for the responseId
     bool responseExtended; // if the response is expected as an extended frame
+    CanThrottleConfiguration *config;
 };
 
 #endif /* CAN_THROTTLE_H_ */

@@ -104,7 +104,6 @@ void BrusaMotorController::handleTick() {
  * in case errors were detected and requests the desired torque / speed.
  */
 void BrusaMotorController::sendControl() {
-    BrusaMotorControllerConfiguration *config = (BrusaMotorControllerConfiguration *)getConfiguration();
     prepareOutputFrame(CAN_ID_CONTROL);
 
     speedRequested = 0;
@@ -153,8 +152,6 @@ void BrusaMotorController::sendControl() {
  * This message controls the mechanical power limits for motor- and regen-mode.
  */
 void BrusaMotorController::sendControl2() {
-    BrusaMotorControllerConfiguration *config = (BrusaMotorControllerConfiguration *)getConfiguration();
-
     prepareOutputFrame(CAN_ID_CONTROL_2);
     uint16_t torqSlew = (config->torqueSlewRate * 100);
     outputFrame.buf[0] = (torqSlew & 0xFF00) >> 8;
@@ -175,8 +172,6 @@ void BrusaMotorController::sendControl2() {
  * This message controls the electrical limits in the controller.
  */
 void BrusaMotorController::sendLimits() {
-    BrusaMotorControllerConfiguration *config = (BrusaMotorControllerConfiguration *)getConfiguration();
-
     prepareOutputFrame(CAN_ID_LIMIT);
     uint16_t dcVoltLim = config->dcVoltLimitMotor;
     outputFrame.buf[0] = (dcVoltLim & 0xFF00) >> 8;
@@ -336,7 +331,7 @@ uint32_t BrusaMotorController::getTickInterval() {
  * If not available or the checksum is invalid, default values are chosen.
  */
 void BrusaMotorController::loadConfiguration() {
-    BrusaMotorControllerConfiguration *config = (BrusaMotorControllerConfiguration *)getConfiguration();
+    config = (BrusaMotorControllerConfiguration *)getConfiguration();
 
     if(!config) { // as lowest sub-class make sure we have a config object
         config = new BrusaMotorControllerConfiguration();
@@ -368,7 +363,7 @@ void BrusaMotorController::loadConfiguration() {
  * Store the current configuration parameters to EEPROM.
  */
 void BrusaMotorController::saveConfiguration() {
-    BrusaMotorControllerConfiguration *config = (BrusaMotorControllerConfiguration *)getConfiguration();
+    config = (BrusaMotorControllerConfiguration *)getConfiguration();
 
     MotorController::saveConfiguration(); // call parent
     prefsHandler->write("maxMecPowerMotor", config->maxMechanicalPowerMotor);

@@ -247,8 +247,6 @@ void ESP32Driver::setup()
 
     loadConfiguration();
 
-    ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
-
     ConfigEntry entry;
     entry = {"ESP32-SSID", "Set SSID to create or connect to", &config->ssid, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr};
     cfgEntries.push_back(entry);
@@ -338,7 +336,6 @@ void ESP32Driver::handleTick() {
         if (millis() > (lastTime + 1000)) //every second send an update to the web server giving the uptime
         {
             lastTime = millis();
-            ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
 
             String buff;
             int totalSeconds = (lastTime / 1000);
@@ -388,7 +385,6 @@ void ESP32Driver::sendStatusCSV(String str)
 //which could get called frequently (and always in the main loop if nothing else)
 void ESP32Driver::processSerial()
 {
-    ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
     if (!systemEnabled) return;
     while (Serial2.available())
     {
@@ -470,7 +466,7 @@ void ESP32Driver::processSerial()
 void ESP32Driver::sendWirelessConfig()
 {
     Logger::debug("Sending wifi cfg to ESP32");
-    ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
+
     StaticJsonDocument<300> doc;
     doc["SSID"] = config->ssid;
     doc["WIFIPW"] = config->ssid_pw;
@@ -489,7 +485,6 @@ void ESP32Driver::sendWirelessConfig()
 
 void ESP32Driver::sendDeviceList()
 {
-    ESP32Configuration *config = (ESP32Configuration *)getConfiguration();
     DynamicJsonDocument doc(10000);
 
     deviceManager.createJsonDeviceList(doc);
@@ -507,7 +502,6 @@ void ESP32Driver::sendDeviceList()
 
 void ESP32Driver::sendDeviceDetails(uint16_t deviceID)
 {
-    ESP32Configuration *config = (ESP32Configuration *)getConfiguration();
     Device *dev = nullptr;
     DynamicJsonDocument doc(10000);
 
@@ -540,7 +534,7 @@ uint32_t ESP32Driver::getTickInterval()
 
 void ESP32Driver::loadConfiguration() {
     
-    ESP32Configuration *config = (ESP32Configuration *)getConfiguration();
+    config = (ESP32Configuration *)getConfiguration();
 
     if (!config) {
         config = new ESP32Configuration();
@@ -563,7 +557,7 @@ void ESP32Driver::loadConfiguration() {
 void ESP32Driver::saveConfiguration() {
     Device::saveConfiguration();
 
-    ESP32Configuration *config = (ESP32Configuration *)getConfiguration();
+    config = (ESP32Configuration *)getConfiguration();
 
     prefsHandler->write("SSID", (const char *)config->ssid, 64);
     prefsHandler->write("WIFIPW", (const char *)config->ssid_pw, 64);

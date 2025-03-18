@@ -92,4 +92,5 @@ private:
 	bool toggleState[12]; //used by any inputs set to LatchModes::TOGGLING
 	LED::LEDTYPE LEDState[12]; //LED state for all 12 keys
 	LatchModes::LATCHMODE latchState[12];
+	PowerKPCANIODeviceConfiguration *config;
 };

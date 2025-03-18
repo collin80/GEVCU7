@@ -50,8 +50,6 @@ void CanBrake::setup() {
     loadConfiguration();
     Throttle::setup();
 
-    CanBrakeConfiguration *config = (CanBrakeConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"CANBRAKE-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -115,7 +113,6 @@ void CanBrake::handleTick() {
  */
 void CanBrake::handleCanFrame(const CAN_message_t &frame) {
     crashHandler.addBreadcrumb(ENCODE_BREAD("CNBRK") + 2);
-    CanBrakeConfiguration *config = (CanBrakeConfiguration *)getConfiguration();
 
     if (frame.id == responseId) {
         setAlive();
@@ -136,8 +133,6 @@ RawSignalData* CanBrake::acquireRawSignal() {
 }
 
 bool CanBrake::validateSignal(RawSignalData* rawSignal) {
-    CanBrakeConfiguration *config = (CanBrakeConfiguration *) getConfiguration();
-
     if (ticksNoResponse >= CFG_CANTHROTTLE_MAX_NUM_LOST_MSG) {
         if (status == OK)
         {
@@ -177,8 +172,6 @@ bool CanBrake::validateSignal(RawSignalData* rawSignal) {
 }
 
 int16_t CanBrake::calculatePedalPosition(RawSignalData* rawSignal) {
-    CanBrakeConfiguration *config = (CanBrakeConfiguration *) getConfiguration();
-
     if (config->maximumLevel1 == 0) //brake processing disabled if max is 0
         return 0;
 
@@ -190,7 +183,6 @@ int16_t CanBrake::calculatePedalPosition(RawSignalData* rawSignal) {
  * brake based regen.
  */
 int16_t CanBrake::mapPedalPosition(int16_t pedalPosition) {
-    CanBrakeConfiguration *config = (CanBrakeConfiguration *) getConfiguration();
     int16_t brakeLevel, range;
 
     if (pedalPosition == 0) // if brake not pressed, return 0, not minimumRegen !
@@ -204,7 +196,7 @@ int16_t CanBrake::mapPedalPosition(int16_t pedalPosition) {
 }
 
 void CanBrake::loadConfiguration() {
-    CanBrakeConfiguration *config = (CanBrakeConfiguration *) getConfiguration();
+    config = (CanBrakeConfiguration *) getConfiguration();
 
     if (!config) { // as lowest sub-class make sure we have a config object
         config = new CanBrakeConfiguration();
@@ -227,7 +219,7 @@ void CanBrake::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void CanBrake::saveConfiguration() {
-    CanBrakeConfiguration *config = (CanBrakeConfiguration *) getConfiguration();
+    config = (CanBrakeConfiguration *) getConfiguration();
 
     prefsHandler->write("BrakeMin1", config->minimumLevel1);
     prefsHandler->write("BrakeMax1", config->maximumLevel1);

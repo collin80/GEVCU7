@@ -62,5 +62,6 @@ private:
     bool didInitialStatus;
     int statusIdx;
     uint32_t lastTime;
+    ESP32Configuration *config;
 };
 

@@ -69,8 +69,6 @@ void TSDCDCController::setup()
     loadConfiguration();
     DCDCController::setup(); // run the parent class version of this function
 
-    TSDCDCConfiguration *config = (TSDCDCConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"TSDCDC-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -96,8 +94,6 @@ void TSDCDCController::handleTick()
 
 void TSDCDCController::sendCmd()
 {
-    TSDCDCConfiguration *config = (TSDCDCConfiguration *)getConfiguration();
-
     CAN_message_t output;
     output.len = 3;
     output.id = 0x3D8;
@@ -118,7 +114,7 @@ uint32_t TSDCDCController::getTickInterval()
 }
 
 void TSDCDCController::loadConfiguration() {
-    TSDCDCConfiguration *config = (TSDCDCConfiguration *)getConfiguration();
+    config = (TSDCDCConfiguration *)getConfiguration();
 
     if (!config) {
         config = new TSDCDCConfiguration();
@@ -131,7 +127,7 @@ void TSDCDCController::loadConfiguration() {
 }
 
 void TSDCDCController::saveConfiguration() {
-    TSDCDCConfiguration *config = (TSDCDCConfiguration *)getConfiguration();
+    config = (TSDCDCConfiguration *)getConfiguration();
 
     if (!config) {
         config = new TSDCDCConfiguration();

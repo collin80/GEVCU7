@@ -94,8 +94,6 @@ void TeslaACGen2Controller::setup()
     loadConfiguration();
     HVACController::setup(); // run the parent class version of this function
 
-    TeslaACGen2Configuration *config = (TeslaACGen2Configuration *)getConfiguration();
-
     targetTempC = config->targetTemperature;
 
     //create our PID controller. Has to be done after the getConfiguration above since we use the PID params
@@ -111,11 +109,11 @@ void TeslaACGen2Controller::setup()
     cfgEntries.push_back(entry);
     entry = {"TESLAG2AC-MAXPOW", "Maximum allowable wattage draw of compressor", &config->maxPower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 8000, 0, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TESLAG2AC-KP", "Proportional value of PID controller", &config->kP, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 80.0, 2, nullptr};
+    entry = {"TESLAG2AC-KP", "Proportional value of PID controller", &config->kP, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 80.0}, 2, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TESLAG2AC-KI", "Integral value of PID controller", &config->kI, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 80.0, 2, nullptr};
+    entry = {"TESLAG2AC-KI", "Integral value of PID controller", &config->kI, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating =80.0}, 2, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TESLAG2AC-KD", "Differential value of PID controller", &config->kD, CFG_ENTRY_VAR_TYPE::FLOAT, 0, 80.0, 2, nullptr};
+    entry = {"TESLAG2AC-KD", "Differential value of PID controller", &config->kD, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 80.0}, 2, nullptr};
     cfgEntries.push_back(entry);
 
     setAttachedCANBus(config->canbusNum);
@@ -135,7 +133,6 @@ void TeslaACGen2Controller::handleTick()
 
     checkAlive(4000);
 
-    TeslaACGen2Configuration *config = (TeslaACGen2Configuration *)getConfiguration();
     targetTempC = config->targetTemperature;
 
     sendCmd();   //Send our compressor command message
@@ -143,8 +140,6 @@ void TeslaACGen2Controller::handleTick()
 
 void TeslaACGen2Controller::sendCmd()
 {
-    TeslaACGen2Configuration *config = (TeslaACGen2Configuration *)getConfiguration();
-
     CAN_message_t output;
     output.len = 8;
     output.id = 0x28A;
@@ -189,7 +184,7 @@ uint32_t TeslaACGen2Controller::getTickInterval()
 }
 
 void TeslaACGen2Controller::loadConfiguration() {
-    TeslaACGen2Configuration *config = (TeslaACGen2Configuration *)getConfiguration();
+    config = (TeslaACGen2Configuration *)getConfiguration();
 
     if (!config) {
         config = new TeslaACGen2Configuration();
@@ -206,7 +201,7 @@ void TeslaACGen2Controller::loadConfiguration() {
 }
 
 void TeslaACGen2Controller::saveConfiguration() {
-    TeslaACGen2Configuration *config = (TeslaACGen2Configuration *)getConfiguration();
+    config = (TeslaACGen2Configuration *)getConfiguration();
 
     if (!config) {
         config = new TeslaACGen2Configuration();

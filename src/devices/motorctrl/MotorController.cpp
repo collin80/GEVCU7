@@ -509,7 +509,7 @@ bool MotorController::isReady() {
 
 const char* MotorController::getFaultDescription(uint16_t faultcode)
 {
-    if ((faultcode >= 1000) && (faultcode < MCTRL_LAST_FAULT) ) return MCTRL_FAULT_DESCS[faultcode];
+    if ((faultcode >= 1000) && (faultcode < MCTRL_LAST_FAULT) ) return MCTRL_FAULT_DESCS[faultcode-1000];
     return Device::getFaultDescription(faultcode); //try generic device class if we couldn't handle it
     return nullptr; //no match, return nothing
 }

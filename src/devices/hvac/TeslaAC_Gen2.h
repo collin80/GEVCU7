@@ -65,6 +65,7 @@ public:
 
 private:
     void sendCmd();
+    TeslaACGen2Configuration *config;
     bool isReady;
     PID *pid;
     double targetDuty;

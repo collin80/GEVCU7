@@ -45,8 +45,6 @@ void OrionBatteryManager::setup() {
 
     BatteryManager::setup(); // run the parent class version of this function
 
-    OrionBatteryManagerConfiguration *config = (OrionBatteryManagerConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"ORION-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -125,7 +123,7 @@ bool OrionBatteryManager::isDischargeOK()
 }
 
 void OrionBatteryManager::loadConfiguration() {
-    OrionBatteryManagerConfiguration *config = (OrionBatteryManagerConfiguration *)getConfiguration();
+    config = (OrionBatteryManagerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new OrionBatteryManagerConfiguration();
@@ -138,7 +136,7 @@ void OrionBatteryManager::loadConfiguration() {
 }
 
 void OrionBatteryManager::saveConfiguration() {
-    OrionBatteryManagerConfiguration *config = (OrionBatteryManagerConfiguration *)getConfiguration();
+    config = (OrionBatteryManagerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new OrionBatteryManagerConfiguration();

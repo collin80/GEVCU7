@@ -67,8 +67,9 @@ private:
     int alive;
     bool prechargeComplete;
     bool allowedToOperate;
-    void timestamp();
+    C300MotorControllerConfiguration *config;
 
+    void timestamp();
     void sendCmdUS();
     void sendCmdCanada();
 };

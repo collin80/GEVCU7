@@ -185,6 +185,7 @@ private:
 	bool isLockedOut;
 	bool isEnabled;
 	bool isCANControlled;
+    RMSMotorControllerConfiguration *config;
 
    void sendCmdFrame();
    void handleCANMsgTemperature1(uint8_t *data);

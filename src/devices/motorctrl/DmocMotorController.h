@@ -84,15 +84,15 @@ private:
     byte alive;
     uint16_t torqueCommand;
     uint8_t inhibitStateMachine;
-    void timestamp();
+    DmocMotorControllerConfiguration *config;
 
+    void timestamp();
     void sendCmd1();
     void sendCmd2();
     void sendCmd3();
     void sendCmd4();
     void sendCmd5();
     byte calcChecksum(const CAN_message_t &thisFrame);
-
 };
 
 #endif /* DMOC_H_ */

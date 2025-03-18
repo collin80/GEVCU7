@@ -66,6 +66,7 @@ private:
     int seconds;
     int minutes;
     int hours;
+    DelphiDCDCConfiguration *config;
     void sendCmd();
 };
 

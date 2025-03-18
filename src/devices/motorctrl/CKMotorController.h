@@ -67,6 +67,7 @@ private:
 
     OperationState actualState; //what the controller is reporting it is    
 	uint8_t aliveCounter;
+    CKMotorControllerConfiguration *config;
     void timestamp();
 	byte calcChecksum(CAN_message_t& thisFrame);
     void sendPowerCmd();

@@ -33,8 +33,6 @@ void PowerkeyPad::setup()
 
     loadConfiguration();
 
-    PowerKPCANIODeviceConfiguration *config = (PowerKPCANIODeviceConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"POWERKEY-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -252,7 +250,7 @@ LED::LEDTYPE PowerkeyPad::getLEDState(int which)
 }
 
 void PowerkeyPad::loadConfiguration() {
-    PowerKPCANIODeviceConfiguration *config = (PowerKPCANIODeviceConfiguration *)getConfiguration();
+    config = (PowerKPCANIODeviceConfiguration *)getConfiguration();
 
     if (!config) {
         config = new PowerKPCANIODeviceConfiguration();
@@ -265,7 +263,7 @@ void PowerkeyPad::loadConfiguration() {
 }
 
 void PowerkeyPad::saveConfiguration() {
-    PowerKPCANIODeviceConfiguration *config = (PowerKPCANIODeviceConfiguration *)getConfiguration();
+    config = (PowerKPCANIODeviceConfiguration *)getConfiguration();
 
     if (!config) {
         config = new PowerKPCANIODeviceConfiguration();

@@ -36,9 +36,9 @@ void PotGearSelector::setup()
 {
     tickHandler.detach(this);
 
-    Logger::info("add device: Pot Gear Selector (id:%X, %X)", POTGEARSEL, this);
+    loadConfiguration();
 
-    PotGearSelConfiguration *config = (PotGearSelConfiguration *)getConfiguration();
+    Logger::info("add device: Pot Gear Selector (id:%X, %X)", POTGEARSEL, this);
 
     ConfigEntry entry;
     entry = {"PGADC", "Set ADC for pot based gear selector", &config->adcPin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
@@ -54,15 +54,12 @@ void PotGearSelector::setup()
     entry = {"PGDRIVE", "Set nominal value for drive position", &config->drivePosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr};
     cfgEntries.push_back(entry);
 
-    loadConfiguration();
-
     Device::setup(); // run the parent class version of this function
 
     tickHandler.attach(this, TICK_POTGEAR);
 }
 
 void PotGearSelector::handleTick() {
-    PotGearSelConfiguration *config = (PotGearSelConfiguration *)getConfiguration();
     MotorController* motorController = (MotorController*) deviceManager.getMotorController();
 
     Device::handleTick(); //kick the ball up to papa
@@ -114,7 +111,7 @@ uint32_t PotGearSelector::getTickInterval()
 
 void PotGearSelector::loadConfiguration()
 {
-    PotGearSelConfiguration *config = (PotGearSelConfiguration *)getConfiguration();
+    config = (PotGearSelConfiguration *)getConfiguration();
 
     if (!config) {
         config = new PotGearSelConfiguration();
@@ -136,7 +133,7 @@ void PotGearSelector::loadConfiguration()
 
 void PotGearSelector::saveConfiguration()
 {
-    PotGearSelConfiguration *config = (PotGearSelConfiguration *)getConfiguration();
+    config = (PotGearSelConfiguration *)getConfiguration();
 
     Device::saveConfiguration();
 

@@ -81,6 +81,7 @@ private:
     uint32_t prechargeBeginTime;
     uint16_t targetVoltage;
     bool isPrecharged;
+    PrechargeConfiguration *config;
 };
 
 #endif

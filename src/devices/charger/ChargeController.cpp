@@ -122,7 +122,7 @@ void ChargeController::saveConfiguration()
 
 const char* ChargeController::getFaultDescription(uint16_t faultcode)
 {
-    if ((faultcode >= 1000) && (faultcode < CHARGER_LAST_FAULT) ) return CHARGER_FAULT_DESCS[faultcode];
+    if ((faultcode >= 1000) && (faultcode < CHARGER_LAST_FAULT) ) return CHARGER_FAULT_DESCS[faultcode-1000];
     return Device::getFaultDescription(faultcode); //try generic device class if we couldn't handle it
     return nullptr; //no match, return nothing
 }

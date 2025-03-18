@@ -22,8 +22,6 @@ void DelphiDCDCController::setup()
     loadConfiguration();
     DCDCController::setup(); // run the parent class version of this function
 
-    DelphiDCDCConfiguration *config = (DelphiDCDCConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"DELPHIDCDC-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -67,8 +65,6 @@ This still allows for a max output of 16v which is way too much. So, it's a suff
 
 void DelphiDCDCController::sendCmd()
 {
-    DelphiDCDCConfiguration *config = (DelphiDCDCConfiguration *)getConfiguration();
-
     CAN_message_t output;
     output.len = 8;
     output.id = 0x1D7;
@@ -95,7 +91,7 @@ uint32_t DelphiDCDCController::getTickInterval()
 }
 
 void DelphiDCDCController::loadConfiguration() {
-    DelphiDCDCConfiguration *config = (DelphiDCDCConfiguration *)getConfiguration();
+    config = (DelphiDCDCConfiguration *)getConfiguration();
 
     if (!config) {
         config = new DelphiDCDCConfiguration();
@@ -108,7 +104,7 @@ void DelphiDCDCController::loadConfiguration() {
 }
 
 void DelphiDCDCController::saveConfiguration() {
-    DelphiDCDCConfiguration *config = (DelphiDCDCConfiguration *)getConfiguration();
+    config = (DelphiDCDCConfiguration *)getConfiguration();
 
     if (!config) {
         config = new DelphiDCDCConfiguration();

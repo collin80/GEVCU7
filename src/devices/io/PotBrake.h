@@ -65,6 +65,7 @@ protected:
 
 private:
     RawSignalData rawSignal;
+    PotBrakeConfiguration *config;
 };
 
 #endif /* POT_BRAKE_H_ */

@@ -64,6 +64,8 @@ public:
 private:
 
     uint16_t torqueCommand;
+    TestMotorControllerConfiguration *config;
+
     void timestamp();
 };
 

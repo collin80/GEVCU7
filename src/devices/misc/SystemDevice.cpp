@@ -58,8 +58,6 @@ void SystemDevice::setup() {
     
     Device::setup(); //call base class
 
-    SystemConfiguration *config = (SystemConfiguration *)getConfiguration();
-
     cfgEntries.reserve(25);
     char buff[20];
 
@@ -138,7 +136,7 @@ void SystemDevice::handleTick()
  * are chosen and the configuration is overwritten in the EEPROM.
  */
 void SystemDevice::loadConfiguration() {
-    SystemConfiguration *config = (SystemConfiguration *) getConfiguration();
+    config = (SystemConfiguration *) getConfiguration();
 
     if (!config) { // as lowest sub-class make sure we have a config object
         config = new SystemConfiguration();
@@ -182,7 +180,7 @@ void SystemDevice::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void SystemDevice::saveConfiguration() {
-    SystemConfiguration *config = (SystemConfiguration *) getConfiguration();
+    config = (SystemConfiguration *) getConfiguration();
 
     Device::saveConfiguration(); // call parent
 

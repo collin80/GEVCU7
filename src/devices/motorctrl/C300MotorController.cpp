@@ -267,7 +267,6 @@ void C300MotorController::handleTick() {
 //Byte 6-7 is speed request in 1RPM with -12000 offset but speed mode is not likely supported so probably just send a value of 12000 here
 void C300MotorController::sendCmdUS() 
 {
-    C300MotorControllerConfiguration *config = (C300MotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
     OperationState newstate;
     alive = (alive + 1);
@@ -329,7 +328,6 @@ void C300MotorController::sendCmdUS()
 //byte 6: Alive signal 0-FF
 void C300MotorController::sendCmdCanada() 
 {
-    C300MotorControllerConfiguration *config = (C300MotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
     OperationState newstate;
     alive++;
@@ -393,7 +391,6 @@ void C300MotorController::sendCmdCanada()
 //when there is no RPM already. And, nothing else stops you from asking for 300Nm of regen at 5MPH. You don't want to do that.
 void C300MotorController::taperRegen()
 {
-    C300MotorControllerConfiguration *config = (C300MotorControllerConfiguration *)getConfiguration();
     if (speedActual < config->regenTaperLower) torqueRequested = 0;
     else if (speedActual > config->regenTaperUpper) torqueRequested = torqueRequested;
     else {        
@@ -410,7 +407,7 @@ uint32_t C300MotorController::getTickInterval()
 }
 
 void C300MotorController::loadConfiguration() {
-    C300MotorControllerConfiguration *config = (C300MotorControllerConfiguration *)getConfiguration();
+    config = (C300MotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new C300MotorControllerConfiguration();

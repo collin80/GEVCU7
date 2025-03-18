@@ -110,7 +110,6 @@ void CKMotorController::handleTick() {
 
 //Commanded RPM plus state of key and gear selector
 void CKMotorController::sendPowerCmd() {
-    CKMotorControllerConfiguration *config = (CKMotorControllerConfiguration *)getConfiguration();
     CAN_message_t output;
     OperationState newstate;
     Gears currentGear = getSelectedGear();
@@ -218,7 +217,7 @@ uint32_t CKMotorController::getTickInterval()
 }
 
 void CKMotorController::loadConfiguration() {
-    CKMotorControllerConfiguration *config = (CKMotorControllerConfiguration *)getConfiguration();
+    config = (CKMotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new CKMotorControllerConfiguration();

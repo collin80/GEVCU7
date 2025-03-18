@@ -52,4 +52,5 @@ public:
 
 private:
 	int16_t values[4];
+	FourAnaM2DeviceConfiguration *config;
 };

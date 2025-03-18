@@ -52,8 +52,6 @@ void Precharger::setup() {
 
     Device::setup(); //call base class
 
-    PrechargeConfiguration *config = (PrechargeConfiguration *)getConfiguration();
-
     cfgEntries.reserve(6);
 
     ConfigEntry entry;
@@ -93,8 +91,6 @@ void Precharger::handleTick() {
     crashHandler.addBreadcrumb(ENCODE_BREAD("PRECR") + 1);
     Device::handleTick(); // Call parent which controls the workflow
     //Logger::avalanche("Precharge Tick Handler");
-
-    PrechargeConfiguration *config = (PrechargeConfiguration *) getConfiguration();
 
 /*  
     there are two basic types of precharge - a raw time and thats it or we look at other devices to get voltages
@@ -199,7 +195,7 @@ void Precharger::handleTick() {
  * are chosen and the configuration is overwritten in the EEPROM.
  */
 void Precharger::loadConfiguration() {
-    PrechargeConfiguration *config = (PrechargeConfiguration *) getConfiguration();
+    config = (PrechargeConfiguration *) getConfiguration();
 
     if (!config) { // as lowest sub-class make sure we have a config object
         config = new PrechargeConfiguration();
@@ -220,7 +216,7 @@ void Precharger::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void Precharger::saveConfiguration() {
-    PrechargeConfiguration *config = (PrechargeConfiguration *) getConfiguration();
+    config = (PrechargeConfiguration *) getConfiguration();
 
     Device::saveConfiguration(); // call parent
     prefsHandler->write("PrechargeRelay", config->prechargeRelay);

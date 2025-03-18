@@ -65,6 +65,7 @@ protected:
 private:
     RawSignalData rawSignal;
     bool rampingDirection;
+    TestThrottleConfiguration *config;
 };
 
 #endif /* POT_THROTTLE_H_ */

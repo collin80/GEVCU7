@@ -46,8 +46,6 @@ void PotThrottle::setup() {
 
     loadConfiguration();
 
-    PotThrottleConfiguration *config = (PotThrottleConfiguration *) getConfiguration();
-
     Throttle::setup(); //call base class
 
     ConfigEntry entry;
@@ -86,8 +84,6 @@ void PotThrottle::handleTick() {
  * Retrieve raw input signals from the throttle hardware.
  */
 RawSignalData *PotThrottle::acquireRawSignal() {
-    PotThrottleConfiguration *config = (PotThrottleConfiguration *) getConfiguration();
-
     rawSignal.input1 = systemIO.getAnalogIn(config->AdcPin1);
     rawSignal.input2 = systemIO.getAnalogIn(config->AdcPin2);
     return &rawSignal;
@@ -98,14 +94,12 @@ RawSignalData *PotThrottle::acquireRawSignal() {
  * and the checks are performed on a 0-1000 scale with a percentage tolerance
  */
 bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
-    PotThrottleConfiguration *config = (PotThrottleConfiguration *) getConfiguration();
     int32_t calcThrottle1, calcThrottle2;
 
     calcThrottle1 = normalizeInput(rawSignal->input1, config->minimumLevel1, config->maximumLevel1);
     if (config->numberPotMeters == 1 && config->throttleSubType == 2) { // inverted
         calcThrottle1 = 1000 - calcThrottle1;
     }
-
 
     if (calcThrottle1 > (1000 + CFG_THROTTLE_TOLERANCE))
     {
@@ -215,7 +209,6 @@ bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
  * to the specified range and the type of potentiometer.
  */
 int16_t PotThrottle::calculatePedalPosition(RawSignalData *rawSignal) {
-    PotThrottleConfiguration *config = (PotThrottleConfiguration *) getConfiguration();
     uint16_t calcThrottle1, calcThrottle2;
 
     calcThrottle1 = normalizeInput(rawSignal->input1, config->minimumLevel1, config->maximumLevel1);
@@ -235,7 +228,7 @@ int16_t PotThrottle::calculatePedalPosition(RawSignalData *rawSignal) {
  * are chosen and the configuration is overwritten in the EEPROM.
  */
 void PotThrottle::loadConfiguration() {
-    PotThrottleConfiguration *config = (PotThrottleConfiguration *) getConfiguration();
+    config = (PotThrottleConfiguration *) getConfiguration();
 
     if (!config) { // as lowest sub-class make sure we have a config object
         config = new PotThrottleConfiguration();
@@ -274,7 +267,7 @@ void PotThrottle::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void PotThrottle::saveConfiguration() {
-    PotThrottleConfiguration *config = (PotThrottleConfiguration *) getConfiguration();
+    config = (PotThrottleConfiguration *) getConfiguration();
 
     prefsHandler->write("ThrottleMin1", (uint16_t)config->minimumLevel1);
     prefsHandler->write("ThrottleMax1", (uint16_t)config->maximumLevel1);

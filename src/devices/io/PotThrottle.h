@@ -74,6 +74,7 @@ protected:
 
 private:
     RawSignalData rawSignal;
+    PotThrottleConfiguration *config;
 };
 
 #endif /* POT_THROTTLE_H_ */

@@ -191,14 +191,11 @@ Values above 32128 are positive torque.  Values below 32128 are negative torque
 
 void CodaMotorController::sendCmd1()
 {
-    CodaMotorControllerConfiguration *config = (CodaMotorControllerConfiguration *)getConfiguration();
-
     CAN_message_t output;
     output.len = 5;
     output.id = 0x204;
     output.flags.extended = 0; //standard frame
     output.buf[0] = 0x00; //First byte is always zero.
-
 
     if(operationState==ENABLE)
     {
@@ -274,8 +271,6 @@ void CodaMotorController::sendCmd1()
 
 
 void CodaMotorController::sendCmd2() {
-    CodaMotorControllerConfiguration *config = (CodaMotorControllerConfiguration *)getConfiguration();
-
     /*In the CODA CAN bus capture logs, this command, defined in the UQM manual as a
       207 watchdog reset, is sent every 480msec.  It also always occurs after the last count of
       a sequence ie 57, 67, 97, or A7.  But this may just be coincidence.
@@ -310,7 +305,7 @@ uint32_t CodaMotorController::getTickInterval()
 }
 
 void CodaMotorController::loadConfiguration() {
-    CodaMotorControllerConfiguration *config = (CodaMotorControllerConfiguration *)getConfiguration();
+    config = (CodaMotorControllerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new CodaMotorControllerConfiguration();

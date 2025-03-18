@@ -64,8 +64,6 @@ void TestThrottle::handleTick() {
  * Retrieve raw input signals from the throttle hardware.
  */
 RawSignalData *TestThrottle::acquireRawSignal() {
-    TestThrottleConfiguration *config = (TestThrottleConfiguration *) getConfiguration();
-
     if (rampingDirection) rawSignal.input1 += 1;
     else rawSignal.input1 -= 1;
     
@@ -87,7 +85,6 @@ RawSignalData *TestThrottle::acquireRawSignal() {
  * and the checks are performed on a 0-1000 scale with a percentage tolerance
  */
 bool TestThrottle::validateSignal(RawSignalData *rawSignal) {
-    TestThrottleConfiguration *config = (TestThrottleConfiguration *) getConfiguration();
     int32_t calcThrottle1;
 
     calcThrottle1 = normalizeInput(rawSignal->input1, config->minimumLevel1, config->maximumLevel1);
@@ -129,7 +126,6 @@ bool TestThrottle::validateSignal(RawSignalData *rawSignal) {
  * to the specified range and the type of potentiometer.
  */
 int16_t TestThrottle::calculatePedalPosition(RawSignalData *rawSignal) {
-    TestThrottleConfiguration *config = (TestThrottleConfiguration *) getConfiguration();
     uint16_t calcThrottle1;
 
     calcThrottle1 = normalizeInput(rawSignal->input1, config->minimumLevel1, config->maximumLevel1);
@@ -143,7 +139,7 @@ int16_t TestThrottle::calculatePedalPosition(RawSignalData *rawSignal) {
  * are chosen and the configuration is overwritten in the EEPROM.
  */
 void TestThrottle::loadConfiguration() {
-    TestThrottleConfiguration *config = (TestThrottleConfiguration *) getConfiguration();
+    config = (TestThrottleConfiguration *) getConfiguration();
 
     if (!config) { // as lowest sub-class make sure we have a config object
         config = new TestThrottleConfiguration();
@@ -164,7 +160,7 @@ void TestThrottle::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void TestThrottle::saveConfiguration() {
-    TestThrottleConfiguration *config = (TestThrottleConfiguration *) getConfiguration();
+    config = (TestThrottleConfiguration *) getConfiguration();
 
     Throttle::saveConfiguration(); // call parent
 

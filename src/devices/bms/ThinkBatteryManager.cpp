@@ -45,8 +45,6 @@ void ThinkBatteryManager::setup() {
 
     BatteryManager::setup(); // run the parent class version of this function
 
-    ThinkBatteryManagerConfiguration *config = (ThinkBatteryManagerConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"THINK-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -210,7 +208,7 @@ bool ThinkBatteryManager::isDischargeOK()
 }
 
 void ThinkBatteryManager::loadConfiguration() {
-    ThinkBatteryManagerConfiguration *config = (ThinkBatteryManagerConfiguration *)getConfiguration();
+    config = (ThinkBatteryManagerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new ThinkBatteryManagerConfiguration();
@@ -223,7 +221,7 @@ void ThinkBatteryManager::loadConfiguration() {
 }
 
 void ThinkBatteryManager::saveConfiguration() {
-    ThinkBatteryManagerConfiguration *config = (ThinkBatteryManagerConfiguration *)getConfiguration();
+    config = (ThinkBatteryManagerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new ThinkBatteryManagerConfiguration();

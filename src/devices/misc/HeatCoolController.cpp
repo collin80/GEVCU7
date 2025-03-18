@@ -52,8 +52,6 @@ void HeatCoolController::setup() {
 
     Device::setup(); //call base class
 
-    HeatCoolConfiguration *config = (HeatCoolConfiguration *)getConfiguration();
-
     cfgEntries.reserve(8 + 4 * COOL_ZONES);
 
     ConfigEntry entry;
@@ -110,8 +108,6 @@ void HeatCoolController::handleTick() {
     crashHandler.addBreadcrumb(ENCODE_BREAD("HVACC") + 1);
     Device::handleTick(); // Call parent which controls the workflow
     Logger::avalanche("HeatCool Tick Handler");
-
-    HeatCoolConfiguration *config = (HeatCoolConfiguration *) getConfiguration();
 
     if (!isPumpOn)
     {
@@ -197,7 +193,7 @@ void HeatCoolController::handleTick() {
  * are chosen and the configuration is overwritten in the EEPROM.
  */
 void HeatCoolController::loadConfiguration() {
-    HeatCoolConfiguration *config = (HeatCoolConfiguration *) getConfiguration();
+    config = (HeatCoolConfiguration *) getConfiguration();
 
     if (!config) { // as lowest sub-class make sure we have a config object
         config = new HeatCoolConfiguration();
@@ -234,7 +230,7 @@ void HeatCoolController::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void HeatCoolController::saveConfiguration() {
-    HeatCoolConfiguration *config = (HeatCoolConfiguration *) getConfiguration();
+    config = (HeatCoolConfiguration *) getConfiguration();
 
     Device::saveConfiguration(); // call parent
 

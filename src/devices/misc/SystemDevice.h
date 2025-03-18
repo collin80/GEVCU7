@@ -56,6 +56,7 @@ public:
 protected:
 
 private:
+    SystemConfiguration *config;
 };
 
 extern SystemConfiguration *sysConfig;

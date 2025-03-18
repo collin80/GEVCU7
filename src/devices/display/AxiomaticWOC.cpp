@@ -56,10 +56,6 @@ void AxiomaticWOC::setup() {
 
     Device::setup(); // run the parent class version of this function
 
-    loadConfiguration();
-
-    AxiomaticWOCConfiguration *config = (AxiomaticWOCConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                Min Max Precision Funct
     entry = {"AXWOC-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -146,7 +142,7 @@ void AxiomaticWOC::sendWakeCfg()
 
 void AxiomaticWOC::loadConfiguration()
 {
-    AxiomaticWOCConfiguration *config = (AxiomaticWOCConfiguration *)getConfiguration();
+    config = (AxiomaticWOCConfiguration *)getConfiguration();
 
     if (!config) {
         config = new AxiomaticWOCConfiguration();
@@ -158,7 +154,7 @@ void AxiomaticWOC::loadConfiguration()
 
 void AxiomaticWOC::saveConfiguration()
 {
-    AxiomaticWOCConfiguration *config = (AxiomaticWOCConfiguration *)getConfiguration();
+    config = (AxiomaticWOCConfiguration *)getConfiguration();
 
     prefsHandler->write("CanbusNum", config->canbusNum);
     prefsHandler->forceCacheWrite();

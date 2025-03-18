@@ -49,8 +49,6 @@ void LightController::setup() {
 
     Device::setup(); //call base class
 
-    LightingConfiguration *config = (LightingConfiguration *)getConfiguration();
-
     cfgEntries.reserve(3);
 
     ConfigEntry entry;
@@ -72,7 +70,6 @@ void LightController::handleTick() {
     Device::handleTick(); // Call parent which controls the workflow
     //Logger::avalanche("Lighting Tick Handler");
 
-    LightingConfiguration *config = (LightingConfiguration *) getConfiguration();
     MotorController *mctl = static_cast<MotorController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_MOTORCTRL));
     Throttle *throttle = static_cast<Throttle *>(deviceManager.getDeviceByType(DeviceType::DEVICE_THROTTLE));
     Throttle *brake = static_cast<Throttle *>(deviceManager.getDeviceByType(DeviceType::DEVICE_BRAKE));
@@ -112,7 +109,7 @@ void LightController::handleTick() {
  * are chosen and the configuration is overwritten in the EEPROM.
  */
 void LightController::loadConfiguration() {
-    LightingConfiguration *config = (LightingConfiguration *) getConfiguration();
+    config = (LightingConfiguration *) getConfiguration();
 
     if (!config) { // as lowest sub-class make sure we have a config object
         config = new LightingConfiguration();
@@ -131,7 +128,7 @@ void LightController::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void LightController::saveConfiguration() {
-    LightingConfiguration *config = (LightingConfiguration *) getConfiguration();
+    config = (LightingConfiguration *) getConfiguration();
 
     Device::saveConfiguration(); // call parent
     prefsHandler->write("BrakeLightOut", config->brakeLightOutput);

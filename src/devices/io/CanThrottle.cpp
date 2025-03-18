@@ -49,8 +49,6 @@ void CanThrottle::setup() {
     loadConfiguration();
     Throttle::setup();
 
-    CanThrottleConfiguration *config = (CanThrottleConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"CANTHROT-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
@@ -114,8 +112,6 @@ void CanThrottle::handleTick() {
  *
  */
 void CanThrottle::handleCanFrame(const CAN_message_t &frame) {
-    CanThrottleConfiguration *config = (CanThrottleConfiguration *)getConfiguration();
-
     if (frame.id == responseId) {
         setAlive();
         switch (config->carType) {
@@ -135,8 +131,6 @@ RawSignalData* CanThrottle::acquireRawSignal() {
 }
 
 bool CanThrottle::validateSignal(RawSignalData* rawSignal) {
-    CanThrottleConfiguration *config = (CanThrottleConfiguration *) getConfiguration();
-
     if (ticksNoResponse >= CFG_CANTHROTTLE_MAX_NUM_LOST_MSG) {
         if (status == OK)
         {
@@ -176,13 +170,11 @@ bool CanThrottle::validateSignal(RawSignalData* rawSignal) {
 }
 
 int16_t CanThrottle::calculatePedalPosition(RawSignalData* rawSignal) {
-    CanThrottleConfiguration *config = (CanThrottleConfiguration *) getConfiguration();
-
     return normalizeAndConstrainInput(rawSignal->input1, config->minimumLevel1, config->maximumLevel1);
 }
 
 void CanThrottle::loadConfiguration() {
-    CanThrottleConfiguration *config = (CanThrottleConfiguration *) getConfiguration();
+    config = (CanThrottleConfiguration *) getConfiguration();
 
     if (!config) { // as lowest sub-class make sure we have a config object
         config = new CanThrottleConfiguration();
@@ -205,7 +197,7 @@ void CanThrottle::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void CanThrottle::saveConfiguration() {
-    CanThrottleConfiguration *config = (CanThrottleConfiguration *) getConfiguration();
+    config = (CanThrottleConfiguration *) getConfiguration();
 
     prefsHandler->write("ThrottleMin1", config->minimumLevel1);
     prefsHandler->write("ThrottleMax1", config->maximumLevel1);
