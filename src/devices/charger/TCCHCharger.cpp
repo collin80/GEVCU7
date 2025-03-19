@@ -15,11 +15,11 @@ void TCCHChargerController::setup()
     loadConfiguration();
     ChargeController::setup(); // run the parent class version of this function
 
-    TCCHChargerConfiguration *config = (TCCHChargerConfiguration *)getConfiguration();
-
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
     entry = {"TCCH-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"TCCH-COMMVER", "Set communications version (0 or 1)", &config->commVersion, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
     cfgEntries.push_back(entry);
 
     setAttachedCANBus(config->canbusNum);
@@ -46,13 +46,43 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
         setAlive();
 	    currentVoltage = (frame.buf[0] << 8) + (frame.buf[1]);
 	    currentAmps = (frame.buf[2] << 8) + (frame.buf[3]);
-        status = frame.buf[4];
-        if (status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);//Logger::error("Hardware failure of charger");
-        if (status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);//Logger::error("Charger over temperature!");
-        if (status & 4) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);//Logger::error("Input voltage out of spec!");
-        if (status & 8) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);//Logger::error("Charger can't detect proper battery voltage");
-        if (status & 16) faultHandler.raiseFault(getId(), COMM_TIMEOUT);//Logger::error("Comm timeout. Failed!");
-        Logger::debug("Charger    V: %f  A: %f   Status: %u", currentVoltage / 10.0f, currentAmps / 10.0f, status);
+        if (config->commVersion == 1)
+        {
+            status = frame.buf[4];
+            if (status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
+            if (status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
+            if (status & 4) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);
+            if (status & 8) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);
+            if (status & 0x10) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);
+            if (status & 0x20) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);
+            if (status & 0x40) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTA);
+            if (status & 0x80) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTA);
+            status = frame.buf[5];
+            if (status & 1) faultHandler.raiseFault(getId(), COMM_TIMEOUT);
+            uint8_t workingStatus = (status >> 1) & 3;
+            if (workingStatus == 0) faultHandler.raiseFault(getId(), GENERAL_FAULT);
+            //if it equals 2 or 3 then we're stopped and that might be OK so no fault
+            //bit 3 is completion of init. Should key on that and not try to command power until it's OK
+            //bit 4 is fan status (0 = stopped 1 = request to run)
+            //bit 5 is cooling pump on/off
+            status = frame.buf[6]; //all about charge port condition
+            uint8_t ccState = status & 3;
+            //bit 2 is CP signal state (0 = nothing 1 = valid)
+            if (status & 8) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
+            uint8_t lockState = (status >> 4) & 0x7;
+            //bit 7 is S2 switch control status (0 = off 1 = on)
+            deviceTemperature = frame.buf[7] - 40.0f;
+        }
+        else
+        {
+            status = frame.buf[4];
+            if (status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);//Logger::error("Hardware failure of charger");
+            if (status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);//Logger::error("Charger over temperature!");
+            if (status & 4) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);//Logger::error("Input voltage out of spec!");
+            if (status & 8) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);//Logger::error("Charger can't detect proper battery voltage");
+            if (status & 16) faultHandler.raiseFault(getId(), COMM_TIMEOUT);//Logger::error("Comm timeout. Failed!");
+        }
+        Logger::debug("Charger    V: %f  A: %f   Status: %u", currentVoltage / 10.0f, currentAmps / 10.0f, frame.buf[4]);
 
         //these two are part of the base class and will automatically be shown to interested parties
         outputVoltage = currentVoltage / 10.0f;
@@ -71,8 +101,6 @@ void TCCHChargerController::handleTick()
 
 void TCCHChargerController::sendCmd()
 {
-    TCCHChargerConfiguration *config = (TCCHChargerConfiguration *)getConfiguration();
-
     CAN_message_t output;
     output.len = 8;
     output.id = 0x1806E5F4;
@@ -85,8 +113,8 @@ void TCCHChargerController::sendCmd()
     output.buf[1] = (vOutput & 0xFF);
     output.buf[2] = (cOutput >> 8);
     output.buf[3] = (cOutput & 0xFF);
-    output.buf[4] = 0; // 0 = start charging
-    output.buf[5] = 0; //unused
+    output.buf[4] = 0; // 0 = start charging 1 = close output (!?!) 2 = charge end (go to sleep)
+    output.buf[5] = 0; // 0 = charging mode 1 = battery heating mode
     output.buf[6] = 0; //unused
     output.buf[7] = 0; //unused
 
@@ -102,7 +130,7 @@ uint32_t TCCHChargerController::getTickInterval()
 }
 
 void TCCHChargerController::loadConfiguration() {
-    TCCHChargerConfiguration *config = (TCCHChargerConfiguration *)getConfiguration();
+    config = (TCCHChargerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new TCCHChargerConfiguration();
@@ -112,16 +140,18 @@ void TCCHChargerController::loadConfiguration() {
     ChargeController::loadConfiguration(); // call parent
 
     prefsHandler->read("CanbusNum", &config->canbusNum, 1);
+    prefsHandler->read("CommVer", &config->commVersion, 1);
 }
 
 void TCCHChargerController::saveConfiguration() {
-    TCCHChargerConfiguration *config = (TCCHChargerConfiguration *)getConfiguration();
+    config = (TCCHChargerConfiguration *)getConfiguration();
 
     if (!config) {
         config = new TCCHChargerConfiguration();
         setConfiguration(config);
     }
     prefsHandler->write("CanbusNum", config->canbusNum);
+    prefsHandler->write("CommVer", config->commVersion);
     ChargeController::saveConfiguration();
 }
 

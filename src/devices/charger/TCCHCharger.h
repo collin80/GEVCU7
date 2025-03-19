@@ -44,6 +44,7 @@
 class TCCHChargerConfiguration : public ChargeConfiguration {
 public:
     uint8_t canbusNum;
+    uint8_t commVersion;
 };
 
 class TCCHChargerController: public ChargeController, CanObserver {
@@ -60,4 +61,5 @@ public:
 
 private:
     void sendCmd();
+    TCCHChargerConfiguration *config;
 };
