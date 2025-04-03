@@ -189,15 +189,15 @@ void UDSController::setup() {
     cfgEntries.reserve(5);
 
     ConfigEntry entry;
-    entry = {"UDS_RX", "Set CAN ID to receive UDS messages on", &config->udsRx, CFG_ENTRY_VAR_TYPE::UINT32, 0, 0x1FFFFFFFul, 16, nullptr};
+    entry = {"UDS_RX", "Set CAN ID to receive UDS messages on", &config->udsRx, CFG_ENTRY_VAR_TYPE::UINT32, 0, 0x1FFFFFFFul, 16, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"UDS_TX", "Set CAN ID to send UDS messages on", &config->udsTx, CFG_ENTRY_VAR_TYPE::UINT32, 0, 0x1FFFFFFFul, 16, nullptr};
+    entry = {"UDS_TX", "Set CAN ID to send UDS messages on", &config->udsTx, CFG_ENTRY_VAR_TYPE::UINT32, 0, 0x1FFFFFFFul, 16, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"UDS_EXT", "Should extended addressing (29 bit IDs) be used? (0=No 1=Yes)", &config->useExtended, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    entry = {"UDS_EXT", "Should extended addressing (29 bit IDs) be used? (0=No 1=Yes)", &config->useExtended, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"UDS_BROADCAST", "Should GEVCU listen on broadcast address? (0=No 1=Yes)", &config->listenBroadcast, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    entry = {"UDS_BROADCAST", "Should GEVCU listen on broadcast address? (0=No 1=Yes)", &config->listenBroadcast, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"UDS_BUS", "Listen on which bus? CAN0=1, CAN1=1, CAN2=2", &config->udsBus, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    entry = {"UDS_BUS", "Listen on which bus? CAN0=1, CAN1=1, CAN2=2", &config->udsBus, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     udsIsoTPTargetted.begin();

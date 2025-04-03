@@ -49,7 +49,7 @@ void BatteryManager::setup() {
     BatteryManagerConfiguration *config = (BatteryManagerConfiguration *) getConfiguration();
 
     //ConfigEntry entry;
-    //entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 100000.0}, 2, nullptr};
+    //entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 100000.0}, 2, nullptr, nullptr};
     //cfgEntries.push_back(entry);
 
     StatusEntry stat;

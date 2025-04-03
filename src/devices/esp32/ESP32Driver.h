@@ -25,6 +25,8 @@ public:
     uint8_t hostName[64];
     uint8_t esp32_mode;
     uint8_t debugMode;
+    uint8_t firmwareFile[64];
+    int espUpdateType;
 };
 
 class ESP32Driver : public Device
@@ -38,6 +40,8 @@ public:
     void processSerial();
     void sendLogString(String str);
     void sendStatusCSV(String str);
+    void doTeensyUpdate();
+    void doESP32Update();
 
     uint32_t getTickInterval();
 
@@ -55,7 +59,8 @@ private:
     ESP32NS::ESP32_STATE desiredState;
     bool systemAlive;
     bool systemEnabled;
-    uint8_t serialReadBuffer[1024];
+    bool inhibitJSON;
+    uint8_t serialReadBuffer[2048];
     uint8_t serialWriteBuffer[1024];
     DynamicJsonDocument *websocket_json;
     SerialFileSender *fileSender;

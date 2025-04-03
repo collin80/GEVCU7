@@ -44,7 +44,7 @@ void HVACController::setup()
     Device::setup(); // run the parent class version of this function3
 
     ConfigEntry entry;
-    entry = {"HVAC-TEMPERATURE", "Target climate temperature", &config->targetTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 100.0}, 2, nullptr};
+    entry = {"HVAC-TEMPERATURE", "Target climate temperature", &config->targetTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 100.0}, 2, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     StatusEntry stat;

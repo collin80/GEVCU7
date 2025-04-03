@@ -41,17 +41,17 @@ void PotGearSelector::setup()
     Logger::info("add device: Pot Gear Selector (id:%X, %X)", POTGEARSEL, this);
 
     ConfigEntry entry;
-    entry = {"PGADC", "Set ADC for pot based gear selector", &config->adcPin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"PGADC", "Set ADC for pot based gear selector", &config->adcPin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PGHYST", "Set hysteresis for gear signal", &config->hysteresis, CFG_ENTRY_VAR_TYPE::UINT16, 0, 2048, 0, nullptr};
+    entry = {"PGHYST", "Set hysteresis for gear signal", &config->hysteresis, CFG_ENTRY_VAR_TYPE::UINT16, 0, 2048, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PGPARK", "Set nominal value for park position", &config->parkPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr};
+    entry = {"PGPARK", "Set nominal value for park position", &config->parkPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PGREV", "Set nominal value for reverse position", &config->reversePosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr};
+    entry = {"PGREV", "Set nominal value for reverse position", &config->reversePosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PGNEU", "Set nominal value for neutral position", &config->neutralPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr};
+    entry = {"PGNEU", "Set nominal value for neutral position", &config->neutralPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PGDRIVE", "Set nominal value for drive position", &config->drivePosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr};
+    entry = {"PGDRIVE", "Set nominal value for drive position", &config->drivePosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 4096, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     Device::setup(); // run the parent class version of this function

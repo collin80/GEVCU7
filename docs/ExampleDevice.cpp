@@ -74,11 +74,11 @@ void Example::setup()
     //        |           |                        |                    |                         |  Max value
     //        |           |                        |                    |                         |  |  # of decimal places
     //        |           |                        |                    |                         |  |  |  Function that returns a desc of value                   
-    entry = {"EX-FIRST", "First example variable", &config->firstValue, CFG_ENTRY_VAR_TYPE::BYTE, 0, 3, 0, DEV_PTR(&Example::describeFirstVar)};
+    entry = {"EX-FIRST", "First example variable", &config->firstValue, CFG_ENTRY_VAR_TYPE::BYTE, 0, 3, 0, DEV_PTR(&Example::describeFirstVar), nullptr};
     cfgEntries.push_back(entry);
-    entry = {"EX-SECOND", "Second, bigger example variable", &config->secondValue, CFG_ENTRY_VAR_TYPE::UINT16, 0, 26000, 0, nullptr};
+    entry = {"EX-SECOND", "Second, bigger example variable", &config->secondValue, CFG_ENTRY_VAR_TYPE::UINT16, 0, 26000, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"EX-FLOAT", "Decimal example variable", &config->fractionalValue, CFG_ENTRY_VAR_TYPE::FLOAT, -10.0f, 10.0f, 1, nullptr};
+    entry = {"EX-FLOAT", "Decimal example variable", &config->fractionalValue, CFG_ENTRY_VAR_TYPE::FLOAT, -10.0f, 10.0f, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     /*

@@ -265,6 +265,10 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
     {
         Logger::console("%s was set as value for parameter %s", valu, settingName);
         deviceMatched->saveConfiguration(); //devices are responsible for doing their own saving and writing to eeprom
+        if (entry->afterUpdateFunc)
+        {
+            CALL_MEMBER_FN(deviceMatched, entry->afterUpdateFunc)();
+        }
     }
     if (result == 1) //value was too low
     {

@@ -52,13 +52,12 @@
 extern WDT_T4<WDT3> wdt;
 
 const int ledPin = 13;		// LED
-Stream *serial = &Serial;	// Serial (USB) or Serial1, Serial2, etc. (UART)
+Stream *serialptr = &Serial2;	// Serial (USB) or Serial1, Serial2, etc. (UART)
 
 void setup_flasherx() 
 {
-  serial->printf( "\nFlasherX OTA/SDCard firmware update v1 %s %s\n", __DATE__, __TIME__ );
-  //serial->printf( "WARNING: this can ruin your device\n" ); //shhh!
-  serial->printf( "target = %s (%dK flash in %dK sectors)\n",
+  Serial.printf( "\nFlasherX OTA/SDCard firmware update v1 %s %s\n", __DATE__, __TIME__ );
+  Serial.printf( "target = %s (%dK flash in %dK sectors)\n",
 			FLASH_ID, FLASH_SIZE/1024, FLASH_SECTOR_SIZE/1024);
 
   pinMode(ledPin, OUTPUT);	// assign output
@@ -74,12 +73,12 @@ void start_upgrade(FsFile *file)
 
   if (firmware_buffer_init( &buffer_addr, &buffer_size ) == 0)
   {
-    serial->printf( "unable to create buffer\n" );
-    serial->flush();
-    for (;;) {}
+    Serial.printf( "unable to create buffer\n" );
+    Serial.flush();
+    return;
   }
 
-  serial->printf( "buffer = %1luK %s (%08lX - %08lX)\n",
+  Serial.printf( "buffer = %1luK %s (%08lX - %08lX)\n",
 		buffer_size/1024, IN_FLASH(buffer_addr) ? "FLASH" : "RAM",
 		buffer_addr, buffer_addr + buffer_size );
 
@@ -88,9 +87,9 @@ void start_upgrade(FsFile *file)
   
   // return from update_firmware() means error or user abort, so clean up and
   // reboot to ensure that static vars get boot-up initialized before retry
-  serial->printf( "erase FLASH buffer / free RAM buffer...\n" );
+  Serial.printf( "erase FLASH buffer / free RAM buffer...\n" );
   firmware_buffer_free( buffer_addr, buffer_size );
-  serial->flush();
+  Serial.flush();
   REBOOT;
 }
 
@@ -99,108 +98,131 @@ void start_upgrade(FsFile *file)
 //******************************************************************************
 void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
 {
-  static char line[96];					// buffer for hex lines
-  static char data[32] __attribute__ ((aligned (8)));	// buffer for hex data
-  hex_info_t hex = {					// intel hex info struct
-    data, 0, 0, 0,					//   data,addr,num,code
-    0, 0xFFFFFFFF, 0, 					//   base,min,max,
-    0, 0						//   eof,lines
-  };
+    static char line[96];					// buffer for hex lines
+    static char data[32] __attribute__ ((aligned (8)));	// buffer for hex data
+    hex_info_t hex = {					// intel hex info struct
+        data, 0, 0, 0,					//   data,addr,num,code
+        0, 0xFFFFFFFF, 0, 					//   base,min,max,
+        0, 0						//   eof,lines
+    };
 
-  serial->printf( "waiting for hex lines...\n" );
+    Serial.printf( "waiting for hex lines...\n" );
 
-  // read and process intel hex lines until EOF or error
-  while (!hex.eof)  {
+    int dots = 0;
+    int linecount = 0;
 
-    read_ascii_line( file, line, sizeof(line) );
-    wdt.feed();
+    // read and process intel hex lines until EOF or error
+    while (!hex.eof)
+    {
+        if (file) read_ascii_line_file( file, line, sizeof(line) );
+        else read_ascii_line_serial( line, sizeof(line) );
+        wdt.feed();
 
-    if (parse_hex_line( (const char*)line, hex.data, &hex.addr, &hex.num, &hex.code ) == 0) {
-      serial->printf( "abort - bad hex line %s\n", line );
-      return;
-    }
-    else if (process_hex_record( &hex ) != 0) { // error on bad hex code
-      serial->printf( "abort - invalid hex code %d\n", hex.code );
-      return;
-    }
-    else if (hex.code == 0) { // if data record
-      uint32_t addr = buffer_addr + hex.base + hex.addr - FLASH_BASE_ADDR;
-      if (hex.max > (FLASH_BASE_ADDR + buffer_size)) {
-        serial->printf( "abort - max address %08lX too large\n", hex.max );
-        return;
-      }
-      else if (!IN_FLASH(buffer_addr)) {
-        memcpy( (void*)addr, (void*)hex.data, hex.num );
-      }
-      else if (IN_FLASH(buffer_addr)) {
-        int error = flash_write_block( addr, hex.data, hex.num );
-        if (error) {
-          serial->printf( "abort - error %02X in flash_write_block()\n", error );
-	  return;
+        /*linecount++;
+        if (linecount == 200)
+        {
+            linecount = 0;
+            Serial.write('.');
+            dots++;
+            if (dots == 40)
+            {
+                dots = 0;
+                Serial.write('\n');
+            }
+        }*/
+        Serial.printf("(%s)\n", line);        
+
+        if (strlen(line) > 2)
+        {
+            if (parse_hex_line( (const char*)line, hex.data, &hex.addr, &hex.num, &hex.code ) == 0)
+            {
+                Serial.printf( "abort - bad hex line: \"%s\"\n", line );
+                return;
+            }
+            else if (process_hex_record( &hex ) != 0)
+            { // error on bad hex code
+                Serial.printf( "abort - invalid hex code %d\n", hex.code );
+                return;
+            }
+            else if (hex.code == 0)
+            { // if data record
+                uint32_t addr = buffer_addr + hex.base + hex.addr - FLASH_BASE_ADDR;
+                if (hex.max > (FLASH_BASE_ADDR + buffer_size))
+                {
+                    Serial.printf( "abort - max address %08lX too large\n", hex.max );
+                    return;
+                }
+                else if (!IN_FLASH(buffer_addr))
+                {
+                    memcpy( (void*)addr, (void*)hex.data, hex.num );
+                }
+                else if (IN_FLASH(buffer_addr))
+                {
+                    int error = flash_write_block( addr, hex.data, hex.num );
+                    if (error)
+                    {
+                        Serial.printf( "abort - error %02X in flash_write_block()\n", error );
+	                      return;
+                    }
+                }
+            }
+            hex.lines++;
         }
-      }
     }
-    hex.lines++;
-  }
     
-  serial->printf( "\nhex file: %1d lines %1lu bytes (%08lX - %08lX)\n",
-			hex.lines, hex.max-hex.min, hex.min, hex.max );
+    Serial.printf( "\nhex file: %1d lines %1lu bytes (%08lX - %08lX)\n",
+			  hex.lines, hex.max-hex.min, hex.min, hex.max );
 
-  // check FSEC value in new code -- abort if incorrect
-  #if defined(KINETISK) || defined(KINETISL)
-  uint32_t value = *(uint32_t *)(0x40C + buffer_addr);
-  if (value == 0xfffff9de) {
-    serial->printf( "new code contains correct FSEC value %08lX\n", value );
-  }
-  else {
-    serial->printf( "abort - FSEC value %08lX should be FFFFF9DE\n", value );
-    return;
-  } 
-  #endif
+    // check FSEC value in new code -- abort if incorrect
+#if defined(KINETISK) || defined(KINETISL)
+    uint32_t value = *(uint32_t *)(0x40C + buffer_addr);
+    if (value == 0xfffff9de)
+    {
+        Serial.printf( "new code contains correct FSEC value %08lX\n", value );
+    }
+    else
+    {
+        Serial.printf( "abort - FSEC value %08lX should be FFFFF9DE\n", value );
+        return;
+    } 
+#endif
 
-  // check FLASH_ID in new code - abort if not found
-  if (check_flash_id( buffer_addr, hex.max - hex.min )) {
-    serial->printf( "new code contains correct target ID %s\n", FLASH_ID );
-  }
-  else {
-    serial->printf( "abort - new code missing string %s\n", FLASH_ID );
-    return;
-  }
+    // check FLASH_ID in new code - abort if not found
+    if (check_flash_id( buffer_addr, hex.max - hex.min ))
+    {
+        Serial.printf( "new code contains correct target ID %s\n", FLASH_ID );
+    }
+    else
+    {
+        Serial.printf( "abort - new code missing string %s\n", FLASH_ID );
+      return;
+    }
   
-/*
-  // get user input to write to flash or abort
-  int user_lines = -1;
-  while (user_lines != hex.lines && user_lines != 0) {
-    serial->printf( "enter %d to flash or 0 to abort\n", hex.lines );
-    read_ascii_line( serial, line, sizeof(line) );
-    sscanf( line, "%d", &user_lines );
-  }
-  
-  if (user_lines == 0) {
-    serial->printf( "abort - user entered 0 lines\n" );
-    return;
-  }
-*/
     //if we got this far then delete the file we had loaded
 
-    char filename[40];
-    file->getName(filename, 40);
-    file->close();
-    SD.sdfs.remove(filename);
-
+    if (file)
+    {
+        char filename[40];
+        file->getName(filename, 40);
+        file->close();
+        SD.sdfs.remove(filename);
+    }
+  
     wdt.feed();
 
-  // move new program from buffer to flash, free buffer, and reboot
-  flash_move( FLASH_BASE_ADDR, buffer_addr, hex.max-hex.min );
+    Serial.println("About to write new firmware image");
 
-  // should not return from flash_move(), but put REBOOT here as reminder
-  REBOOT;
+    // move new program from buffer to flash, free buffer, and reboot
+    flash_move( FLASH_BASE_ADDR, buffer_addr, hex.max-hex.min );
+
+    // should not return from flash_move(), but put REBOOT here as reminder
+    REBOOT;
 }
 
 //******************************************************************************
 // read_ascii_line()	read ascii characters until '\n', '\r', or max bytes
 //******************************************************************************
-void read_ascii_line( FsFile *file, char *line, int maxbytes )
+void read_ascii_line_file( FsFile *file, char *line, int maxbytes )
 {
     file->fgets(line, maxbytes);
 /*
@@ -213,6 +235,18 @@ void read_ascii_line( FsFile *file, char *line, int maxbytes )
   }
   line[nchar-1] = 0;	// null-terminate
 */
+}
+
+void read_ascii_line_serial(char *line, int maxbytes )
+{
+  int c=0, nchar=0;
+  while (nchar < maxbytes && !(c == '\n' || c == '\r')) {
+    if (serialptr->available()) {
+      c = serialptr->read();
+      line[nchar++] = c;
+    }
+  }
+  line[nchar-1] = 0;	// null-terminate
 }
 
 //******************************************************************************

@@ -31,7 +31,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class Device;
 typedef String (Device::*DescribeValue)();
+typedef void (Device::*AfterUpdate)();
 #define DEV_PTR(p) static_cast<DescribeValue>(p)
+#define UPD_PTR(p) static_cast<AfterUpdate>(p)
 
 enum DeviceType {
     DEVICE_ANY,
@@ -88,6 +90,7 @@ struct ConfigEntry
     minMaxType maxValue; //maximum acceptable value
     uint8_t precision; //number of decimal places to display. Obv. 0 for integers
     DescribeValue descFunc; //if this function pointer is non-null it'll be used to turn values into strings.
+    AfterUpdate afterUpdateFunc; //called after this value is updated 
 };
 
 /*StatusEntry records a data item that the device would like to expose to the world. This is different

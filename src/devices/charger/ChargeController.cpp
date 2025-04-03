@@ -51,11 +51,11 @@ void ChargeController::setup()
     Device::setup(); // run the parent class version of this function
 
     ConfigEntry entry;
-    entry = {"CHARGER-TARGETV", "Target output voltage for charger", &config->targetUpperVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1000.0}, 2, nullptr};
+    entry = {"CHARGER-TARGETV", "Target output voltage for charger", &config->targetUpperVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1000.0}, 2, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"CHARGER-REQHVREADY", "Enable charger only when HV is ready? (0=No, 1=Yes)", &config->requireHVReady, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    entry = {"CHARGER-REQHVREADY", "Enable charger only when HV is ready? (0=No, 1=Yes)", &config->requireHVReady, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"CHARGER-ENABLEPIN", "Output pin to use to enable charger (255 if not needed)", &config->enablePin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"CHARGER-ENABLEPIN", "Output pin to use to enable charger (255 if not needed)", &config->enablePin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     StatusEntry stat;

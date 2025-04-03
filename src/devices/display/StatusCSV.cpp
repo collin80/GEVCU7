@@ -73,17 +73,17 @@ void StatusCSV::setup() {
     handleSerialSwitch(); //see if GVRET output should be turned off
 
     ConfigEntry entry;
-    entry = {"TICKUPDATE", "Set number of timer ticks per update (20ms intervals)", &config->ticksPerUpdate, CFG_ENTRY_VAR_TYPE::UINT16, {.u_int = 1}, {.u_int = 10000}, 1, nullptr};
+    entry = {"TICKUPDATE", "Set number of timer ticks per update (20ms intervals)", &config->ticksPerUpdate, CFG_ENTRY_VAR_TYPE::UINT16, {.u_int = 1}, {.u_int = 10000}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"STATUS-EN", "Status entries to enable (or ALL for all of them)", &config->enableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr};
+    entry = {"STATUS-EN", "Status entries to enable (or ALL for all of them)", &config->enableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"STATUS-DIS", "Status entries to disable (or ALL)", &config->disableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr};
+    entry = {"STATUS-DIS", "Status entries to disable (or ALL)", &config->disableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"STATUS-AUTO", "Automatically start sending status lines? (0 = No 1 = Yes)", &config->bAutoStart, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 0x1}, 1, nullptr};
+    entry = {"STATUS-AUTO", "Automatically start sending status lines? (0 = No 1 = Yes)", &config->bAutoStart, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 0x1}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"STATUS-FILE", "Also send output to sdCard? (0 = No 1 = Yes)", &config->bFileOutput, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 1}, 1, nullptr};
+    entry = {"STATUS-FILE", "Also send output to sdCard? (0 = No 1 = Yes)", &config->bFileOutput, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 1}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"STATUS-ESP", "Also send output to ESP32? (0 = No 1 = Yes)", &config->bESPOutput, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 1}, 1, nullptr};
+    entry = {"STATUS-ESP", "Also send output to ESP32? (0 = No 1 = Yes)", &config->bESPOutput, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 1}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_STATUS);

@@ -47,7 +47,7 @@ void OrionBatteryManager::setup() {
 
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
-    entry = {"ORION-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    entry = {"ORION-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     setAttachedCANBus(config->canbusNum);

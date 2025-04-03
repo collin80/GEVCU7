@@ -55,15 +55,15 @@ void Precharger::setup() {
     cfgEntries.reserve(6);
 
     ConfigEntry entry;
-    entry = {"PRECHARGETYPE", "Set precharge type (1 = Time Based, 2 = Voltage Based)", &config->prechargeType, CFG_ENTRY_VAR_TYPE::BYTE, 1, 2, 0, nullptr};
+    entry = {"PRECHARGETYPE", "Set precharge type (1 = Time Based, 2 = Voltage Based)", &config->prechargeType, CFG_ENTRY_VAR_TYPE::BYTE, 1, 2, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PRECHARGETIME", "Set precharge time in milliseconds", &config->prechargeTime, CFG_ENTRY_VAR_TYPE::UINT16, 0, 65000, 0, nullptr};
+    entry = {"PRECHARGETIME", "Set precharge time in milliseconds", &config->prechargeTime, CFG_ENTRY_VAR_TYPE::UINT16, 0, 65000, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PRECHARGERELAY", "Set output to use for precharge relay", &config->prechargeRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"PRECHARGERELAY", "Set output to use for precharge relay", &config->prechargeRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"MAINCONTACTOR", "Set output to use for main contactor", &config->mainRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"MAINCONTACTOR", "Set output to use for main contactor", &config->mainRelay, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PRECHARGE-TRIGGER", "Set input to use for triggering precharge", &config->enableInput, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"PRECHARGE-TRIGGER", "Set input to use for triggering precharge", &config->enableInput, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     StatusEntry stat;

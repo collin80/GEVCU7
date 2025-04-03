@@ -17,9 +17,9 @@ void TCCHChargerController::setup()
 
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
-    entry = {"TCCH-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    entry = {"TCCH-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TCCH-COMMVER", "Set communications version (0 or 1)", &config->commVersion, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    entry = {"TCCH-COMMVER", "Set communications version (0 or 1)", &config->commVersion, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     setAttachedCANBus(config->canbusNum);

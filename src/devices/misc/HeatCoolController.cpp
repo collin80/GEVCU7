@@ -57,35 +57,35 @@ void HeatCoolController::setup() {
     ConfigEntry entry;
     StatusEntry stat;
 
-    entry = {"HEATONTEMP", "Temperature at which to enable heater (C)", &config->heatOnTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0}, {.floating = 100.0}, 1, nullptr};
+    entry = {"HEATONTEMP", "Temperature at which to enable heater (C)", &config->heatOnTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0}, {.floating = 100.0}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"HEATOFFTEMP", "Temperature at which to cease heating", &config->heatOffTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0}, {.floating = 100.0}, 1, nullptr};
+    entry = {"HEATOFFTEMP", "Temperature at which to cease heating", &config->heatOffTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0}, {.floating = 100.0}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"HEATPIN", "Output used to trigger heating (255=Disabled)", &config->heatEnablePin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"HEATPIN", "Output used to trigger heating (255=Disabled)", &config->heatEnablePin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
 
-    entry = {"PUMPHEAT", "Should water pump be active when heating is on? (0=no, 1=yes)", &config->runPumpWithHeat, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    entry = {"PUMPHEAT", "Should water pump be active when heating is on? (0=no, 1=yes)", &config->runPumpWithHeat, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PUMPREADY", "Should water pump be active when system is on? (0=no, 1=yes)", &config->runPumpAtSysReady, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    entry = {"PUMPREADY", "Should water pump be active when system is on? (0=no, 1=yes)", &config->runPumpAtSysReady, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"PUMPPIN", "Output used to trigger water pump (255=Disabled)", &config->waterPumpPin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"PUMPPIN", "Output used to trigger water pump (255=Disabled)", &config->waterPumpPin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     char buff[30];
     for (int i = 0; i < COOL_ZONES; i++)
     {
         snprintf(buff, 30, "COOLONTEMP%u", i);
-        entry = {buff, "Temperature at which zone cooling is turned on", &config->coolOnTemperature[i], CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0}, {.floating = 200.0}, 1, nullptr};
+        entry = {buff, "Temperature at which zone cooling is turned on", &config->coolOnTemperature[i], CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0}, {.floating = 200.0}, 1, nullptr, nullptr};
         cfgEntries.push_back(entry);
         snprintf(buff, 30, "COOLOFFTEMP%u", i);
-        entry = {buff, "Temperature at which zone cooling is turned off", &config->coolOffTemperature[i], CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0}, {.floating = 200.0}, 1, nullptr};
+        entry = {buff, "Temperature at which zone cooling is turned off", &config->coolOffTemperature[i], CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = -10.0}, {.floating = 200.0}, 1, nullptr, nullptr};
         cfgEntries.push_back(entry);
         snprintf(buff, 30, "COOLZONETYPE%u", i);
-        entry = {buff, "Where does this zone get temperature from (0=MotorCtrl, 1=BMS, 2=DCDC)", &config->coolZoneType[i], CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+        entry = {buff, "Where does this zone get temperature from (0=MotorCtrl, 1=BMS, 2=DCDC)", &config->coolZoneType[i], CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr, nullptr};
         cfgEntries.push_back(entry);
         snprintf(buff, 30, "COOLPIN%u", i);
-        entry = {buff, "Output used for this zone (255=Disabled)", &config->coolPins[i], CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+        entry = {buff, "Output used for this zone (255=Disabled)", &config->coolPins[i], CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
         cfgEntries.push_back(entry);
 
         snprintf(buff, 30, "HC_CoolOn%u", i);

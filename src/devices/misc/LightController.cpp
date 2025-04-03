@@ -52,11 +52,11 @@ void LightController::setup() {
     cfgEntries.reserve(3);
 
     ConfigEntry entry;
-    entry = {"BRAKELIGHT", "Set brake light output (255 = disabled)", &config->brakeLightOutput, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"BRAKELIGHT", "Set brake light output (255 = disabled)", &config->brakeLightOutput, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"REVLIGHT", "Set reverse light output (255 = disabled)", &config->reverseLightOutput, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr};
+    entry = {"REVLIGHT", "Set reverse light output (255 = disabled)", &config->reverseLightOutput, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"REQLEVEL","Required regen to trigger brake light (in 1/10 Nm) 0=Disabled", &config->reqRegenLevel, CFG_ENTRY_VAR_TYPE::INT16, {.s_int = -1000}, 0, 1, nullptr};
+    entry = {"REQLEVEL","Required regen to trigger brake light (in 1/10 Nm) 0=Disabled", &config->reqRegenLevel, CFG_ENTRY_VAR_TYPE::INT16, {.s_int = -1000}, 0, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_LIGHTING);

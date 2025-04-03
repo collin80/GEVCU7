@@ -105,15 +105,15 @@ void TeslaACGen2Controller::setup()
 
     ConfigEntry entry;
     //        cfgName                 helpText                               variable ref        Type                   Min Max Precision Funct
-    entry = {"TESLAG2AC-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr};
+    entry = {"TESLAG2AC-CANBUS", "Set which CAN bus to connect to (0-2)", &config->canbusNum, CFG_ENTRY_VAR_TYPE::BYTE, 0, 2, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TESLAG2AC-MAXPOW", "Maximum allowable wattage draw of compressor", &config->maxPower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 8000, 0, nullptr};
+    entry = {"TESLAG2AC-MAXPOW", "Maximum allowable wattage draw of compressor", &config->maxPower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 8000, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TESLAG2AC-KP", "Proportional value of PID controller", &config->kP, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 80.0}, 2, nullptr};
+    entry = {"TESLAG2AC-KP", "Proportional value of PID controller", &config->kP, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 80.0}, 2, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TESLAG2AC-KI", "Integral value of PID controller", &config->kI, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating =80.0}, 2, nullptr};
+    entry = {"TESLAG2AC-KI", "Integral value of PID controller", &config->kI, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating =80.0}, 2, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TESLAG2AC-KD", "Differential value of PID controller", &config->kD, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 80.0}, 2, nullptr};
+    entry = {"TESLAG2AC-KD", "Differential value of PID controller", &config->kD, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 80.0}, 2, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     setAttachedCANBus(config->canbusNum);

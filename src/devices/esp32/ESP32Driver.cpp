@@ -3,6 +3,7 @@
 #include "../misc/SystemDevice.h"
 #include "../../SerialConsole.h"
 #include "devices/display/StatusCSV.h"
+#include "FlasherX.h"
 
 extern SerialConsole *serialConsole;
 
@@ -206,6 +207,7 @@ ESP32Driver::ESP32Driver() : Device()
     systemAlive = false;
     systemEnabled = false;
     didInitialStatus = false;
+    inhibitJSON = false;
     statusIdx = 0;
     lastTime = 0;
     websocket_json = new DynamicJsonDocument(3000);
@@ -248,27 +250,33 @@ void ESP32Driver::setup()
     loadConfiguration();
 
     ConfigEntry entry;
-    entry = {"ESP32-SSID", "Set SSID to create or connect to", &config->ssid, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr};
+    entry = {"ESP32-SSID", "Set SSID to create or connect to", &config->ssid, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-PW", "Set WiFi password / WPA2 Key", &config->ssid_pw, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr};
+    entry = {"ESP32-PW", "Set WiFi password / WPA2 Key", &config->ssid_pw, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-HOSTNAME", "Set wireless host name (mDNS / OTA)", &config->hostName, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr};
+    entry = {"ESP32-HOSTNAME", "Set wireless host name (mDNS / OTA)", &config->hostName, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-MODE", "Set ESP32 Mode (0 = Create AP, 1 = Connect to SSID)", &config->esp32_mode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    entry = {"ESP32-MODE", "Set ESP32 Mode (0 = Create AP, 1 = Connect to SSID)", &config->esp32_mode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-DEBUG", "Enable debugging at module level (0 = obey log level, 1 = force debugging on)", &config->debugMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr};
+    entry = {"ESP32-DEBUG", "Enable debugging at module level (0 = obey log level, 1 = force debugging on)", &config->debugMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+
+    entry = {"ESP32-FWUPD", "Update main processor firmware", &config->firmwareFile, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, UPD_PTR(&doTeensyUpdate)};
+    cfgEntries.push_back(entry);
+
+    entry = {"ESP32-FWTYPE", "Update ESP32 firmware with type", &config->espUpdateType, CFG_ENTRY_VAR_TYPE::BYTE, 0, 9999, 0, nullptr, UPD_PTR(&doESP32Update)};
     cfgEntries.push_back(entry);
 
     Device::setup(); // run the parent class version of this function
 
     //for some reason nothing works right if you set this higher than 115200 but it doesn't seem like corruption of the characters.
     //Text just... vanishes into thin air. This seems to suggest that one of the ends is going full tilt and overrunning buffers
-    //Serial2.addMemoryForRead(serialReadBuffer, sizeof(serialReadBuffer));
-    //Serial2.addMemoryForWrite(serialWriteBuffer, sizeof(serialWriteBuffer));
+    Serial2.addMemoryForRead(serialReadBuffer, sizeof(serialReadBuffer));
+    Serial2.addMemoryForWrite(serialWriteBuffer, sizeof(serialWriteBuffer));
     Serial2.begin(230400);
     //Serial2.setTimeout(2);
 
@@ -353,14 +361,17 @@ void ESP32Driver::handleTick() {
             buff += String(seconds);
             (*websocket_json)["timeRunning"] = buff;
             (*websocket_json)["systemState"] = 8;
-            serializeJson((*websocket_json), Serial2);
-            Serial2.println();
-
-            //shall we send it to the serial console for debugging?
-            if (config->debugMode)
+            if (!inhibitJSON)
             {
-                serializeJsonPretty((*websocket_json), Serial);
-                Serial.println();
+                serializeJson((*websocket_json), Serial2);
+                Serial2.println();
+
+                //shall we send it to the serial console for debugging?
+                if (config->debugMode)
+                {
+                    serializeJsonPretty((*websocket_json), Serial);
+                    Serial.println();
+                }
             }
             (*websocket_json).clear();
         }
@@ -397,6 +408,13 @@ void ESP32Driver::processSerial()
         //else
         {
             if (c == 0xD0) fileSender->processCharacter(c);
+            if (c == 0xA5)
+            {
+                Logger::info("Starting to stream firmware update");
+                inhibitJSON = true;
+                start_upgrade(nullptr); //start a teensy mm upgrade through serial tunnel
+                inhibitJSON = false;
+            } 
             else if (c == '\n')
             {
                 if (config->debugMode) Logger::console("ESP32: %s", bufferedLine.c_str());
@@ -532,6 +550,46 @@ uint32_t ESP32Driver::getTickInterval()
     return 5000;
 }
 
+//send json request to esp32 to start a teensy update from internet
+void ESP32Driver::doTeensyUpdate()
+{
+    Logger::info("Sending microMod OTA request to ESP32");
+
+    inhibitJSON = true;
+
+    StaticJsonDocument<300> doc;
+    doc["FWUPD"] = config->firmwareFile;
+    serializeJson(doc, Serial2);
+    Serial2.println();
+
+    //shall we send it to the serial console for debugging?
+    if (config->debugMode)
+    {
+        serializeJsonPretty(doc, Serial);
+        Serial.println();
+    }
+}
+
+//send json request to esp32 to start an update on itself
+void ESP32Driver::doESP32Update()
+{
+    Logger::info("Sending esp32 OTA request to ESP32");
+
+    inhibitJSON = true;
+
+    StaticJsonDocument<300> doc;
+    doc["ESPUPD"] = config->espUpdateType;
+    serializeJson(doc, Serial2);
+    Serial2.println();
+
+    //shall we send it to the serial console for debugging?
+    if (config->debugMode)
+    {
+        serializeJsonPretty(doc, Serial);
+        Serial.println();
+    }
+}
+
 void ESP32Driver::loadConfiguration() {
     
     config = (ESP32Configuration *)getConfiguration();
@@ -550,6 +608,9 @@ void ESP32Driver::loadConfiguration() {
     Logger::debug("SSID: %s", config->ssid);
     Logger::debug("PW: %s", config->ssid_pw);
     Logger::debug("Hostname: %s", config->hostName);
+
+    config->espUpdateType = 1;
+    strcpy((char *)config->firmwareFile, "GEVCU7");
 
     Device::loadConfiguration(); // call parent
 }

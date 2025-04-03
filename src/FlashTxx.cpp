@@ -19,8 +19,11 @@
 #include <malloc.h>		// malloc(), free()
 #include <string.h>		// memset()
 #include "FlashTxx.h"		// FLASH_BASE_ADDRESS, FLASH_SECTOR_SIZE, etc.
+#include <Watchdog_t4.h>
 
 static int leave_interrupts_disabled = 0;
+
+extern WDT_T4<WDT3> wdt;
 
 //******************************************************************************
 // compute addr/size for firmware buffer and return NO/RAM/FLASH_BUFFER_TYPE
@@ -255,6 +258,8 @@ RAMFUNC void flash_move( uint32_t dst, uint32_t src, uint32_t size )
   
   // move size bytes containing new program from source to destination
   while (offset < size && error == 0) {
+
+    wdt.feed();
 
     addr = dst + offset;
 
