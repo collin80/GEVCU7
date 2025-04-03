@@ -48,6 +48,7 @@
 #include "FlashTxx.h"		// TLC/T3x/T4x/TMM flash primitives
 #include "FlasherX.h"
 #include <Watchdog_t4.h>
+#include "config.h"
 
 extern WDT_T4<WDT3> wdt;
 
@@ -110,6 +111,7 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
 
     int dots = 0;
     int linecount = 0;
+    bool blinkOn;
 
     // read and process intel hex lines until EOF or error
     while (!hex.eof)
@@ -118,19 +120,24 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
         else read_ascii_line_serial( line, sizeof(line) );
         wdt.feed();
 
-        /*linecount++;
+        digitalWrite(BLINK_LED, LOW);
+        blinkOn = false;
+
+        linecount++;
         if (linecount == 200)
         {
             linecount = 0;
             Serial.write('.');
             dots++;
+            blinkOn = !blinkOn;
+            digitalWrite(BLINK_LED, blinkOn);
             if (dots == 40)
             {
                 dots = 0;
                 Serial.write('\n');
             }
-        }*/
-        Serial.printf("(%s)\n", line);        
+        }
+        //Serial.printf("(%s)\n", line);        
 
         if (strlen(line) > 2)
         {
