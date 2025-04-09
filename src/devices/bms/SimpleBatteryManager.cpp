@@ -34,8 +34,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../dcdc/DCDCController.h"
 
 SimpleBatteryManager::SimpleBatteryManager() : BatteryManager() {
-    allowCharge = false;
-    allowDischarge = false;
+    allowCharge = true;
+    allowDischarge = true;
     commonName = "Simple BMS";
     shortName = "SimpleBMS";
     deviceId = SIMPLEBMS;
@@ -72,6 +72,9 @@ void SimpleBatteryManager::handleTick() {
     MotorController *mc = deviceManager.getMotorController();
     ChargeController *cc = (ChargeController *)deviceManager.getDeviceByType(DeviceType::DEVICE_CHARGER);
     DCDCController *dc = (DCDCController *)deviceManager.getDeviceByType(DeviceType::DEVICE_DCDC);
+
+    float targetSOC;
+
     if (!firstReading)
     {
         float totalCurrent = 0;
@@ -82,6 +85,37 @@ void SimpleBatteryManager::handleTick() {
         float upperVBound = config->packFullVoltage - v_interval;
         float lowerVBound = config->packEmptyVoltage + v_interval;
 
+        targetSOC = SOC;
+
+        //assume upper and lower 20% are linear in voltage and try to adjust SOC to match
+        float dcV = mc->getDcVoltage();
+        if (dcV < lowerVBound)
+        {
+            targetSOC = 20.0f - ((lowerVBound - dcV) / v_interval * 20.0f);
+            if (targetSOC < 0.0f) targetSOC = 0.0f;
+    
+            //only intervene if the difference is more than 2%
+            if (fabs(targetSOC - SOC) > 2.0f )
+            {
+                totalCurrent += 1000.0; //pretend to be using a lot of current to knock down the SOC
+            }
+        }
+        else if (dcV > upperVBound)
+        {
+            targetSOC = 80.0f + ((dcV - upperVBound) / v_interval * 20.0f);
+            if (targetSOC > 100.0f) targetSOC = 100.0f;
+    
+            if (fabs(targetSOC - SOC) > 2.0f)
+            {
+                totalCurrent -= 1000.0;
+            }
+        }
+
+        if (SOC < 2.0f) allowDischarge = false;
+            else allowDischarge = true;
+        if (SOC > 99.5f) allowCharge = false;
+            else allowCharge = true;
+
         uint32_t interval = millis() - lastMS;
         lastMS = millis();
         //an hour is 3.6 million milliseconds
@@ -89,6 +123,12 @@ void SimpleBatteryManager::handleTick() {
         ah_partial *= totalCurrent;
         config->currentPackAH -= ah_partial;
         SOC = (config->currentPackAH / config->nominalPackAH) * 100.0f;
+        Logger::debug("Target SOC: %f       Real SOC: %f        dcv: %f", targetSOC, SOC, dcV);
+        Logger::debug("Charging OK: %i     Discharging OK: %i", allowCharge, allowDischarge);
+        //write the parameter but don't force the cache. Let it naturally time out every so often
+        //and save to EEPROM. This limits the write cycles to EEPROM.
+        prefsHandler->write("CurrAH", config->currentPackAH);
+
     }
     else
     {
