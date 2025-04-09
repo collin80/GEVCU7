@@ -86,6 +86,7 @@ void TestMotorController::handleTick() {
         //if (currentGear == REVERSE)
         //    torqueRequested = (((long) throttleRequested * -1 *(long) config->torqueMax) / 1000.0f);
         
+        //this smooths the torque request into the former actual torque to make it schmooove
         torqueActual = ((torqueActual * 7) + (torqueRequested * 3)) / 10.0;
         speedActual = torqueActual * 20;
         if (speedActual < 0) speedActual = 0;
@@ -98,13 +99,9 @@ void TestMotorController::handleTick() {
         dcCurrent += (torqueRequested - torqueActual) * 2;        
                 
     }
-    dcVoltage = 360.0f - (dcCurrent);
+    dcVoltage = 360.0f - (dcCurrent / 10.0f);
     acCurrent = (dcCurrent * 40) / 30; //A bit more current than DC bus    
     
-    //Both dc current and dc voltage are scaled up 10, mech power should be in 0.1kw increments
-    //current*voltage = watts but there is inefficiency to deal with. and it's watts but we're scaled up 100x
-    //because of multipliers so need to scale down 100x to get to watts then by 100x again to get to 0.1kw
-    //100x100 = 10000 but inefficiency should make it even worse
     mechanicalPower = (dcCurrent * dcVoltage) / 1200.0f;
     
     //Heat up or cool motor and inverter based on mechanical power being used.
