@@ -111,17 +111,20 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
 
     int dots = 0;
     int linecount = 0;
-    bool blinkOn;
+    bool blinkOn = false;
+
+    digitalWrite(BLINK_LED, LOW);
 
     // read and process intel hex lines until EOF or error
     while (!hex.eof)
     {
         if (file) read_ascii_line_file( file, line, sizeof(line) );
-        else read_ascii_line_serial( line, sizeof(line) );
+        else
+        {
+          serialptr->write((char)0x97); //signal we want to receive a line
+          read_ascii_line_serial( line, sizeof(line) );
+        }
         wdt.feed();
-
-        digitalWrite(BLINK_LED, LOW);
-        blinkOn = false;
 
         linecount++;
         if (linecount == 200)
@@ -177,7 +180,7 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
         }
     }
     
-    Serial.printf( "\nhex file: %1d lines %1lu bytes (%08lX - %08lX)\n",
+    Serial.printf( "\nhex file: %1d lines, %1lu bytes, addresses (%08lX - %08lX)\n",
 			  hex.lines, hex.max-hex.min, hex.min, hex.max );
 
     // check FSEC value in new code -- abort if incorrect
@@ -202,7 +205,7 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
     else
     {
         Serial.printf( "abort - new code missing string %s\n", FLASH_ID );
-      return;
+        return;
     }
   
     //if we got this far then delete the file we had loaded

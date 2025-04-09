@@ -60,7 +60,7 @@ private:
     bool systemAlive;
     bool systemEnabled;
     bool inhibitJSON;
-    uint8_t serialReadBuffer[2048];
+    uint8_t serialReadBuffer[1024];
     uint8_t serialWriteBuffer[1024];
     DynamicJsonDocument *websocket_json;
     SerialFileSender *fileSender;
