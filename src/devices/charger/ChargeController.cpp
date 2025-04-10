@@ -41,6 +41,7 @@ ChargeController::ChargeController() : Device()
     deviceTemperature = 0.0f;
     isEnabled = false;
     isFaulted = false;
+    isEVSEConnected = false;
     deviceType = DEVICE_CHARGER;
 }
 
@@ -66,6 +67,12 @@ void ChargeController::setup()
     deviceManager.addStatusEntry(stat);
     stat = {"CHGR_Temperature", &deviceTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
     deviceManager.addStatusEntry(stat);
+    stat = {"CHGR_IsEnabled", &isEnabled, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"CHGR_IsEnabled", &isFaulted, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"CHGR_EVSE_Connected", &isEVSEConnected, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
+    deviceManager.addStatusEntry(stat);
 }
 
 void ChargeController::handleTick() 
@@ -86,6 +93,11 @@ float ChargeController::getOutputCurrent()
 float ChargeController::getTemperature()
 {
     return deviceTemperature;
+}
+
+bool ChargeController::getEVSEConnected()
+{
+    return isEVSEConnected;
 }
 
 void ChargeController::loadConfiguration()

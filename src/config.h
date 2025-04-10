@@ -35,7 +35,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <FlexCAN_T4.h>
 
-#define CFG_BUILD_NUM	1084      //increment this every time a git commit is done. 
+//increment this every time a git commit is done.
+//I have done a TERRIBLE job of that. Trusting the compile
+//date and time is more accurate but an attempt is made to update this number too.
+#define CFG_BUILD_NUM	1085 
 
 #define portMEMORY_BARRIER()     __asm volatile ( "dmb" ::: "memory" )
 #define portDATA_SYNC_BARRIER()  __asm volatile ( "dsb" ::: "memory" )

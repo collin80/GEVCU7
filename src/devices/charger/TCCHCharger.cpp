@@ -21,6 +21,8 @@ void TCCHChargerController::setup()
     cfgEntries.push_back(entry);
     entry = {"TCCH-COMMVER", "Set communications version (0 or 1)", &config->commVersion, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
+    entry = {"TCCH-EVSEPIN", "Set input pin for EVSE connected", &config->evseConnectedPin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
+    cfgEntries.push_back(entry);
 
     setAttachedCANBus(config->canbusNum);
 
@@ -37,6 +39,7 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
     uint16_t currentVoltage = 0;
     uint16_t currentAmps = 0;
     uint8_t status = 0;
+
     Logger::debug("TCCH msg: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
                   frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
                   frame.buf[5],frame.buf[6],frame.buf[7]);
@@ -49,6 +52,7 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
         if (config->commVersion == 1)
         {
             status = frame.buf[4];
+            isFaulted = status ? true : false;
             if (status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
             if (status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
             if (status & 4) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);
@@ -76,6 +80,7 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
         else
         {
             status = frame.buf[4];
+            isFaulted = status ? true : false;
             if (status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);//Logger::error("Hardware failure of charger");
             if (status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);//Logger::error("Charger over temperature!");
             if (status & 4) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);//Logger::error("Input voltage out of spec!");
@@ -96,6 +101,22 @@ void TCCHChargerController::handleTick()
 
     checkAlive(4000);
 
+    if (config->enablePin != 255) //if there is an enable pin then respect it
+    {
+        isEnabled = systemIO.getDigitalIn(config->enablePin) && isFaulted;
+    }
+    else isEnabled = true && !isFaulted; //otherwise enable unless we're faulted
+
+    //if the above checkAlive failed then we assume the charger is MIA and we don't keep sending traffic to it.
+    if (!isOperational) isEnabled = false;
+
+    if (config->evseConnectedPin != 255)
+    {
+        isEVSEConnected = false;
+        if (systemIO.getDigitalIn(config->evseConnectedPin)) isEVSEConnected = true;
+    }
+    else isEVSEConnected = false;
+
     sendCmd();   //Send our Delphi voltage control command
 }
 
@@ -113,7 +134,10 @@ void TCCHChargerController::sendCmd()
     output.buf[1] = (vOutput & 0xFF);
     output.buf[2] = (cOutput >> 8);
     output.buf[3] = (cOutput & 0xFF);
-    output.buf[4] = 0; // 0 = start charging 1 = close output (!?!) 2 = charge end (go to sleep)
+    if (isEnabled)
+        output.buf[4] = 0; // 0 = start charging 1 = stop charging 2 = charge end (go to sleep)
+    else
+    output.buf[4] = 1;
     output.buf[5] = 0; // 0 = charging mode 1 = battery heating mode
     output.buf[6] = 0; //unused
     output.buf[7] = 0; //unused
@@ -141,6 +165,7 @@ void TCCHChargerController::loadConfiguration() {
 
     prefsHandler->read("CanbusNum", &config->canbusNum, 1);
     prefsHandler->read("CommVer", &config->commVersion, 1);
+    prefsHandler->read("evsepin", &config->evseConnectedPin, 255);
 }
 
 void TCCHChargerController::saveConfiguration() {
@@ -152,6 +177,7 @@ void TCCHChargerController::saveConfiguration() {
     }
     prefsHandler->write("CanbusNum", config->canbusNum);
     prefsHandler->write("CommVer", config->commVersion);
+    prefsHandler->write("evsepin", config->evseConnectedPin);
     ChargeController::saveConfiguration();
 }
 

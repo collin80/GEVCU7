@@ -268,12 +268,12 @@ void ESP32Driver::setup()
     entry = {"ESP32-FWUPD", "Update main processor firmware", &config->firmwareFile, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, UPD_PTR(&doTeensyUpdate)};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-FWTYPE", "Update ESP32 firmware with type", &config->espUpdateType, CFG_ENTRY_VAR_TYPE::BYTE, 0, 9999, 0, nullptr, UPD_PTR(&doESP32Update)};
+    entry = {"ESP32-ESPUPD", "Update ESP32 firmware with type", &config->espUpdateType, CFG_ENTRY_VAR_TYPE::BYTE, 0, 9999, 0, nullptr, UPD_PTR(&doESP32Update)};
     cfgEntries.push_back(entry);
 
     Device::setup(); // run the parent class version of this function
 
-    //for some reason nothing works right if you set this higher than 115200 but it doesn't seem like corruption of the characters.
+    //for some reason nothing works right if you set this higher than 230400 but it doesn't seem like corruption of the characters.
     //Text just... vanishes into thin air. This seems to suggest that one of the ends is going full tilt and overrunning buffers
     Serial2.addMemoryForRead(serialReadBuffer, sizeof(serialReadBuffer));
     Serial2.addMemoryForWrite(serialWriteBuffer, sizeof(serialWriteBuffer));

@@ -33,6 +33,7 @@
 #include "../../config.h"
 #include "../Device.h"
 #include "../io/Throttle.h"
+#include "../charger/ChargeController.h"
 #include "../../DeviceManager.h"
 #include "../../sys_io.h"
 

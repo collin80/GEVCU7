@@ -72,6 +72,7 @@ public:
     float getOutputVoltage();
     float getOutputCurrent();
     float getTemperature();
+    bool getEVSEConnected();
     virtual const char* getFaultDescription(uint16_t faultcode);
 
     virtual void loadConfiguration();
@@ -83,4 +84,5 @@ protected:
     float deviceTemperature;
     bool isEnabled;
     bool isFaulted;
+    bool isEVSEConnected;
 };

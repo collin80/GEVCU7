@@ -45,6 +45,7 @@ class TCCHChargerConfiguration : public ChargeConfiguration {
 public:
     uint8_t canbusNum;
     uint8_t commVersion;
+    uint8_t evseConnectedPin;
 };
 
 class TCCHChargerController: public ChargeController, CanObserver {

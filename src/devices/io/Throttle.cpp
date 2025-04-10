@@ -95,12 +95,12 @@ void Throttle::handleTick() {
     ThrottleConfiguration *config = (ThrottleConfiguration *) getConfiguration();
     if (config->smoothingVal >= 0.001f)
     {
-        Logger::info("In: %i", rawSignals->input1);
+        Logger::avalanche("In: %i", rawSignals->input1);
         float inverse = 1.0f - config->smoothingVal;
         rawSignals->input1 = (rawSignals->input1 * inverse) + (lastVal.input1 * config->smoothingVal);
         rawSignals->input2 = (rawSignals->input2 * inverse) + (lastVal.input2 * config->smoothingVal);
         rawSignals->input3 = (rawSignals->input3 * inverse) + (lastVal.input3 * config->smoothingVal);
-        Logger::info("Out: %i", rawSignals->input1);
+        Logger::avalanche("Out: %i", rawSignals->input1);
         lastVal = *rawSignals;
     }
 
