@@ -215,7 +215,7 @@ void MotorController::handleTick() {
     //Logger::debug("Throttle: %d", throttleRequested);
 
     ChargeController *charger = static_cast<ChargeController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_CHARGER));
-    if (charger->getEVSEConnected()) throttleRequested = 0; //NO DRIVING AWAY!
+    if (charger && charger->getEVSEConnected()) throttleRequested = 0; //NO DRIVING AWAY!
 
     if (skipcounter++ > 30)    //A very low priority loop for checks that only need to be done once per second.
     {
