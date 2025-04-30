@@ -49,6 +49,7 @@
 #include "FlasherX.h"
 #include <Watchdog_t4.h>
 #include "config.h"
+#include <Logger.h>
 
 extern WDT_T4<WDT3> wdt;
 
@@ -74,12 +75,11 @@ void start_upgrade(FsFile *file)
 
   if (firmware_buffer_init( &buffer_addr, &buffer_size ) == 0)
   {
-    Serial.printf( "unable to create buffer\n" );
-    Serial.flush();
+    Logger::error("unable to create buffer" );
     return;
   }
 
-  Serial.printf( "buffer = %1luK %s (%08lX - %08lX)\n",
+  Logger::info( "buffer = %1luK %s (%08lX - %08lX)",
 		buffer_size/1024, IN_FLASH(buffer_addr) ? "FLASH" : "RAM",
 		buffer_addr, buffer_addr + buffer_size );
 
@@ -146,12 +146,12 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
         {
             if (parse_hex_line( (const char*)line, hex.data, &hex.addr, &hex.num, &hex.code ) == 0)
             {
-                Serial.printf( "abort - bad hex line: \"%s\"\n", line );
+                Logger::error( "abort - bad hex line: \"%s\"", line );
                 return;
             }
             else if (process_hex_record( &hex ) != 0)
             { // error on bad hex code
-                Serial.printf( "abort - invalid hex code %d\n", hex.code );
+                Logger::error( "abort - invalid hex code %d", hex.code );
                 return;
             }
             else if (hex.code == 0)
@@ -159,7 +159,7 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
                 uint32_t addr = buffer_addr + hex.base + hex.addr - FLASH_BASE_ADDR;
                 if (hex.max > (FLASH_BASE_ADDR + buffer_size))
                 {
-                    Serial.printf( "abort - max address %08lX too large\n", hex.max );
+                    Logger::error( "abort - max address %08lX too large", hex.max );
                     return;
                 }
                 else if (!IN_FLASH(buffer_addr))
@@ -171,7 +171,7 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
                     int error = flash_write_block( addr, hex.data, hex.num );
                     if (error)
                     {
-                        Serial.printf( "abort - error %02X in flash_write_block()\n", error );
+                        Logger::error( "abort - error %02X in flash_write_block()", error );
 	                      return;
                     }
                 }
@@ -180,7 +180,7 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
         }
     }
     
-    Serial.printf( "\nhex file: %1d lines, %1lu bytes, addresses (%08lX - %08lX)\n",
+    Logger::info( "\nhex file: %1d lines, %1lu bytes, addresses (%08lX - %08lX)",
 			  hex.lines, hex.max-hex.min, hex.min, hex.max );
 
     // check FSEC value in new code -- abort if incorrect
@@ -200,11 +200,11 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
     // check FLASH_ID in new code - abort if not found
     if (check_flash_id( buffer_addr, hex.max - hex.min ))
     {
-        Serial.printf( "new code contains correct target ID %s\n", FLASH_ID );
+        Logger::info( "new code contains correct target ID %s", FLASH_ID );
     }
     else
     {
-        Serial.printf( "abort - new code missing string %s\n", FLASH_ID );
+        Logger::error( "abort - new code missing string %s", FLASH_ID );
         return;
     }
   
@@ -220,7 +220,8 @@ void update_firmware( FsFile *file, uint32_t buffer_addr, uint32_t buffer_size )
   
     wdt.feed();
 
-    Serial.println("About to write new firmware image");
+    Logger::info("About to write new firmware image");
+    Logger::flushFile(); //force the write as we're about to go bye bye
 
     // move new program from buffer to flash, free buffer, and reboot
     flash_move( FLASH_BASE_ADDR, buffer_addr, hex.max-hex.min );

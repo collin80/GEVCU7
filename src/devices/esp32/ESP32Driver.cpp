@@ -13,17 +13,13 @@ Specification for Comm Protocol between ESP32 and GEVCU7 core
 First of all, the things that we want to be able to do:
 1. Get/Set configuration for the ESP32 - SSID, WPA2Key, Mode (sending to esp32 works now)
 2. Get/Set configuration items for GEVCU7 (this would handle being able to set new values)
-3. Get performance metrics from running device drivers (faked out right now)
+3. Get performance metrics from running device drivers
 4. Get log from sdcard and send it to ESP32
 5. Send firmware files from ESP32 to the sdcard
 6. Connect to ESP32 from the internet to do remote diag
 
 The first three items can all be done over JSON. Key on { as the first
 character to determine that it's JSON and we should process it that way.
-
-The ESP32 should return the string "BOOTOK" once it is fully loaded
-and has booted successfully. This allows the code here to know that the ESP32
-is running properly and ready for input.
 
 For #2 it should be possible for the other side (esp32 running web server) to
 query what devices are possible and which are enabled. Enabled devices should
@@ -73,32 +69,6 @@ if the ESP32 side changes the value it must reply back with the change:
 GEVCU knows the way the value should be interpreted so it can process things
 and do the actual setting update.
 
-For #4 there is a special method:
-Send 0xB0 followed by the desired log number (0=current, 1-4 are historical)
-GEVCU7 returns 0xC0 followed by a 32 bit value for the logsize
-Then ESP32 sends 0xC1 followed by the desired size to return. This size
-is taken from the end of the file. So, asking for 10k will get the last 10k
-of the file. The file is returned in 256 byte chunks, each of which starts
-with 0xCA then an 8 bit counter, 256 bytes of log, then CRC8. Bytes past the
-end of the file are 0x0 to pad out 256 bytes returned. In this way any chunk
-of the log can be gotten. Log files are going to be rotated by GEVCU7 probably
-around the 100MB mark so you'd have a current logfile then potentially some
-older logs, maybe 3-4 older logs and anything older is deleted.
-
-#5 works similarly:
-ESP32 sends 0xD0 to GEVCU7 to signal the start of a firmware upload. Then 
-it sends a null terminated string with the desired filename then the
-file size as a 32 bit value. Once this is done GEVCU7 sends back 0xD1
-if everything is OK. Upon OK the ESP32 sends 256 byte chunks much like
-above - Send 0xDA followed by an 8 bit counter, followed by 256 bytes of
-firmware, followed by CRC8. Once again, pad the comm to 256 chunks but in
-this case GEVCU7 will silently drop any bytes past the end of the file size.
-
-But, the real question is how will the ESP32 get these firmware files? Can't be by
-magic! So, probably this has to be either the internet (connect to my server)
-or the app has to be able to connect to the internet and do it. The media3.evtv.me
-site would be a decent place to put the files.
-
 #6 is trickier. We do NOT want this active unless the owner of the GEVCU7
 has specifically requested it but the case is waterproof, sealed, and hard to open.
 So, the most logical approach is to allow a digital input to trigger the ability
@@ -121,61 +91,6 @@ as that's still 4 billion possible codes. And, the ESP32 can quit responding
 if too many codes are attempted. Perhaps 10 tries is enough then require a power
 cycle to be able to try it again.
 
-File transfers need to work reliably between the teensy and esp32 both for
-firmware updates and for sdcard downloads. Really, they're the exact same thing
-as either is just a tunnel from the sdcard on the teensy to the esp32 either
-coming or going. I looked for XMODEM and YMODEM implmentations for Arduino.
-They exist but usually are one sided and sometimes directly use ancient C
-code that looks terrible. This serial link is extremely short and low latency
-and is very unlikely to drop any characters either. So, to some extent a 
-transfer protocol is not needed but using one is better than trusting fate.
-So, I'm just going to make a very simple transfer protocol that uses CRC16
-(the XMODEM version) and is somewhat like X/Y modem. But, a big difference
-in implementation is that I don't care about backward compatibility
-and there will not be any waiting around for ACKs with delays. The file
-transfer code is going to be essentially non-blocking and work via polling
-the timer in a loop function and serial interrupts. This way the rest of the program
-can keep running.
-
-Use bundled FastCRC library.
-
-File transfers are started from the sender. It sends 0xD0 as a start of transfer
-signal. Then it sends a header with the filename and size. The other side ACKs
-that it is ready with 0xAA. Then the sender sends 0xDA, followed by a sequence
-number (0-255), followed by 512 bytes (padding if needed), followed by the CRC16
-of the 512 bytes. The receiver then ACKs (0xAA, followed by sequence #) to show it
-has received the chunk, confirmed the CRC, and is ready for another chunk. 0x26 is instead
-used for NAK (was going to use 0x55 but that's just a bit shift away from AA which is not ideal)
-If NAK then we need to resend that last packet. 0xFA signals the receiver wants to ABORT.
-
-That's it. We know the filesize so no need to signal the end. We know it's the end when we
-received enough bytes. This doesn't cover how the receiver might ask for a file to be
-sent to it. In the case of a firmware update, the Teensy isn't going to ask. The ESP32
-just plain initiates a transfer when nothing else is happening and then transfers the file.
-The teensy wasn't expecting it. But for logs the ESP32 has to ask the Teensy to send the log
-so some sort of protocol is needed to have it ask for a log file. This could be done pretty
-much like above where the ESP32 sends 0xB0 asking for a log number and giving an offset
-so it can ask the Teensy not to send the whole file (in case it's large) or maybe an 
-offset of 0 means send the whole thing. But, the Teensy should rotate log files somehow,
-perhaps rotate every time the system is started so log 0 is always the currently accumulating
-log and 1 is the previous, 2 is previous to that, etc. But, renaming log files would be dumb
-as if we had 100 logs you'd have to rename 100 then start a new one. Probably instead should
-store in EEPROM the current log number and increment it each time the power is cycled. This way
-we can save LogFileXXXX.log or something like that. It can have just as many numbers as necessary
-and no more. And, store the log index as 32 bit so you can't possibly power cycle the unit
-enough times to overflow it. Still, this may eventually wear out the card and/or fill it up.
-Maybe have a limit to the number of logs that can be kept and automatically attempt to delete
-the log X back. For instance, if we create LogFile200.log and we're keeping 50 logs we might
-try to delete LogFile151.log upon power up. That way it is constantly cleaning up old files
-and trying to keep the # of logs managable.
-
-Header could be something like:
-struct {
-    char filename[128];
-    uint32_t filesize;
-};
-*/
-
 //An example of all the parameters that are possible to set right now. SHould probably make it configurable and
 //not hard coded.
 /*
@@ -192,10 +107,6 @@ system state values:
 99 Error
 */
 
-//something needs to calculate these. ESP32 can do timeRunning from millis but system state is more complicated
-// "systemState"
-// "timeRunning"
-
 ESP32Driver::ESP32Driver() : Device()
 {
     commonName = "ESP32 Wifi/BT Module";
@@ -210,12 +121,13 @@ ESP32Driver::ESP32Driver() : Device()
     inhibitJSON = false;
     statusIdx = 0;
     lastTime = 0;
+    gotIPAddr = false;
     websocket_json = new DynamicJsonDocument(3000);
 }
 
 void ESP32Driver::packageAndSendEntry(StatusEntry *entry)
 {
-    if (!systemAlive) return;
+    if (!isReady()) return;
     //ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
      
     (*websocket_json)[entry->statusName] = entry->getValueAsString();
@@ -269,6 +181,9 @@ void ESP32Driver::setup()
     cfgEntries.push_back(entry);
 
     entry = {"ESP32-ESPUPD", "Update ESP32 firmware with type", &config->espUpdateType, CFG_ENTRY_VAR_TYPE::BYTE, 0, 9999, 0, nullptr, UPD_PTR(&doESP32Update)};
+    cfgEntries.push_back(entry);
+
+    entry = {"ESP32-IPADDR", "The current IP address of the ESP32 (DO NOT TRY CHANGING THIS)", &config->ipAddr, CFG_ENTRY_VAR_TYPE::STRING, 0, 40, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     Device::setup(); // run the parent class version of this function
@@ -382,14 +297,20 @@ void ESP32Driver::handleTick() {
 
 void ESP32Driver::sendLogString(String str)
 {
-    if (!systemAlive) return; //can't do anything until the system is actually up
+    if (!isReady()) return; //can't do anything until the system is actually up
     Serial2.println("~" + str); //~ prefix means this is a telnet message
 }
 
 void ESP32Driver::sendStatusCSV(String str)
 {
-    if (!systemAlive) return; //can't do anything until the system is actually up
+    if (!isReady()) return; //can't do anything until the system is actually up
     Serial2.println("`" + str); //` prefix means this is a StatusCSV message which should go to the second telnet interface
+}
+
+bool ESP32Driver::isReady()
+{
+    if ((currState == ESP32NS::NORMAL) && gotIPAddr && systemAlive) return true;
+    return false;
 }
 
 //the serial callback is not actually interrupt driven but is called from yield()
@@ -423,6 +344,13 @@ void ESP32Driver::processSerial()
                     systemAlive = true;
                     Logger::info("ESP32 Booted OK");
                     sendWirelessConfig();
+                }
+
+                if (bufferedLine.indexOf("IP:") > -1)
+                {
+                    gotIPAddr = true;
+                    Logger::debug("Reported IP Addr: %s", bufferedLine.substring(4).c_str());
+                    strncpy(config->ipAddr, bufferedLine.substring(4).c_str(), 39);
                 }
 
                 if (bufferedLine[0] == '{')
@@ -596,6 +524,7 @@ void ESP32Driver::loadConfiguration() {
 
     if (!config) {
         config = new ESP32Configuration();
+        strcpy(config->ipAddr, "NO IP SET");
         setConfiguration(config);
     }
 

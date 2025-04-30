@@ -341,11 +341,11 @@ FLASHMEM void setup() {
         FsFile file;
         file = SD.sdfs.open("GEVCU7.hex", O_READ);
         if (!file) {
-            if (Serial) Serial.println("No teensy firmware to flash. Skipping.");
+            Logger::info("No teensy firmware to flash. Skipping.");
         }
         else
         {
-            if (Serial) Serial.println("Found teensy firmware. Flashing it");
+            Logger::info("Found teensy firmware. Flashing it");
             setup_flasherx();
             start_upgrade(&file);
             file.close();
@@ -364,6 +364,8 @@ FLASHMEM void setup() {
     }
 
     tickHandler.setup();
+
+    Logger::flushFile();
 
 	Wire.begin();
 	Logger::info("TWI init ok");
@@ -391,6 +393,7 @@ FLASHMEM void setup() {
 
     //log level is set by system device driver just above ^^^^^
     Logger::console("LogLevel: %i", sysConfig->logLevel);
+    Logger::flushFile();
 
     //initialize all the hardware I/O (CAN, digital, analog, etc)
 	systemIO.setup();
@@ -440,6 +443,7 @@ FLASHMEM void setup() {
     //I know you're tempted to try it. Don't, things will crash instantly at this next line.
     //    *(volatile uint32_t *)0x30000000 = 0; 
 
+    Logger::flushFile();
 }
 
 //there really isn't much in the loop here. Most everything is done via interrupts and timer ticks. If you have

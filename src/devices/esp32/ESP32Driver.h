@@ -26,6 +26,7 @@ public:
     uint8_t esp32_mode;
     uint8_t debugMode;
     uint8_t firmwareFile[64];
+    char ipAddr[40];
     int espUpdateType;
 };
 
@@ -42,6 +43,7 @@ public:
     void sendStatusCSV(String str);
     void doTeensyUpdate();
     void doESP32Update();
+    bool isReady();
 
     uint32_t getTickInterval();
 
@@ -60,6 +62,7 @@ private:
     bool systemAlive;
     bool systemEnabled;
     bool inhibitJSON;
+    bool gotIPAddr;
     uint8_t serialReadBuffer[1024];
     uint8_t serialWriteBuffer[1024];
     DynamicJsonDocument *websocket_json;
