@@ -34,9 +34,9 @@ MotorController::MotorController() : Device() {
     faulted = false;
     warning = false;
 
-    temperatureMotor = 0;
-    temperatureInverter = 0;
-    temperatureSystem = 0;
+    temperatureMotor = 20.0f;
+    temperatureInverter = 20.0f;
+    temperatureSystem = 20.0f;
 
     statusBitfield.bitfield = 0;
 

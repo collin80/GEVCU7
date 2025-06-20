@@ -110,6 +110,7 @@ public:
     uint8_t minimumRegen; // percentage of max torque allowable for regen at minimum level
     uint8_t creep; // percentage of torque used for creep function (imitate creep of automatic transmission, set 0 to disable)
     float smoothingVal;
+    uint16_t slewRate;
 };
 
 /*
@@ -149,6 +150,8 @@ protected:
 
 private:
     int16_t level; // the final signed throttle level. [-1000, 1000] in permille of maximum
+    int16_t pedalPosition;
+    int16_t rawThrottle;
     RawSignalData lastVal;
 };
 

@@ -344,6 +344,7 @@ FLASHMEM void SerialConsole::printMenu() {
 
     if (heartbeat != NULL) { //and heartbeat better not be null! It's always allocated. better to check though
         Logger::console("   L = show raw analog/digital input/output values (toggle)");
+        Logger::console("   S = show all possible status entries");
     }
     Logger::console("   OUTPUT=<0-7> - toggles state of specified digital output");
 }

@@ -211,14 +211,16 @@ bool PotThrottle::validateSignal(RawSignalData *rawSignal) {
 int16_t PotThrottle::calculatePedalPosition(RawSignalData *rawSignal) {
     uint16_t calcThrottle1, calcThrottle2;
 
-    calcThrottle1 = normalizeInput(rawSignal->input1, config->minimumLevel1, config->maximumLevel1);
+    calcThrottle1 = normalizeAndConstrainInput(rawSignal->input1, config->minimumLevel1, config->maximumLevel1);
 
     if (config->numberPotMeters > 1) {
-        calcThrottle2 = normalizeInput(rawSignal->input2, config->minimumLevel2, config->maximumLevel2);
+        calcThrottle2 = normalizeAndConstrainInput(rawSignal->input2, config->minimumLevel2, config->maximumLevel2);
         if (config->throttleSubType == 2) // inverted
             calcThrottle2 = 1000 - calcThrottle2;
         calcThrottle1 = (calcThrottle1 + calcThrottle2) / 2; // now the average of the two
     }
+    //just to be doubly, triply sure that it never gets reported outside 0 to 1000
+    calcThrottle1 = constrain(calcThrottle1, 0, 1000);
     return calcThrottle1;
 }
 
