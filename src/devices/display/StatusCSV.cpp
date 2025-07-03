@@ -258,11 +258,7 @@ void StatusCSV::enableStatusHash(char * str)
 {
     if (!stricmp("ALL", str))
     {
-//        for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
-//        {
-//            config->enabledStatusEntries[i] = 0;
-//        }
-        Logger::console("I lied. This is not supported yet... sorry....");
+        deviceManager.enableAllStatusEntries();
     }
     else
     {
@@ -277,14 +273,7 @@ void StatusCSV::enableStatusHash(char * str)
             if (ent)
             {
                 hash = ent->getHash();
-                for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
-                {
-                    if (config->enabledStatusEntries[i] == 0)
-                    {
-                        config->enabledStatusEntries[i] = hash;
-                        break;
-                    }
-                }
+                enableByHash(hash);
             }
             tok = strtok(NULL, ","); //get next one
         }
@@ -315,20 +304,37 @@ void StatusCSV::disableStatusHash(char * str)
             if (ent)
             {
                 hash = ent->getHash();
-                for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
-                {
-                    if (config->enabledStatusEntries[i] == hash)
-                    {
-                        config->enabledStatusEntries[i] = 0;
-                        break;
-                    }
-                }
+                disableByHash(hash);
             }
             tok = strtok(NULL, ","); //get next one
         }
     }
     saveConfiguration();
     handleSerialSwitch();
+}
+
+void StatusCSV::enableByHash(uint32_t hash)
+{
+    for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
+    {
+        if (config->enabledStatusEntries[i] == 0)
+        {
+            config->enabledStatusEntries[i] = hash;
+            break;
+        }
+    }
+}
+
+void StatusCSV::disableByHash(uint32_t hash)
+{
+    for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
+    {
+        if (config->enabledStatusEntries[i] == hash)
+        {
+            config->enabledStatusEntries[i] = 0;
+            break;
+        }
+    }
 }
 
 /*
@@ -381,9 +387,17 @@ void StatusCSV::loadConfiguration() {
 
     prefsHandler->read("TicksPer", &config->ticksPerUpdate, 5);
     //if block hasn't ever been written to EEPROM then just default it to all zeros
-    if (!prefsHandler->readBlock("EnabledItems", (uint8_t *)&config->enabledStatusEntries, sizeof(config->enabledStatusEntries)))
+    if (!prefsHandler->readBlock("EnItems", (uint8_t *)&config->enabledStatusEntries, sizeof(config->enabledStatusEntries)))
     {
         memset((uint8_t *)&config->enabledStatusEntries, 0, sizeof(config->enabledStatusEntries));
+    }
+
+    //try to load old name and bring those over if so.
+    uint32_t temp[40];
+    if (prefsHandler->readBlock("EnabledItems", (uint8_t *)&temp, sizeof(temp)))
+    {
+        memcpy(&config->enabledStatusEntries, &temp, sizeof(temp));
+        prefsHandler->eraseByKey("EnabledItems");
     }
     prefsHandler->read("AutoStart", &config->bAutoStart, 0);
     prefsHandler->read("FileOutput", &config->bFileOutput, 0);
@@ -397,7 +411,7 @@ void StatusCSV::saveConfiguration() {
     }
 
     prefsHandler->write("TicksPer", config->ticksPerUpdate);
-    if (!prefsHandler->writeBlock("EnabledItems", (uint8_t *)&config->enabledStatusEntries, sizeof(config->enabledStatusEntries)))
+    if (!prefsHandler->writeBlock("EnItems", (uint8_t *)&config->enabledStatusEntries, sizeof(config->enabledStatusEntries)))
     {
         Logger::error("Could not write enabled status fields register!");
     }

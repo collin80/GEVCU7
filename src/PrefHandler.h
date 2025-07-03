@@ -67,6 +67,7 @@ public:
     bool read(const char *key, double *val, double defval);
     bool read(const char *key, char *val, const char* defval);
     bool readBlock(const char *key, uint8_t *data, size_t length);
+    bool eraseByKey(const char *key);
 
     uint8_t calcChecksum();
     void saveChecksum();

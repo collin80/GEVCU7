@@ -263,7 +263,7 @@ uint32_t PrefHandler::findEmptySettingLoc()
     return 0xFFFFFFFFul;
 }
 
-//Uses the above two funcctions to input a key name and see where it is stored
+//Uses the above two functions to input a key name and see where it is stored
 //(if it exists). Can create a new entry if desired. Returns the location of 
 //the setting. Not to be called by external code.
 uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
@@ -289,6 +289,16 @@ uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
     }
     Logger::avalanche("Key: %s Returned Addr: %x", key, address);
     return address;
+}
+
+bool PrefHandler::eraseByKey(const char *key)
+{
+    uint32_t address = keyToAddress(key, false);
+    if (address >= 0xFFFFFFF) return false; //obviously does not exist
+    //but returned value is 5 bytes past the start. First 4 are hash, last one is length
+    //can't change length or everything gets messed up but can ruin the hash
+    uint32_t dummy = 0;
+    return memCache->Write(address - 5, dummy);
 }
 
 //Now we have the actual functions that drivers will call to read and write things

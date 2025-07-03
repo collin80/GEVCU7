@@ -220,6 +220,27 @@ StatusEntry* DeviceManager::FindStatusEntryByIdx(int idx)
     else return nullptr;
 }
 
+void DeviceManager::enableAllStatusEntries()
+{
+    StatusCSV *statusDevice = static_cast<StatusCSV *>(getDeviceByID(STATUSCSV));
+    if (!statusDevice) return;
+    int idx = 0;
+    StatusEntry *ent = nullptr;
+    uint32_t hash;
+
+    for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
+    {
+        ent = FindStatusEntryByIdx(idx);
+        if (ent)
+        {
+            hash = ent->getHash();
+            statusDevice->enableByHash(hash);
+        }
+        idx++;
+    }
+
+}
+
 void DeviceManager::printAllStatusEntries()
 {
     StatusCSV *statusDevice = static_cast<StatusCSV *>(getDeviceByID(STATUSCSV));
@@ -233,13 +254,18 @@ void DeviceManager::printAllStatusEntries()
         dev = (Device *)it->device;
         if (statusDevice && statusDevice->isHashMonitored(it->getHash()))
         {
-            Logger::console("%03i. <%08x>   [%s:%s]   value: %s   <MONITORED>", 
-                idx, it->getHash(), dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
+            //Logger::console("%03i. <%08x>   [%s:%s]   value: %s   <MONITORED>", 
+            //    idx, it->getHash(), dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
+            Logger::console("%03i.   [%s:%s]   value: %s   <MONITORED>", 
+                idx, dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
         }
         else 
         {
-            Logger::console("%03i. <%08x>   [%s:%s]   value: %s", 
-                idx, it->getHash(), dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
+            //Logger::console("%03i. <%08x>   [%s:%s]   value: %s   ", 
+              //  idx, it->getHash(), dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
+
+            Logger::console("%03i.   [%s:%s]   value: %s", 
+                idx, dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
         }
     }
 }

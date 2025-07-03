@@ -44,7 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define STATUSCSV                   0x4500
 #define CFG_TICK_INTERVAL_STATUS    20000
-#define NUM_ENTRIES_IN_TABLE        40
+#define NUM_ENTRIES_IN_TABLE        62
 
 class StatusCSVConfiguration: public DeviceConfiguration {
 public:
@@ -68,7 +68,8 @@ public:
     virtual void setup(); //initialization on start up
     bool isHashMonitored(uint32_t hash);
     void toggleOutput();
-
+    void enableByHash(uint32_t hash);
+    void disableByHash(uint32_t hash);
     void loadConfiguration();
     void saveConfiguration();
 

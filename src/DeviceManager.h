@@ -55,6 +55,7 @@ public:
     void dispatchToObservers(const StatusEntry &entry);
     bool addStatusObserver(Device *dev);
     bool removeStatusObserver(Device *dev);
+    void enableAllStatusEntries();
     StatusEntry* findStatusEntryByHash(uint32_t hash);
     StatusEntry* FindStatusEntryByIdx(int idx);
     uint8_t getNumThrottles();
