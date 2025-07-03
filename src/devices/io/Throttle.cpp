@@ -77,7 +77,9 @@ void Throttle::setup()
     StatusEntry stat;
     //        name              var         type             prevVal  obj
     stat = {"Throttle_Level", &level, CFG_ENTRY_VAR_TYPE::INT16, 0, this};
+    deviceManager.addStatusEntry(stat);
     stat = {"Pedal_Position", &pedalPosition, CFG_ENTRY_VAR_TYPE::INT16, 0, this};
+    deviceManager.addStatusEntry(stat);
     stat = {"Raw_Throttle", &rawThrottle, CFG_ENTRY_VAR_TYPE::INT16, 0, this};
     deviceManager.addStatusEntry(stat);
 }

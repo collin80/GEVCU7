@@ -127,6 +127,8 @@ FLASHMEM void MotorController::setup() {
     deviceManager.addStatusEntry(stat);
     stat = {"MC_TorqueReq", &torqueRequested, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
     deviceManager.addStatusEntry(stat);
+    stat = {"MC_TorqueSlewed", &slewedTorque, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
     stat = {"MC_TorqueAct", &torqueActual, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
     deviceManager.addStatusEntry(stat);
     stat = {"MC_TorqueMax", &torqueAvailable, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
