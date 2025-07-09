@@ -44,7 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define STATUSCSV                   0x4500
 #define CFG_TICK_INTERVAL_STATUS    20000
-#define NUM_ENTRIES_IN_TABLE        62
+#define NUM_ENTRIES_IN_TABLE        120
 
 class StatusCSVConfiguration: public DeviceConfiguration {
 public:

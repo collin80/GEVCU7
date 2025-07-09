@@ -386,18 +386,26 @@ void StatusCSV::loadConfiguration() {
     Device::loadConfiguration(); // call parent
 
     prefsHandler->read("TicksPer", &config->ticksPerUpdate, 5);
-    //if block hasn't ever been written to EEPROM then just default it to all zeros
-    if (!prefsHandler->readBlock("EnItems", (uint8_t *)&config->enabledStatusEntries, sizeof(config->enabledStatusEntries)))
-    {
-        memset((uint8_t *)&config->enabledStatusEntries, 0, sizeof(config->enabledStatusEntries));
-    }
+    memset((uint8_t *)&config->enabledStatusEntries, 0, sizeof(config->enabledStatusEntries));
+    //The table is larger than 256 bytes so we have to save and load in halves
+    int halfPoint = NUM_ENTRIES_IN_TABLE / 2;
+    prefsHandler->readBlock("EnItems1", (uint8_t *)&config->enabledStatusEntries, sizeof(uint32_t) * halfPoint);
+    prefsHandler->readBlock("EnItems2", (uint8_t *)&config->enabledStatusEntries[halfPoint], sizeof(uint32_t) * halfPoint);
 
     //try to load old name and bring those over if so.
     uint32_t temp[40];
     if (prefsHandler->readBlock("EnabledItems", (uint8_t *)&temp, sizeof(temp)))
     {
-        memcpy(&config->enabledStatusEntries, &temp, sizeof(temp));
-        prefsHandler->eraseByKey("EnabledItems");
+        uint8_t didUpdate = 0;
+        prefsHandler->read("Upgraded", &didUpdate, 0);
+        if (didUpdate == 0)
+        {
+            Logger::console("Bringing over old statuscsv entries");
+            memcpy(&config->enabledStatusEntries, &temp, sizeof(temp));
+            didUpdate = 1;
+            prefsHandler->write("Upgraded", didUpdate);
+            prefsHandler->forceCacheWrite();
+        }
     }
     prefsHandler->read("AutoStart", &config->bAutoStart, 0);
     prefsHandler->read("FileOutput", &config->bFileOutput, 0);
@@ -411,10 +419,16 @@ void StatusCSV::saveConfiguration() {
     }
 
     prefsHandler->write("TicksPer", config->ticksPerUpdate);
-    if (!prefsHandler->writeBlock("EnItems", (uint8_t *)&config->enabledStatusEntries, sizeof(config->enabledStatusEntries)))
+    int halfPoint = NUM_ENTRIES_IN_TABLE / 2;
+    if (!prefsHandler->writeBlock("EnItems1", (uint8_t *)&config->enabledStatusEntries, sizeof(uint32_t) * halfPoint))
     {
-        Logger::error("Could not write enabled status fields register!");
+        Logger::error("Could not write enabled status fields register 1!");
     }
+    if (!prefsHandler->writeBlock("EnItems2", (uint8_t *)&config->enabledStatusEntries[halfPoint], sizeof(uint32_t) * halfPoint))
+    {
+        Logger::error("Could not write enabled status fields register 2!");
+    }
+
     prefsHandler->write("AutoStart", config->bAutoStart);
     prefsHandler->write("FileOutput", config->bFileOutput);
     prefsHandler->write("ESPOutput", config->bESPOutput);
