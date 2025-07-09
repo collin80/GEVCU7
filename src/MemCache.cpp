@@ -113,7 +113,7 @@ void MemCache::FlushPage(uint8_t page) {
         Logger::avalanche("Writing page at cache index %i", page);
         pages[page].dirty = false;
         pages[page].age = 0; //freshly flushed!
-        delay(10);
+        delay(10); //can't write to eeprom again for around 8ms so delay here so it isnt possible. Bad solution though!
     }
 }
 

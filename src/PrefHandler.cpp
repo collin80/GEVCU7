@@ -298,7 +298,10 @@ bool PrefHandler::eraseByKey(const char *key)
     //but returned value is 5 bytes past the start. First 4 are hash, last one is length
     //can't change length or everything gets messed up but can ruin the hash
     uint32_t dummy = 0;
-    return memCache->Write(address - 5, dummy);
+    Logger::console("Erasing config entry at %x", address);
+    memCache->Write(address - 5, dummy);
+    memCache->AgeFullyAddress(address - 5); //cause the page to be written very soon
+    return true;
 }
 
 //Now we have the actual functions that drivers will call to read and write things
