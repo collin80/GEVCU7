@@ -71,7 +71,7 @@ void Throttle::setup()
     cfgEntries.push_back(entry);
     entry = {"TSMOOTH", "Throttle smoothing amount (0.000 - 1.000)", &config->smoothingVal, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1.0}, 3, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TSLEW", "Throttle Slew Rate per second", &config->slewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr, nullptr};
+    entry = {"TSLEW", "Throttle Slew Rate per second (lower = more slew control, higher = faster response)", &config->slewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     StatusEntry stat;
