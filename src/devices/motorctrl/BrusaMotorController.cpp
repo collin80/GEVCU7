@@ -72,6 +72,29 @@ void BrusaMotorController::setup() {
     canHandlerIsolated.attach(this, CAN_MASKED_ID_1, CAN_MASK_1, false);
     canHandlerIsolated.attach(this, CAN_MASKED_ID_2, CAN_MASK_2, false);
 
+    ConfigEntry entry;
+    entry = {"MAXMOTORPOW", "Set maximum motoring power (W)", &config->maxMechanicalPowerMotor, CFG_ENTRY_VAR_TYPE::UINT32, 0, 250000, 1, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"MAXREGENPOW", "Set maximum regen power (W)", &config->maxMechanicalPowerRegen, CFG_ENTRY_VAR_TYPE::UINT32, 0, 250000, 1, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"DCVMOTORLIM", "Set voltage limit for motoring (V)", &config->dcVoltLimitMotor, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating=2000.0f}, 1, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"DCVREGENLIM", "Set voltage limit for regen (V)", &config->dcVoltLimitRegen, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating=2000.0f}, 1, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"DCAMOTORLIM", "Set current limit for motoring (A)", &config->dcCurrentLimitMotor, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating=2000.0f}, 1, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"DCAREGENLIM", "Set current limit for regen (A)", &config->dcCurrentLimitRegen, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0f}, {.floating=2000.0f}, 1, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"OSCLIMIT", "Enable oscillation limiter", &config->enableOscillationLimiter, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 1, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+
+    StatusEntry stat;
+    //        name       var         type              prevVal  obj
+    stat = {"DMC_STATUS2", &statusBitfield2, CFG_ENTRY_VAR_TYPE::UINT16, 0, this};
+    deviceManager.addStatusEntry(stat);
+    stat = {"DMC_STATUS3", &statusBitfield3, CFG_ENTRY_VAR_TYPE::UINT32, 0, this};
+    deviceManager.addStatusEntry(stat);
+
     setAlive();
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_BRUSA);
@@ -113,7 +136,7 @@ void BrusaMotorController::sendControl() {
     if (faulted) {
         outputFrame.buf[0] |= clearErrorLatch;
     } else {
-        if ((running || speedActual > 1000) && !systemIO.getDigitalIn(1)) { // see warning about field weakening current to prevent uncontrollable regen
+        if ( (running && (operationState == ENABLE))  || speedActual > 1000 ) { // see warning about field weakening current to prevent uncontrollable regen
             outputFrame.buf[0] |= enablePowerStage;
         }
         if (running) {
@@ -134,6 +157,7 @@ void BrusaMotorController::sendControl() {
             outputFrame.buf[3] = (speedRequested & 0x00FF);
 
             // set the torque in 0.01Nm (GEVCU uses Nm -> multiply by 100)
+            //some DMC controllers might use 0.02Nm insteaad
             int16_t torq = torqueRequested * 100;
             outputFrame.buf[4] = (torq & 0xFF00) >> 8;
             outputFrame.buf[5] = (torq & 0x00FF);
@@ -283,11 +307,11 @@ void BrusaMotorController::processActualValues(const uint8_t data[]) {
  * (e.g. the webserver to display the various status flags)
  */
 void BrusaMotorController::processErrors(const uint8_t data[]) {
-    //statusBitfield3 = (uint32_t)(data[1] | (data[0] << 8) | (data[5] << 16) | (data[4] << 24));
-    //statusBitfield2 = (uint32_t)(data[7] | (data[6] << 8));
+    statusBitfield3 = (uint32_t)(data[1] | (data[0] << 8) | (data[5] << 16) | (data[4] << 24));
+    statusBitfield2 = (uint32_t)(data[7] | (data[6] << 8));
 
-    //if (Logger::isDebug())
-    //    Logger::debug(BRUSA_DMC5, "errors: %X, warning: %X", statusBitfield3, statusBitfield2);
+    if (Logger::isDebug())
+        Logger::debug(BRUSA_DMC5, "errors: %X, warning: %X", statusBitfield3, statusBitfield2);
 }
 
 /*
@@ -310,9 +334,9 @@ void BrusaMotorController::processTorqueLimit(const uint8_t data[]) {
  * This message provides information about motor and inverter temperatures.
  */
 void BrusaMotorController::processTemperature(const uint8_t data[]) {
-    temperatureInverter = (int16_t)(data[1] | (data[0] << 8)) * 0.5f;
-    temperatureMotor = (int16_t)(data[3] | (data[2] << 8)) * 0.5f;
-    temperatureSystem = (int16_t)(data[4] - 50) * 1.0f;
+    temperatureInverter = (data[1] | (data[0] << 8)) * 0.5f;
+    temperatureMotor = (data[3] | (data[2] << 8)) * 0.5f;
+    temperatureSystem = (data[4] - 50.0f) * 1.0f;
 
     if (Logger::isDebug())
         Logger::debug(BRUSA_DMC5, "temperature: inverter: %fC, motor: %fC, system: %fC", (float)temperatureInverter, (float)temperatureMotor, (float)temperatureSystem);
@@ -340,20 +364,14 @@ void BrusaMotorController::loadConfiguration() {
 
     MotorController::loadConfiguration(); // call parent
 
-
-//	if (prefsHandler->checksumValid()) { //checksum is good, read in the values stored in EEPROM
-//        Logger::debug(BRUSA_DMC5, (char *)Constants::validChecksum);
-//		prefsHandler->read(EEMC_, &config->minimumLevel1);
-//    } else { //checksum invalid. Reinitialize values and store to EEPROM
-//        Logger::warn(BRUSA_DMC5, (char *)Constants::invalidChecksum);
-        prefsHandler->read("maxMecPowerMotor", &config->maxMechanicalPowerMotor, 50000);
-        prefsHandler->read("maxMecPowerRegen", &config->maxMechanicalPowerRegen, 0);
-        prefsHandler->read("dcVoltLimMotor", &config->dcVoltLimitMotor, 1000);
-        prefsHandler->read("dcVoltLimRegen", &config->dcVoltLimitRegen, 0);
-        prefsHandler->read("dcCurrLimMotor", &config->dcCurrentLimitMotor, 0);
-        prefsHandler->read("dcCurrLimRegen", &config->dcCurrentLimitRegen, 0);
-        prefsHandler->read("enableOscLim", (uint8_t *)&config->enableOscillationLimiter, (uint8_t)0);
-    //}
+    prefsHandler->read("maxMecPowerMotor", &config->maxMechanicalPowerMotor, 50000);
+    prefsHandler->read("maxMecPowerRegen", &config->maxMechanicalPowerRegen, 0);
+    prefsHandler->read("dcVoltLimMotor", &config->dcVoltLimitMotor, 1000);
+    prefsHandler->read("dcVoltLimRegen", &config->dcVoltLimitRegen, 0);
+    prefsHandler->read("dcCurrLimMotor", &config->dcCurrentLimitMotor, 0);
+    prefsHandler->read("dcCurrLimRegen", &config->dcCurrentLimitRegen, 0);
+    prefsHandler->read("enableOscLim", (uint8_t *)&config->enableOscillationLimiter, (uint8_t)0);
+    
     Logger::debug(BRUSA_DMC5, "Max mech power motor: %f kW, max mech power regen: %f ", config->maxMechanicalPowerMotor, config->maxMechanicalPowerRegen);
     Logger::debug(BRUSA_DMC5, "DC limit motor: %f Volt, DC limit regen: %f Volt", config->dcVoltLimitMotor, config->dcVoltLimitRegen);
     Logger::debug(BRUSA_DMC5, "DC limit motor: %f Amps, DC limit regen: %f Amps", config->dcCurrentLimitMotor, config->dcCurrentLimitRegen);
@@ -373,7 +391,6 @@ void BrusaMotorController::saveConfiguration() {
 	prefsHandler->write("dcCurrLimMotor", config->dcCurrentLimitMotor);
 	prefsHandler->write("dcCurrLimRegen", config->dcCurrentLimitRegen);
 	prefsHandler->write("enableOscLim", (uint8_t)config->enableOscillationLimiter);
-    prefsHandler->saveChecksum();
 }
 
 DMAMEM BrusaMotorController brusaMC;
