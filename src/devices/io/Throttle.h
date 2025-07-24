@@ -111,6 +111,8 @@ public:
     uint8_t creep; // percentage of torque used for creep function (imitate creep of automatic transmission, set 0 to disable)
     float smoothingVal;
     uint16_t slewRate;
+    uint16_t slewDecel;
+    uint16_t slewCutoff;
 };
 
 /*

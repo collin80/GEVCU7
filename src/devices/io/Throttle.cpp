@@ -71,7 +71,11 @@ void Throttle::setup()
     cfgEntries.push_back(entry);
     entry = {"TSMOOTH", "Throttle smoothing amount (0.000 - 1.000)", &config->smoothingVal, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1.0}, 3, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TSLEW", "Throttle Slew Rate per second (lower = more slew control, higher = faster response)", &config->slewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr, nullptr};
+    entry = {"TSLEW", "Throttle Acceleration Slew Rate (lower = more slew control, higher = faster response)", &config->slewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"TSLEWREV", "Throttle Deceleration Slew Rate (lower = more slew, higher = faster response)", &config->slewDecel, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr, nullptr};
+    cfgEntries.push_back(entry);
+    entry = {"TSLEWCUTOFF", "Tenths of a percent of pedal input where slew is heavily restricted", &config->slewCutoff, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     StatusEntry stat;
@@ -114,25 +118,40 @@ void Throttle::handleTick() {
 
     if (validateSignal(rawSignals)) { // validate the raw data
         pedalPosition = calculatePedalPosition(rawSignals); // bring the raw data into a range of 0-1000 (without mapping)
+        rawThrottle = mapPedalPosition(pedalPosition);
+
         if (config->slewRate == 0)
         {
-            rawThrottle = level = mapPedalPosition(pedalPosition);
+            level = rawThrottle;
         }
         else
         {
-            rawThrottle = mapPedalPosition(pedalPosition);
             int slewInc = config->slewRate / (1000000 / 40000);
-            Logger::debug("SlewInc: %i", slewInc);
-            if (slewInc < 1) slewInc = 1;
+            int slewDecelInc = config->slewDecel / (1000000 / 40000);
+            if (pedalPosition > config->slewCutoff)
+            {
+                if (pedalPosition < (config->slewCutoff * 2))
+                {
+                    float multFactor = (1.0f + ((float)pedalPosition / (float)config->slewCutoff) );
+                    multFactor *= multFactor; //power of two
+                    slewInc *= multFactor;
+                    slewDecelInc *= multFactor;
+                }
+                else level = rawThrottle;
+            }
+            Logger::debug("SlewInc: %i   SlewDecel: %i", slewInc, slewDecelInc);
+            if (slewInc < 10) slewInc = 10;
+            if (slewDecelInc < 20) slewDecelInc = 20;
             
+            //increasing throttle position
             if (rawThrottle > level) 
             {
                 level += slewInc;
                 if (level > rawThrottle) level = rawThrottle;
             }
-            else 
+            else if (rawThrottle < level)//decreasing throttle position. Should be faster usually
             {
-                level -= slewInc;
+                level -= slewDecelInc;
                 if (level < rawThrottle) level = rawThrottle;
             }
             Logger::debug("Req: %i Output: %i", rawThrottle, level);
@@ -317,6 +336,8 @@ void Throttle::loadConfiguration() {
         prefsHandler->read("MaxAccelRegen", &config->maximumRegen, 70);
         prefsHandler->read("Smoothing", &config->smoothingVal, 0.0f);
         prefsHandler->read("SlewRate", &config->slewRate, 2000);
+        prefsHandler->read("SlewDecel", &config->slewDecel, 3000);
+        prefsHandler->read("SlewCutoff", &config->slewCutoff, 500);
     
     //Logger::debug(THROTTLE, "RegenMax: %i RegenMin: %i Fwd: %i Map: %i", config->positionRegenMaximum, config->positionRegenMinimum,
     //              config->positionForwardMotionStart, config->positionHalfPower);
@@ -346,6 +367,8 @@ void Throttle::saveConfiguration() {
     prefsHandler->write("MaxAccelRegen", config->maximumRegen);
     prefsHandler->write("Smoothing", config->smoothingVal);
     prefsHandler->write("SlewRate", config->slewRate);
+    prefsHandler->write("SlewDecel", config->slewDecel);
+    prefsHandler->write("SlewCutoff", config->slewCutoff);
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
 

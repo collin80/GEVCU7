@@ -242,8 +242,8 @@ void StatusCSV::handleTick()
                 builder += val + ",";
             }
         }
-        SerialUSB1.print(builder);
-        if (config->bFileOutput && sdCardWorking) csvRingBuf.print(builder);
+        SerialUSB1.println(builder);
+        if (config->bFileOutput && sdCardWorking) csvRingBuf.println(builder);
         if (esp32 && config->bESPOutput) esp32->sendStatusCSV(builder);
     }
 }
