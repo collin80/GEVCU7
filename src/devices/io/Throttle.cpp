@@ -69,14 +69,11 @@ void Throttle::setup()
     cfgEntries.push_back(entry);
     entry = {"TCREEP", "Percent of full torque to use for creep (0=disable)", &config->creep, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TSMOOTH", "Throttle smoothing amount (0.000 - 1.000)", &config->smoothingVal, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1.0}, 3, nullptr, nullptr};
+    entry = {"TSMOOTH", "Throttle smart smoothing level (0 to 5)", &config->smartSmooth, CFG_ENTRY_VAR_TYPE::BYTE, 0, 5, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TSLEW", "Throttle Acceleration Slew Rate (lower = more slew control, higher = faster response)", &config->slewRate, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr, nullptr};
+    entry = {"TSMOOTHCUT", "Tenths of a percent of pedal travel where smoothing is disabled", &config->smoothStop, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TSLEWREV", "Throttle Deceleration Slew Rate (lower = more slew, higher = faster response)", &config->slewDecel, CFG_ENTRY_VAR_TYPE::UINT16, 0, 20000, 0, nullptr, nullptr};
-    cfgEntries.push_back(entry);
-    entry = {"TSLEWCUTOFF", "Tenths of a percent of pedal input where slew is heavily restricted", &config->slewCutoff, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
-    cfgEntries.push_back(entry);
+
 
     StatusEntry stat;
     //        name              var         type             prevVal  obj
@@ -100,62 +97,18 @@ void Throttle::handleTick() {
 
     RawSignalData *rawSignals = acquireRawSignal(); // get raw data from the throttle device
 
-    //now potential extra step here. If any smoothing is enabled then process that
-    //The basic idea is to mix the previous value with the new value by the proportion
-    //given by the smoothing value. 0.5 would mix the two equally which is quite a bit of smoothing
-    //a value of 1.0 should never be used!
     ThrottleConfiguration *config = (ThrottleConfiguration *) getConfiguration();
-    if (config->smoothingVal >= 0.001f)
-    {
-        Logger::avalanche("In: %i", rawSignals->input1);
-        float inverse = 1.0f - config->smoothingVal;
-        rawSignals->input1 = (rawSignals->input1 * inverse) + (lastVal.input1 * config->smoothingVal);
-        rawSignals->input2 = (rawSignals->input2 * inverse) + (lastVal.input2 * config->smoothingVal);
-        rawSignals->input3 = (rawSignals->input3 * inverse) + (lastVal.input3 * config->smoothingVal);
-        Logger::avalanche("Out: %i", rawSignals->input1);
-        lastVal = *rawSignals;
-    }
 
     if (validateSignal(rawSignals)) { // validate the raw data
         pedalPosition = calculatePedalPosition(rawSignals); // bring the raw data into a range of 0-1000 (without mapping)
         rawThrottle = mapPedalPosition(pedalPosition);
-
-        if (config->slewRate == 0)
+        //if there is no smart smoothing or the pedal position is over the cutoff then go straight to the real value
+        if ((config->smartSmooth == 0) || (pedalPosition >= config->smoothStop)) level = rawThrottle;
+        else //smart smoothing enabled at some level
         {
-            level = rawThrottle;
+            int diff = rawThrottle - level;
+            level = level + (diff * 0.05f * (6.0f - config->smartSmooth) );
         }
-        else
-        {
-            int slewInc = config->slewRate / (1000000 / 40000);
-            int slewDecelInc = config->slewDecel / (1000000 / 40000);
-            if (pedalPosition > config->slewCutoff)
-            {
-                if (pedalPosition < (config->slewCutoff * 2))
-                {
-                    float multFactor = (1.0f + ((float)pedalPosition / (float)config->slewCutoff) );
-                    multFactor *= multFactor; //power of two
-                    slewInc *= multFactor;
-                    slewDecelInc *= multFactor;
-                }
-                else level = rawThrottle;
-            }
-            Logger::debug("SlewInc: %i   SlewDecel: %i", slewInc, slewDecelInc);
-            if (slewInc < 10) slewInc = 10;
-            if (slewDecelInc < 20) slewDecelInc = 20;
-            
-            //increasing throttle position
-            if (rawThrottle > level) 
-            {
-                level += slewInc;
-                if (level > rawThrottle) level = rawThrottle;
-            }
-            else if (rawThrottle < level)//decreasing throttle position. Should be faster usually
-            {
-                level -= slewDecelInc;
-                if (level < rawThrottle) level = rawThrottle;
-            }
-            Logger::debug("Req: %i Output: %i", rawThrottle, level);
-        } 
     } 
     else rawThrottle = level = 0;
 }
@@ -334,10 +287,8 @@ void Throttle::loadConfiguration() {
         prefsHandler->read("Creep", &config->creep, 0);
         prefsHandler->read("MinAccelRegen", &config->minimumRegen, 0);
         prefsHandler->read("MaxAccelRegen", &config->maximumRegen, 70);
-        prefsHandler->read("Smoothing", &config->smoothingVal, 0.0f);
-        prefsHandler->read("SlewRate", &config->slewRate, 2000);
-        prefsHandler->read("SlewDecel", &config->slewDecel, 3000);
-        prefsHandler->read("SlewCutoff", &config->slewCutoff, 500);
+        prefsHandler->read("smartsmooth", &config->smartSmooth, 0);
+        prefsHandler->read("smoothstop", &config->smoothStop, 600);
     
     //Logger::debug(THROTTLE, "RegenMax: %i RegenMin: %i Fwd: %i Map: %i", config->positionRegenMaximum, config->positionRegenMinimum,
     //              config->positionForwardMotionStart, config->positionHalfPower);
@@ -365,10 +316,8 @@ void Throttle::saveConfiguration() {
     prefsHandler->write("Creep", config->creep);
     prefsHandler->write("MinAccelRegen", config->minimumRegen);
     prefsHandler->write("MaxAccelRegen", config->maximumRegen);
-    prefsHandler->write("Smoothing", config->smoothingVal);
-    prefsHandler->write("SlewRate", config->slewRate);
-    prefsHandler->write("SlewDecel", config->slewDecel);
-    prefsHandler->write("SlewCutoff", config->slewCutoff);
+    prefsHandler->write("smartsmooth", config->smartSmooth);
+    prefsHandler->write("smoothstop", config->smoothStop);
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
 
