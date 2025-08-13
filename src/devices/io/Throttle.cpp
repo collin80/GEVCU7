@@ -71,7 +71,7 @@ void Throttle::setup()
     cfgEntries.push_back(entry);
     entry = {"TSMOOTH", "Throttle smart smoothing level (0 to 5)", &config->smartSmooth, CFG_ENTRY_VAR_TYPE::BYTE, 0, 5, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TSMOOTHCUT", "Tenths of a percent of pedal travel where smoothing is disabled", &config->smoothStop, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, 0, nullptr, nullptr};
+    entry = {"TSMOOTHCUT", "Tenths of a percent of raw throttle where smoothing is disabled", &config->smoothStop, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
 
@@ -103,7 +103,7 @@ void Throttle::handleTick() {
         pedalPosition = calculatePedalPosition(rawSignals); // bring the raw data into a range of 0-1000 (without mapping)
         rawThrottle = mapPedalPosition(pedalPosition);
         //if there is no smart smoothing or the pedal position is over the cutoff then go straight to the real value
-        if ((config->smartSmooth == 0) || (pedalPosition >= config->smoothStop)) level = rawThrottle;
+        if ((config->smartSmooth == 0) || (rawThrottle >= config->smoothStop)) level = rawThrottle;
         else //smart smoothing enabled at some level
         {
             int diff = rawThrottle - level;

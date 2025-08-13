@@ -161,7 +161,7 @@ void HeatCoolController::handleTick() {
                 temperature = mctl->getTemperatureInverter();
                 if (mctl->getTemperatureSystem() > temperature) temperature = mctl->getTemperatureSystem();
                 if (mctl->getTemperatureMotor() > temperature) temperature = mctl->getTemperatureMotor();
-                temperature /= 10.0f; //all returned temperatures above were in 10th of a degree
+                //temperature /= 10.0f; //all returned temperatures above were in 10th of a degree
             }
             break;
         case CZ_DCDC:
