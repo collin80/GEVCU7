@@ -38,6 +38,7 @@ SimpleBatteryManager::SimpleBatteryManager() : BatteryManager() {
     allowDischarge = true;
     commonName = "Simple BMS";
     shortName = "SimpleBMS";
+    currAHAccum = 0.0;
     deviceId = SIMPLEBMS;
     firstReading = true;
     lastMS = 0;
@@ -46,7 +47,7 @@ SimpleBatteryManager::SimpleBatteryManager() : BatteryManager() {
 void SimpleBatteryManager::setup() {
     tickHandler.detach(this);
 
-    Logger::info("add device: Th!nk City BMS (id: %X, %X)", SIMPLEBMS, this);
+    Logger::info("add device: Simple BMS (id: %X, %X)", SIMPLEBMS, this);
 
     loadConfiguration();
 
@@ -62,6 +63,11 @@ void SimpleBatteryManager::setup() {
     cfgEntries.push_back(entry);
     entry = {"SBMS-FULLV", "Nominal AH capacity of the pack", &config->packFullVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 2000.0}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
+
+    StatusEntry stat;
+    //        name       var           type                               prevVal  obj
+    stat = {"SBMS_CURRAH", &config->currentPackAH, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
+    deviceManager.addStatusEntry(stat);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_SIMPLE);
     crashHandler.addBreadcrumb(ENCODE_BREAD("SIBMS") + 0);
@@ -89,39 +95,46 @@ void SimpleBatteryManager::handleTick() {
 
         //assume upper and lower 20% are linear in voltage and try to adjust SOC to match
         float dcV = mc->getDcVoltage();
+        if (dcV < 20) return; //obviously we're not actually getting the system voltage yet so don't do calcs
         if (dcV < lowerVBound)
         {
-            targetSOC = 20.0f - ((lowerVBound - dcV) / v_interval * 20.0f);
+            targetSOC = 20.0f - ((lowerVBound - dcV) / v_interval) * 20.0f;
             if (targetSOC < 0.0f) targetSOC = 0.0f;
     
             //only intervene if the difference is more than 2%
             if (fabs(targetSOC - SOC) > 2.0f )
             {
-                totalCurrent += 1000.0; //pretend to be using a lot of current to knock down the SOC
+                totalCurrent += 100.0; //pretend to be using a lot of current to knock down the SOC
             }
         }
         else if (dcV > upperVBound)
         {
-            targetSOC = 80.0f + ((dcV - upperVBound) / v_interval * 20.0f);
+            targetSOC = 80.0f + ((dcV - upperVBound) / v_interval) * 20.0f;
             if (targetSOC > 100.0f) targetSOC = 100.0f;
     
             if (fabs(targetSOC - SOC) > 2.0f)
             {
-                totalCurrent -= 1000.0;
+                totalCurrent -= 100.0;
             }
         }
-
-        if (SOC < 2.0f) allowDischarge = false;
-            else allowDischarge = true;
-        if (SOC > 99.5f) allowCharge = false;
-            else allowCharge = true;
 
         uint32_t interval = millis() - lastMS;
         lastMS = millis();
         //an hour is 3.6 million milliseconds
-        float ah_partial = interval / 3600000.0f;
+        double ah_partial = interval / 3600000.0;
         ah_partial *= totalCurrent;
-        config->currentPackAH -= ah_partial;
+        //currAHAccum is a double and so has much more precision than a single precision float which
+        //the config variable is. So, we accumulate the small readings into the double then cast it down
+        //into the float for other uses. This lets precision stay high while the rest of the code doesn't
+        //need to use doubles which don't process very quickly on this hardware
+        currAHAccum -= ah_partial;
+
+        //constrain SOC to 0 to 100% only
+        if (currAHAccum < 0.0) currAHAccum = 0.0;
+        if (currAHAccum > config->nominalPackAH) currAHAccum = config->nominalPackAH;
+
+        config->currentPackAH = currAHAccum;
+        //but use the double here for added precision when doing SOC calc
         SOC = (config->currentPackAH / config->nominalPackAH) * 100.0f;
         Logger::debug("Target SOC: %f       Real SOC: %f        dcv: %f", targetSOC, SOC, dcV);
         Logger::debug("Charging OK: %i     Discharging OK: %i", allowCharge, allowDischarge);
@@ -129,6 +142,10 @@ void SimpleBatteryManager::handleTick() {
         //and save to EEPROM. This limits the write cycles to EEPROM.
         prefsHandler->write("CurrAH", config->currentPackAH);
 
+        if (SOC < 2.0f) allowDischarge = false;
+            else allowDischarge = true;
+        if (SOC > 99.5f) allowCharge = false;
+            else allowCharge = true;
     }
     else
     {
@@ -179,6 +196,7 @@ void SimpleBatteryManager::loadConfiguration() {
 
     prefsHandler->read("NomAH", &config->nominalPackAH, 100.0f);
     prefsHandler->read("CurrAH", &config->currentPackAH, 100.0f);
+    currAHAccum = config->currentPackAH;
     prefsHandler->read("EmptyV", &config->packEmptyVoltage, 250.0f);
     prefsHandler->read("FullV", &config->packFullVoltage, 400.0f);
 }

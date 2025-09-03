@@ -45,6 +45,7 @@
  */
 class TestMotorControllerConfiguration : public MotorControllerConfiguration {
 public:
+    float fakeVoltage;
 };
 
 class TestMotorController: public MotorController {

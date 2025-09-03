@@ -67,6 +67,7 @@ protected:
 private:
     SimpleBatteryManagerConfiguration *config;
     bool firstReading;
+    double currAHAccum;
     uint32_t lastMS;
 };
 

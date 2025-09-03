@@ -44,6 +44,10 @@ void TestMotorController::setup() {
     loadConfiguration();
     MotorController::setup(); // run the parent class version of this function
 
+    ConfigEntry entry;
+    //        cfgName          helpText                               variable ref        Type                   Min Max Precision Funct
+    entry = {"TEST-VOLTS", "Set reported voltage for HV input", &config->fakeVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 800.0}, 1, nullptr, nullptr};
+    cfgEntries.push_back(entry);
     running = true;
     setPowerMode(modeTorque);
     setSelectedGear(DRIVE);
@@ -58,7 +62,7 @@ void TestMotorController::handleTick() {
 
     MotorController::handleTick(); //kick the ball up to papa
     
-    dcVoltage = 360.0f; //360v nominal voltage
+    dcVoltage = config->fakeVoltage;
 
     //use throttleRequested to produce some motor like output.
     //throttleRequested ranges +/- 1000 so regen is possible here if the throttle has it set up.
@@ -99,7 +103,7 @@ void TestMotorController::handleTick() {
         dcCurrent += (torqueRequested - torqueActual) * 2;        
                 
     }
-    dcVoltage = 360.0f - (dcCurrent / 10.0f);
+    dcVoltage = dcVoltage - (dcCurrent / 10.0f);
     acCurrent = (dcCurrent * 40) / 30; //A bit more current than DC bus    
     
     mechanicalPower = (dcCurrent * dcVoltage) / 1200.0f;
@@ -143,6 +147,8 @@ void TestMotorController::loadConfiguration() {
     }
 
     MotorController::loadConfiguration(); // call parent
+
+    config->fakeVoltage = 360.0;
 }
 
 void TestMotorController::saveConfiguration() {
