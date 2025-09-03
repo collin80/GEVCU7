@@ -153,6 +153,8 @@ private:
     int16_t pedalPosition;
     int16_t rawThrottle;
     RawSignalData lastVal;
+    int16_t sma_buffer[256];
+    size_t sma_idx;
 };
 
 #endif

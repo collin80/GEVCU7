@@ -36,6 +36,7 @@ Throttle::Throttle() : Device() {
     pedalPosition = 0;
     rawThrottle = 0;
     status = OK;
+    sma_idx = 0;
     deviceType = DEVICE_THROTTLE;
 }
 
@@ -69,11 +70,12 @@ void Throttle::setup()
     cfgEntries.push_back(entry);
     entry = {"TCREEP", "Percent of full torque to use for creep (0=disable)", &config->creep, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TSMOOTH", "Throttle smart smoothing level (0 to 5)", &config->smartSmooth, CFG_ENTRY_VAR_TYPE::BYTE, 0, 5, 0, nullptr, nullptr};
+    entry = {"TSMOOTH", "Throttle smart smoothing level (0 to 100)", &config->smartSmooth, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
     entry = {"TSMOOTHCUT", "Tenths of a percent of raw throttle where smoothing is disabled", &config->smoothStop, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
+    memset(sma_buffer, 0, 256);
 
     StatusEntry stat;
     //        name              var         type             prevVal  obj
@@ -102,12 +104,18 @@ void Throttle::handleTick() {
     if (validateSignal(rawSignals)) { // validate the raw data
         pedalPosition = calculatePedalPosition(rawSignals); // bring the raw data into a range of 0-1000 (without mapping)
         rawThrottle = mapPedalPosition(pedalPosition);
+        sma_buffer[sma_idx] = rawThrottle;
+        sma_idx = (sma_idx + 1);
+        if (sma_idx >= config->smartSmooth) sma_idx = 0;
         //if there is no smart smoothing or the pedal position is over the cutoff then go straight to the real value
         if ((config->smartSmooth == 0) || (rawThrottle >= config->smoothStop)) level = rawThrottle;
         else //smart smoothing enabled at some level
         {
-            int diff = rawThrottle - level;
-            level = level + (diff * 0.05f * (6.0f - config->smartSmooth) );
+            //int diff = rawThrottle - level;
+            //level = level + (diff * 0.05f * (6.0f - config->smartSmooth) );
+            int32_t accum = 0;
+            for (int i = 0; i < config->smartSmooth; i++) accum += sma_buffer[i];
+            level = accum / config->smartSmooth;
         }
     } 
     else rawThrottle = level = 0;
