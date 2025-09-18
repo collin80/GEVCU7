@@ -69,6 +69,8 @@ private:
     bool firstReading;
     double currAHAccum;
     uint32_t lastMS;
+    float sma_buffer[100];
+    uint32_t sma_idx;
 };
 
 #endif
