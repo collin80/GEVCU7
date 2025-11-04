@@ -272,11 +272,11 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
     }
     if (result == 1) //value was too low
     {
-        Logger::console("Value was below minimum value of %f for parameter %s", entry->minValue, settingName);
+            Logger::console("Value was below minimum value of %f for parameter %s", entry->minValue, settingName);
     }
     if (result == 2) //value was too high
     {
-        Logger::console("Value was above maximum value of %f for parameter %s", entry->maxValue, settingName);
+            Logger::console("Value was above maximum value of %f for parameter %s", entry->maxValue, settingName);
     }
 }
 

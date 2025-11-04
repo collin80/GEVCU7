@@ -88,35 +88,11 @@ void SimpleBatteryManager::handleTick() {
         if (mc) totalCurrent += mc->getDcCurrent();
         if (cc) totalCurrent -= cc->getOutputCurrent();
 
-        //this used to be / 5 which would have been 20% but it should be /10 for 10%
-        float v_interval = (config->packFullVoltage - config->packEmptyVoltage) / 10;
-        //Find point at upper end where we hit 90% SOC
-        float upperVBound = config->packFullVoltage - v_interval;
-        //Find point at lower end where we hit 10% SOC
-        float lowerVBound = config->packEmptyVoltage + v_interval;
-
         targetSOC = SOC;
 
         //assume upper and lower 10% are linear in voltage and try to adjust SOC to match
         float dcV = mc->getDcVoltage();
         if (dcV < 20) return; //obviously we're not actually getting the system voltage yet so don't do calcs
-        if (dcV < lowerVBound)
-        {
-            targetSOC = 10.0f - ((lowerVBound - dcV) / v_interval) * 10.0f;
-            if (targetSOC < 0.0f) targetSOC = 0.0f;
-        }
-        else if (dcV > upperVBound)
-        {
-            targetSOC = 90.0f + ((dcV - upperVBound) / v_interval) * 10.0f;
-            if (targetSOC > 100.0f) targetSOC = 100.0f;
-        }
-
-        float diff = targetSOC - SOC;
-        //only intervene if the difference is more than 2%
-        if (fabs(targetSOC - SOC) > 2.0f )
-        {
-            totalCurrent -= diff * 3.0;
-        }
 
         //we're on a timer tick so the interval should be close to the same value but this way
         //we get the exact interval to be more accurate
@@ -138,6 +114,8 @@ void SimpleBatteryManager::handleTick() {
         //constrain SOC to 0 to 100% only
         if (currAHAccum < 0.0) currAHAccum = 0.0;
         if (currAHAccum > config->nominalPackAH) currAHAccum = config->nominalPackAH;
+        //if we've hit the target voltage and the current is under 4A then set the soc to 100%
+        if (dcV >= config->packFullVoltage && fabs(totalCurrent) < 4.0) currAHAccum = config->nominalPackAH;
 
         config->currentPackAH = currAHAccum;
         //but use the double here for added precision when doing SOC calc
