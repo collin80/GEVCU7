@@ -69,8 +69,7 @@ void C300MotorController::setup() {
 }
 
 void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
-    int RotorTemp, invTemp, StatorTemp;
-    int temp;
+
     setAlive(); //if a frame got to here then it passed the filter and must have been from the C300
     bool isOK = false;
     uint8_t b0 = 0;
@@ -268,7 +267,6 @@ void C300MotorController::handleTick() {
 void C300MotorController::sendCmdUS() 
 {
     CAN_message_t output;
-    OperationState newstate;
     alive = (alive + 1);
     output.len = 8;
     output.id = 0x0CFF1401;
@@ -329,7 +327,6 @@ void C300MotorController::sendCmdUS()
 void C300MotorController::sendCmdCanada() 
 {
     CAN_message_t output;
-    OperationState newstate;
     alive++;
     output.len = 8;
     output.id = 0x0C01EFD0;

@@ -275,6 +275,7 @@ of all registered devices and get the list that way.
 #define MEMCACHE 0x7300
 #define SYSIO  0x7400
 #define INVALID 0xFFFF
+#define ANYDEVICE 0xFFFF
 
 typedef uint16_t DeviceId;
 
@@ -290,5 +291,3 @@ namespace LatchModes
 }
 
 #endif /* DEVICE_TYPES_H_ */
-
-

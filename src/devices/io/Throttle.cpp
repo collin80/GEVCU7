@@ -28,6 +28,17 @@
 #include "Throttle.h"
 #include "../../DeviceManager.h"
 
+const char* THROTTLE_FAULT_DESCS[] =
+{
+    "Throttle input 1 is too high",
+    "Throttle input 1 is too low",
+    "Throttle input 2 is too high",
+    "Throttle input 2 is too low",
+    "Throttle input 3 is too high",
+    "Throttle input 3 is too low",
+    "Throttle inputs do not agree on position",
+};
+
 /*
  * Constructor
  */
@@ -75,7 +86,7 @@ void Throttle::setup()
     entry = {"TSMOOTHCUT", "Tenths of a percent of raw throttle where smoothing is disabled", &config->smoothStop, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    memset(sma_buffer, 0, 256);
+    memset(sma_buffer, 0, 256 * sizeof(int16_t));
 
     StatusEntry stat;
     //        name              var         type             prevVal  obj

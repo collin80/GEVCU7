@@ -87,8 +87,6 @@ void LeafMotorController::setup() {
  */
 
 void LeafMotorController::handleCanFrame(const CAN_message_t &frame) {
-    int RotorTemp, invTemp, StatorTemp;
-    int temp; //if a frame got to here then it passed the filter and must have been from the DMOC
     uint16_t speedTemp;
 
     setAlive();
@@ -259,6 +257,7 @@ byte LeafMotorController::calcChecksum(CAN_message_t &thisFrame) {
         }
     }
     thisFrame.buf[7] = crc;
+    return crc;
 }
 
 uint32_t LeafMotorController::getTickInterval()

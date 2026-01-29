@@ -45,13 +45,7 @@ enum DCDC_FAULTS
     DCDC_LAST_FAULT
 };
 
-static const char* DCDC_FAULT_DESCS[] =
-{
-    "DC Input Voltage Error",
-    "DC Input Amperage Error",
-    "DC Output Voltage Error",
-    "DC Output Current Fault"
-};
+extern const char* DCDC_FAULT_DESCS[];
 
 /*
  * Class for DCDC specific configuration parameters

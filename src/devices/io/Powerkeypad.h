@@ -86,7 +86,7 @@ public:
     void handleMessage(uint32_t, void*);
 
 private:
-	int deviceID;
+	unsigned int deviceID;
 	bool buttonState[12]; //The reported state of each button (might be a lie for some modes)
 	bool actualState[12]; //the current actual state of each button
 	bool toggleState[12]; //used by any inputs set to LatchModes::TOGGLING

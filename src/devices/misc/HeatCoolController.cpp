@@ -120,7 +120,7 @@ void HeatCoolController::handleTick() {
 
     BatteryManager *bms = static_cast<BatteryManager *>(deviceManager.getDeviceByType(DeviceType::DEVICE_BMS));
     MotorController *mctl = static_cast<MotorController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_MOTORCTRL));
-    DCDCController *dcdc = static_cast<DCDCController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_DCDC));    
+    //DCDCController *dcdc = static_cast<DCDCController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_DCDC));    
     if (bms && bms->hasTemperatures())
     {
         if (bms->getLowestTemperature() < config->heatOnTemperature)

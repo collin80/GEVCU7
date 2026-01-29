@@ -93,7 +93,7 @@ cycle to be able to try it again.
 
 //An example of all the parameters that are possible to set right now. SHould probably make it configurable and
 //not hard coded.
-/*
+
 system state values:
 1 Initializing System
 2 Precharging System
@@ -177,10 +177,10 @@ void ESP32Driver::setup()
     entry = {"ESP32-DEBUG", "Enable debugging at module level (0 = obey log level, 1 = force debugging on)", &config->debugMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-FWUPD", "Update main processor firmware", &config->firmwareFile, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, UPD_PTR(&doTeensyUpdate)};
+    entry = {"ESP32-FWUPD", "Update main processor firmware", &config->firmwareFile, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, UPD_PTR(&ESP32Driver::doTeensyUpdate)};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-ESPUPD", "Update ESP32 firmware with type", &config->espUpdateType, CFG_ENTRY_VAR_TYPE::BYTE, 0, 9999, 0, nullptr, UPD_PTR(&doESP32Update)};
+    entry = {"ESP32-ESPUPD", "Update ESP32 firmware with type", &config->espUpdateType, CFG_ENTRY_VAR_TYPE::BYTE, 0, 9999, 0, nullptr, UPD_PTR(&ESP32Driver::doESP32Update)};
     cfgEntries.push_back(entry);
 
     entry = {"ESP32-IPADDR", "The current IP address of the ESP32 (DO NOT TRY CHANGING THIS)", &config->ipAddr, CFG_ENTRY_VAR_TYPE::STRING, 0, 40, 0, nullptr, nullptr};

@@ -100,7 +100,7 @@ void ExtIODevice::loadConfiguration() {
  * Store the current configuration to EEPROM
  */
 void ExtIODevice::saveConfiguration() {
-    ExtIODeviceConfiguration *config = (ExtIODeviceConfiguration *) getConfiguration();
+    //ExtIODeviceConfiguration *config = (ExtIODeviceConfiguration *) getConfiguration();
 
     Device::saveConfiguration(); // call parent
 	prefsHandler->forceCacheWrite();

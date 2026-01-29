@@ -29,6 +29,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ChargeController.h"
 #include "../../DeviceManager.h"
 
+const char* CHARGER_FAULT_DESCS[] =
+{
+    "AC Input Voltage Error",
+    "AC Input Amperage Error",
+    "DC Output Voltage Error",
+    "DC Output Current Fault"
+};
+
 template<class T> inline Print &operator <<(Print &obj, T arg) {
     obj.print(arg);
     return obj;

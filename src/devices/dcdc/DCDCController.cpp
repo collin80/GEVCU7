@@ -29,6 +29,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "DCDCController.h"
 #include "../../DeviceManager.h"
 
+const char* DCDC_FAULT_DESCS[] =
+{
+    "DC Input Voltage Error",
+    "DC Input Amperage Error",
+    "DC Output Voltage Error",
+    "DC Output Current Fault"
+};
+
+
 template<class T> inline Print &operator <<(Print &obj, T arg) {
     obj.print(arg);
     return obj;

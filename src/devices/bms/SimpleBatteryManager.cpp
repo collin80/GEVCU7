@@ -78,7 +78,7 @@ void SimpleBatteryManager::handleTick() {
     BatteryManager::handleTick(); //kick the ball up to papa
     MotorController *mc = deviceManager.getMotorController();
     ChargeController *cc = (ChargeController *)deviceManager.getDeviceByType(DeviceType::DEVICE_CHARGER);
-    DCDCController *dc = (DCDCController *)deviceManager.getDeviceByType(DeviceType::DEVICE_DCDC);
+    //DCDCController *dc = (DCDCController *)deviceManager.getDeviceByType(DeviceType::DEVICE_DCDC);
 
     float targetSOC;
 

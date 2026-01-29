@@ -11,10 +11,6 @@ TeslaACGen2Controller::TeslaACGen2Controller() : HVACController()
 
 void TeslaACGen2Controller::handleCanFrame(const CAN_message_t &frame)
 {
-    int16_t inverterTemperature;
-    uint16_t statusBits;
-    uint8_t compressorState;
-
     setAlive();
 
     switch (frame.id)

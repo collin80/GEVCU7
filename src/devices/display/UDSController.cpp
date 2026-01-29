@@ -64,8 +64,6 @@ void udsCallback(const ISOTP_data &iso_config, const uint8_t *buf)
 void UDSController::handleIsoTP(const ISOTP_data &iso_config, const uint8_t *buf)
 {
     ISOTP_data reply;
-    uint32_t firmwareSize;
-    uint32_t firmwareAddr;
 
     Logger::debug("UDS SID: %X config: %X", buf[0], config);
 

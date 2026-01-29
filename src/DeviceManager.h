@@ -57,7 +57,7 @@ public:
     bool removeStatusObserver(Device *dev);
     void enableAllStatusEntries();
     StatusEntry* findStatusEntryByHash(uint32_t hash);
-    StatusEntry* FindStatusEntryByIdx(int idx);
+    StatusEntry* FindStatusEntryByIdx(unsigned int idx);
     uint8_t getNumThrottles();
     uint8_t getNumControllers();
     uint8_t getNumBMS();

@@ -42,8 +42,6 @@ bool PrefHandler::isEnabled()
 
 void PrefHandler::setEnabledStatus(bool en)
 {
-    uint16_t id = this->deviceID;
-
     enabled = en;
 
     //This should not be necessary. It's being done elsewhere.

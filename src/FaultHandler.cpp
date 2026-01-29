@@ -255,26 +255,32 @@ uint16_t FaultHandler::setFaultACK(uint16_t fault)
 
 uint16_t FaultHandler::setAckForDevice(uint16_t device)
 {
+    int ret = 0;
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
         if ( (faultList[i].device == device) && (faultList[i].ack == 0) )
         {
             faultList[i].ack = 1;
             writeFaultToEEPROM(i);
+            ret = 1;
         }
     }
+    return ret;
 }
 
 uint16_t FaultHandler::ackAllFaults()
 {
+    int ret = 0;
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
         if ( faultList[i].ack == 0 )
         {
             faultList[i].ack = 1;
             writeFaultToEEPROM(i);
+            ret = 1;
         }
     }
+    return ret;
 }
 
 uint16_t FaultHandler::setFaultOngoing(uint16_t fault, bool ongoing)

@@ -64,24 +64,7 @@ enum MCTRL_FAULTS
     MCTRL_LAST_FAULT
 };
 
-static const char* MCTRL_FAULT_DESCS[] =
-{
-    "Motor is over temperature",
-    "Inverter is over temperature",
-    "Unable to provide requested torque",
-    "RPM is too high",
-    "Output torque is higher than requested",
-    "Cannot enable motor controller",
-    "Cannot enter drive state",
-    "Cannot enter reverse state",
-    "Cannot provide requested power",
-    "Too much current being requested by drive unit",
-    "Incoming HV too low",
-    "Incoming HV too high",
-    "Cannot produce requested regen power",
-    "Motor position sensing error",
-
-};
+extern const char* MCTRL_FAULT_DESCS[];
 
 class MotorControllerConfiguration : public DeviceConfiguration {
 public:

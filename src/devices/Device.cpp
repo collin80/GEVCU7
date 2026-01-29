@@ -27,6 +27,23 @@
 #include "Device.h"
 #include "../DeviceManager.h"
 
+const char* DEVICE_FAULT_DESCS[] =
+{
+    "No fault",
+    "CAN communications fault",
+    "Communications timeout",
+    "Device is not enabled",
+    "Over temperature limit",
+    "Under temperature limit",
+    "Over voltage",
+    "Under voltage",
+    "Hardware fault",
+    "General fault",
+    "Fault when initializing device",
+    "12V battery too high",
+    "12V battery too low",
+};
+
 Device::Device() {
     deviceConfiguration = nullptr;
     prefsHandler = nullptr;

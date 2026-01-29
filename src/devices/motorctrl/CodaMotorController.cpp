@@ -81,7 +81,7 @@ void CodaMotorController::setup()
 void CodaMotorController::handleCanFrame(const CAN_message_t &frame)
 {
     int RotorTemp, invTemp, StatorTemp;
-    int temp;
+
     setAlive(); //if a frame got to here then it passed the filter and must come from UQM
     if (!running) //if we're newly running then cancel faults if necessary.
     {

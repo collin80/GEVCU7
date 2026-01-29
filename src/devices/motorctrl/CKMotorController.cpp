@@ -70,8 +70,8 @@ void CKMotorController::setup()
  everything has gone according to plan.
  */
 void CKMotorController::handleCanFrame(const CAN_message_t &frame) {
-    int RotorTemp, invTemp, StatorTemp;
-    int temp;
+    //int RotorTemp, invTemp, StatorTemp;
+    //int temp;
     setAlive(); //if a frame got to here then it passed the filter and must have been from the CK controller
 
     //Logger::debug("CKInverter CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame->id,frame->data.bytes[0] ,frame->data.bytes[1],frame->data.bytes[2],frame->data.bytes[3],frame->data.bytes[4],frame->data.bytes[5],frame->data.bytes[6],frame->data.bytes[7]);
@@ -111,7 +111,7 @@ void CKMotorController::handleTick() {
 //Commanded RPM plus state of key and gear selector
 void CKMotorController::sendPowerCmd() {
     CAN_message_t output;
-    OperationState newstate;
+    //OperationState newstate;
     Gears currentGear = getSelectedGear();
     output.len = 7;
     output.id = 0x232;

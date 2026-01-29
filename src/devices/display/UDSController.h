@@ -129,6 +129,8 @@ private:
     bool inSecurityMode;
     bool generatedSeed;
     UDSConfiguration *config;
+    uint32_t firmwareSize;
+    uint32_t firmwareAddr;
 };
 
 #endif
