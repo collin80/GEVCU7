@@ -34,6 +34,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #undef HID_ENABLED
 
+//PWM1 = MM56 Digital Pin (7)
+//PWM2 = MM54 Digital Pin (8)
+//PWM3 = MM53 Digital Pin (24)
+//PWM4 = MM51 Digital Pin (25)
+
+uint8_t G7D_PWM_PINS[4] = {7, 8, 24, 25}; 
+
 SystemIO::SystemIO() : Device()
 {
     commonName = "System IO";
@@ -65,7 +72,7 @@ SystemIO::SystemIO() : Device()
         digOutState[i] = 0;
 
     }
-    
+
     for (int i = 0; i < NUM_DIGITAL; i++) digInState[i] = 0;
     for (int i = 0; i < NUM_ANALOG; i++) anaInState[i] = 0;
     
@@ -81,7 +88,7 @@ void SystemIO::setup_ADC_params()
 }
 
 FLASHMEM void SystemIO::setSystemType(SystemType systemType) {
-    if (systemType >= GEVCU7A && systemType <= GEVCU7C)
+    if (systemType >= GEVCU7A && systemType <= GEVCU7D)
     {
         sysConfig->systemType = systemType;
         Device *sysDev;
@@ -115,6 +122,12 @@ FLASHMEM void SystemIO::setup() {
     pinMode(41, INPUT); //basically the last 4 digital inputs
     pinMode(42, INPUT);
 
+    for (int i = 0; i < 4; i++)
+    {
+        pinMode(G7D_PWM_PINS[i], OUTPUT); //set all PWM pins to output
+        digitalWrite(G7D_PWM_PINS[i], LOW); //all off by default
+    }
+
     pinMode(3, OUTPUT); //PWM0 = ADC Select A
     digitalWrite(3, LOW); 
     if (sysConfig->systemType != GEVCU7B)
@@ -132,6 +145,15 @@ FLASHMEM void SystemIO::setup() {
 
     initDigitalMultiplexor(); //set I/O direction for all pins, polarity, etc.
 
+    if (sysConfig->systemType == GEVCU7D)
+    {
+        analogWriteResolution(12);
+        //pin 24 is on it's own time domain
+        analogWriteFrequency(24, 10000); //10kHz
+        //pins 7,8,25 share a time domain
+        analogWriteFrequency(7, 1000); //1kHz
+        numAnaOut = 4;
+    }
     tickHandler.attach(this, 1000); //interval is set in microseconds. We want 1ms timer
     lastMicros = micros();
 
@@ -190,6 +212,17 @@ FLASHMEM void SystemIO::setupStatusEntries()
       //        name       var           type                  prevVal  obj
         stat = {buff, &anaInState[i], CFG_ENTRY_VAR_TYPE::INT16, 0, this};
         deviceManager.addStatusEntry(stat);
+    }
+
+    if (sysConfig->systemType == GEVCU7D)
+    {
+        for (i = 0; i < NUM_PWM; i++)
+        {
+            sprintf(buff, "SYS_ANAOUT%i", i);
+        //        name       var           type                  prevVal  obj
+            stat = {buff, &anaOutState[i], CFG_ENTRY_VAR_TYPE::INT16, 0, this};
+            deviceManager.addStatusEntry(stat);
+        }
     }
 }
 
@@ -300,6 +333,7 @@ void SystemIO::installExtendedIO(ExtIODevice *device)
     numAnaIn = numAI;
 
     int numAO = 0; //GEVCU has no real analog outputs - there are PWM but they're on the digital outputs
+    if (sysConfig->systemType == GEVCU7D) numAO = 4; //GEVCU7D does though
     for (int i = 0; i < NUM_EXT_IO; i++)
     {
         if (extendedAnalogOut[i].device != NULL) numAO++;
@@ -411,10 +445,18 @@ int16_t SystemIO::getAnalogIn(uint8_t which) {
     return 0; //if it falls through and nothing could provide the answer then return 0
 }
 
-//there really are no directly connected analog outputs but extended I/O devices might implement some
+//there really are no directly connected analog outputs (except on 7D) but extended I/O devices might implement some
 boolean SystemIO::setAnalogOut(uint8_t which, int32_t level)
 {
     if (which >= numAnaOut) return false;
+    if (which < NUM_PWM && sysConfig->systemType == GEVCU7D)
+    {
+        if (level < 0) level = 0;
+        if (level > 4095) level = 4095;
+        analogWrite(G7D_PWM_PINS[which], level);
+        anaOutState[which] = level;
+        return true;
+    }
     ExtIODevice *dev;
     dev = extendedAnalogOut[which].device;
     if (dev) dev->setAnalogOutput(extendedAnalogOut[which].localOffset, level);
@@ -424,10 +466,15 @@ boolean SystemIO::setAnalogOut(uint8_t which, int32_t level)
 int32_t SystemIO::getAnalogOut(uint8_t which)
 {
     if (which >= numAnaOut) return 0;
+    if (which < NUM_PWM && sysConfig->systemType == GEVCU7D)
+    {
+        return anaOutState[which];
+    }
+
     ExtIODevice *dev;
     dev = extendedAnalogOut[which].device;
     if (dev) return dev->getAnalogOutput(extendedAnalogOut[which].localOffset);
-    return 0;    
+    return 0;
 }
 
 //get value of one of the 12 digital inputs (or more if extended I/O added more)
@@ -469,8 +516,13 @@ boolean SystemIO::getDigitalIn(uint8_t which) {
 //set output high or not
 void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
     if (which >= numDigOut) return;
-    
-    if (which < NUM_OUTPUT)
+
+    if (sysType == GEVCU7D && which < 4)
+    {
+        digitalWrite(G7D_PWM_PINS[which], active ? HIGH : LOW);
+        digOutState[which] = active;
+    }
+    else if (which < NUM_OUTPUT)
     {
         _pSetDigitalOutput(which, active);
         digPWMOutput[which].pwmActive = false;
@@ -488,7 +540,11 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
 boolean SystemIO::getDigitalOutput(uint8_t which) {
     if (which >= numDigOut) return false;
     
-    if (which < NUM_OUTPUT)
+    if (sysType == GEVCU7D && which < 4)
+    {
+        return digitalRead(G7D_PWM_PINS[which]);
+    }
+    else if (which < NUM_OUTPUT)
     {
         return _pGetDigitalOutput(which);
     }
