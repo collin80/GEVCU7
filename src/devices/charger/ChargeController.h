@@ -44,13 +44,7 @@ enum CHARGER_FAULTS
     CHARGER_LAST_FAULT
 };
 
-static const char* CHARGER_FAULT_DESCS[] =
-{
-    "AC Input Voltage Error",
-    "AC Input Amperage Error",
-    "DC Output Voltage Error",
-    "DC Output Current Fault"
-};
+extern const char* CHARGER_FAULT_DESCS[];
 
 /*
  * Class for HV charger specific configuration parameters

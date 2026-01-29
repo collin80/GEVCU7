@@ -51,32 +51,8 @@ enum THROTTLE_FAULTS
     THROTTLE_LAST_FAULT
 };
 
-static const char* THROTTLE_FAULT_DESCS[] =
-{
-    "Throttle input 1 is too high",
-    "Throttle input 1 is too low",
-    "Throttle input 2 is too high",
-    "Throttle input 2 is too low",
-    "Throttle input 3 is too high",
-    "Throttle input 3 is too low",
-    "Throttle inputs do not agree on position",
-};
+extern const char* THROTTLE_FAULT_DESCS[];
 
-//These should be able to be removed.
-/*
-#define ThrottleRegenMinValue	270		//where does Regen stop (1/10 of percent)
-#define ThrottleRegenMaxValue	0		//where Regen is at maximum (1/10 of percent)
-#define ThrottleFwdValue		280		//where does forward motion start
-#define ThrottleMapValue		750		//Where is the 1/2 way point for throttle
-#define ThrottleMinRegenValue	0		//how many percent of full power to use at minimal regen
-#define ThrottleMaxRegenValue	70		//how many percent of full power to use at maximum regen
-#define ThrottleCreepValue		0		//how many percent of full power to use at creep
-#define BrakeMinValue			100		//Value ADC reads when brake is not pressed
-#define BrakeMaxValue			3200		//Value ADC reads when brake is pushed all of the way down
-#define BrakeMinRegenValue		0		//percent of full power to use for brake regen (min)
-#define BrakeMaxRegenValue		50		//percent of full power to use for brake regen (max)
-#define BrakeADC				0       //which ADC pin to use
-*/
 //these two should be configuration options instead.
 #define CFG_CANTHROTTLE_MAX_NUM_LOST_MSG            3 // maximum number of lost messages allowed
 #define CFG_THROTTLE_TOLERANCE  150 //the max that things can go over or under the min/max without fault - 1/10% each #
@@ -109,10 +85,8 @@ public:
     uint8_t maximumRegen; // percentage of max torque allowable for regen at maximum level
     uint8_t minimumRegen; // percentage of max torque allowable for regen at minimum level
     uint8_t creep; // percentage of torque used for creep function (imitate creep of automatic transmission, set 0 to disable)
-    float smoothingVal;
-    uint16_t slewRate;
-    uint16_t slewDecel;
-    uint16_t slewCutoff;
+    uint8_t smartSmooth;
+    uint16_t smoothStop;
 };
 
 /*
@@ -155,6 +129,8 @@ private:
     int16_t pedalPosition;
     int16_t rawThrottle;
     RawSignalData lastVal;
+    int16_t sma_buffer[256];
+    size_t sma_idx;
 };
 
 #endif

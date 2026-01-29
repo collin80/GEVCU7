@@ -28,6 +28,25 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "MotorController.h"
 
+const char* MCTRL_FAULT_DESCS[] =
+{
+    "Motor is over temperature",
+    "Inverter is over temperature",
+    "Unable to provide requested torque",
+    "RPM is too high",
+    "Output torque is higher than requested",
+    "Cannot enable motor controller",
+    "Cannot enter drive state",
+    "Cannot enter reverse state",
+    "Cannot provide requested power",
+    "Too much current being requested by drive unit",
+    "Incoming HV too low",
+    "Incoming HV too high",
+    "Cannot produce requested regen power",
+    "Motor position sensing error",
+
+};
+
 MotorController::MotorController() : Device() {
     ready = false;
     running = false;

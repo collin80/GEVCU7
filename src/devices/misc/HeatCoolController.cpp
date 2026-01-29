@@ -120,7 +120,7 @@ void HeatCoolController::handleTick() {
 
     BatteryManager *bms = static_cast<BatteryManager *>(deviceManager.getDeviceByType(DeviceType::DEVICE_BMS));
     MotorController *mctl = static_cast<MotorController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_MOTORCTRL));
-    DCDCController *dcdc = static_cast<DCDCController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_DCDC));    
+    //DCDCController *dcdc = static_cast<DCDCController *>(deviceManager.getDeviceByType(DeviceType::DEVICE_DCDC));    
     if (bms && bms->hasTemperatures())
     {
         if (bms->getLowestTemperature() < config->heatOnTemperature)
@@ -161,7 +161,7 @@ void HeatCoolController::handleTick() {
                 temperature = mctl->getTemperatureInverter();
                 if (mctl->getTemperatureSystem() > temperature) temperature = mctl->getTemperatureSystem();
                 if (mctl->getTemperatureMotor() > temperature) temperature = mctl->getTemperatureMotor();
-                temperature /= 10.0f; //all returned temperatures above were in 10th of a degree
+                //temperature /= 10.0f; //all returned temperatures above were in 10th of a degree
             }
             break;
         case CZ_DCDC:

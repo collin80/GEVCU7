@@ -70,6 +70,9 @@ private:
     PID *pid;
     double targetDuty;
     double targetTempC;
+    int16_t inverterTemperature;
+    uint16_t statusBits;
+    uint8_t compressorState;
 };
 
 

@@ -74,7 +74,6 @@ void RMSMotorController::setup()
 
 void RMSMotorController::handleCanFrame(const CAN_message_t &frame)
 {
-    int temp;
     uint8_t *data = (uint8_t *)frame.buf;
     setAlive();
 	
@@ -258,7 +257,8 @@ void RMSMotorController::handleCANMsgIntVolt(uint8_t *data)
 
 void RMSMotorController::handleCANMsgIntState(uint8_t *data)
 {
-	int vsmState, invState, relayState, invRunMode, invActiveDischarge, invCmdMode, invEnable, invLockout, invDirection;
+	int vsmState, invState, relayState, invRunMode, invActiveDischarge, invCmdMode, invDirection;
+	//int invEnable, invLockout;
 	
 	vsmState = data[0] + (data[1] * 256);
 	invState = data[2];

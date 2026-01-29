@@ -70,10 +70,10 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
             //bit 4 is fan status (0 = stopped 1 = request to run)
             //bit 5 is cooling pump on/off
             status = frame.buf[6]; //all about charge port condition
-            uint8_t ccState = status & 3;
+            //uint8_t ccState = status & 3;
             //bit 2 is CP signal state (0 = nothing 1 = valid)
             if (status & 8) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
-            uint8_t lockState = (status >> 4) & 0x7;
+            //uint8_t lockState = (status >> 4) & 0x7;
             //bit 7 is S2 switch control status (0 = off 1 = on)
             deviceTemperature = frame.buf[7] - 40.0f;
         }

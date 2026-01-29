@@ -67,6 +67,10 @@ public:
 private:
     void sendLEDCmd();
     void sendWakeCfg();
+    float batt12V;
+    uint16_t elapsedMinutes;
+    uint8_t pilotDuty;
+    uint8_t statusFlags;
 
     AxiomaticWOCConfiguration *config;
 };

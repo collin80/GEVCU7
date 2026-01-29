@@ -61,31 +61,7 @@ enum BMS_FAULTS
     BMS_LAST_FAULT
 };
 
-static const char* BMS_FAULT_DESCS[] =
-{
-    "One or more cells under min voltage",
-    "One or more cells over max voltage",
-    "One or more cells over max temperature",
-    "One or more cells under min temperature",
-    "Max to min cell variation too high",
-    "Fault in cell balancing",
-    "Fault in current sensing",
-    "Positive current is too large!",
-    "Negative current is too large!"
-    "Contactor A stuck open",
-    "Contactor A stuck closed",
-    "Contactor B stuck open",
-    "Contactor B stuck closed",
-    "Precharge contactor stuck open",
-    "Precharge contactor stuck closed",
-    "Precharge process has failed",
-    "HV pack over voltage",
-    "HV pack under voltage",
-    "HV pack over temperature",
-    "HV pack under temperature",
-    "HV pack internal isolation fault",
-    "HV pack external isolation fault",
-};
+extern const char* BMS_FAULT_DESCS[];
 
 class BatteryManagerConfiguration : public DeviceConfiguration {
 public:

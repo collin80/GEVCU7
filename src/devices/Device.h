@@ -65,22 +65,7 @@ enum DEVICEFAULTS
     LAST_FAULT_CODE
 };
 
-static const char* DEVICE_FAULT_DESCS[] =
-{
-    "No fault",
-    "CAN communications fault",
-    "Communications timeout",
-    "Device is not enabled",
-    "Over temperature limit",
-    "Under temperature limit",
-    "Over voltage",
-    "Under voltage",
-    "Hardware fault",
-    "General fault",
-    "Fault when initializing device",
-    "12V battery too high",
-    "12V battery too low",
-};
+extern const char* DEVICE_FAULT_DESCS[];
 
 /*
  * A abstract class for all Devices.

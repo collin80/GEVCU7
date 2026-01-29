@@ -36,7 +36,9 @@ enum SystemMessage {
     MSG_ENABLE        = 0x3300,
     MSG_SET_PARAM     = 0x4000,
     MSG_CONFIG_CHANGE = 0x4001,
-    MSG_COMMAND       = 0x4002
+    MSG_COMMAND       = 0x4002,
+    MSG_POWERDOWN     = 0x4010,
+    MSG_POWERUP       = 0x4020
 };
 
 #endif

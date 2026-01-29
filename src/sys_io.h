@@ -46,7 +46,8 @@ enum SystemType
 {
     GEVCU7A = 0,
     GEVCU7B = 1,
-    GEVCU7C = 2
+    GEVCU7C = 2,
+    GEVCU7D = 3,
 };
 
 class ExtendedIODev
@@ -144,6 +145,7 @@ private:
     uint8_t digOutState[NUM_OUTPUT];
     uint8_t digInState[NUM_DIGITAL];
     int16_t anaInState[NUM_ANALOG];
+    int16_t anaOutState[NUM_PWM];
 
     PWM_SPECS digPWMOutput[NUM_OUTPUT];
     uint32_t lastMicros;

@@ -82,10 +82,6 @@ Bytes 4-5 = LV Battery voltage (mv)
 */
 void AxiomaticWOC::handleCanFrame(const CAN_message_t &frame)
 {
-    float batt12V;
-    uint16_t elapsedMinutes;
-    uint8_t pilotDuty;
-    uint8_t statusFlags;
     if (frame.id == 0x622)
     {
         setAlive();

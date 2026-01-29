@@ -80,6 +80,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SD_DETECT           5
 
 #define NUM_ANALOG	8
+#define NUM_PWM    4
 #define NUM_DIGITAL	12
 #define NUM_OUTPUT	8
 #define NUM_EXT_IO  24

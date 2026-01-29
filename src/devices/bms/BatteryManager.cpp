@@ -28,6 +28,32 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "BatteryManager.h"
 
+const char* BMS_FAULT_DESCS[] =
+{
+    "One or more cells under min voltage",
+    "One or more cells over max voltage",
+    "One or more cells over max temperature",
+    "One or more cells under min temperature",
+    "Max to min cell variation too high",
+    "Fault in cell balancing",
+    "Fault in current sensing",
+    "Positive current is too large!",
+    "Negative current is too large!"
+    "Contactor A stuck open",
+    "Contactor A stuck closed",
+    "Contactor B stuck open",
+    "Contactor B stuck closed",
+    "Precharge contactor stuck open",
+    "Precharge contactor stuck closed",
+    "Precharge process has failed",
+    "HV pack over voltage",
+    "HV pack under voltage",
+    "HV pack over temperature",
+    "HV pack under temperature",
+    "HV pack internal isolation fault",
+    "HV pack external isolation fault",
+};
+
 BatteryManager::BatteryManager() : Device()
 {
     packVoltage = 0;
@@ -46,7 +72,7 @@ void BatteryManager::handleTick() {
 
 void BatteryManager::setup() {
 
-    BatteryManagerConfiguration *config = (BatteryManagerConfiguration *) getConfiguration();
+    //BatteryManagerConfiguration *config = (BatteryManagerConfiguration *) getConfiguration();
 
     //ConfigEntry entry;
     //entry = {"CAPACITY", "Capacity of battery pack in ampere-hours", &config->packCapacity, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 100000.0}, 2, nullptr, nullptr};
@@ -113,14 +139,14 @@ float BatteryManager::getDischargeLimit()
 }
 
 void BatteryManager::loadConfiguration() {
-    BatteryManagerConfiguration *config = (BatteryManagerConfiguration *)getConfiguration();
+    //BatteryManagerConfiguration *config = (BatteryManagerConfiguration *)getConfiguration();
 
     Device::loadConfiguration(); // call parent
      
 }
 
 void BatteryManager::saveConfiguration() {
-    BatteryManagerConfiguration *config = (BatteryManagerConfiguration *)getConfiguration();
+    //BatteryManagerConfiguration *config = (BatteryManagerConfiguration *)getConfiguration();
     
     Device::saveConfiguration(); // call parent
 

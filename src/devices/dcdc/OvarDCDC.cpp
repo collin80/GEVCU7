@@ -34,7 +34,7 @@ void OvarDCDCController::handleCanFrame(const CAN_message_t &frame)
 {
     uint16_t dcdcVoltage = 0;
     uint16_t dcdcAmps = 0;
-    int16_t dcdcTemperature = 0;
+    //int16_t dcdcTemperature = 0;
     uint8_t dcdc_status = 0;
     Logger::debug("Ovar DCDC: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
                   frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
@@ -46,7 +46,7 @@ void OvarDCDCController::handleCanFrame(const CAN_message_t &frame)
     {
 	    dcdcVoltage = (frame.buf[0] << 8) + (frame.buf[1]);
 	    dcdcAmps = (frame.buf[2] << 8) + (frame.buf[3]);
-        dcdcTemperature = frame.buf[4] - 40;
+        //dcdcTemperature = frame.buf[4] - 40;
         dcdc_status = frame.buf[5];
         if (dcdc_status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);//Logger::error("DCDC has failed");
         if (dcdc_status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);//Logger::error("DCDC temperature abnormal");

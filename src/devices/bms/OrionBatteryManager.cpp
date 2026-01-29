@@ -63,7 +63,6 @@ void OrionBatteryManager::setup() {
 /*For all multibyte integers the format is MSB first, LSB last
 */
 void OrionBatteryManager::handleCanFrame(const CAN_message_t &frame) {
-    int temp;
     int16_t curr;
     crashHandler.addBreadcrumb(ENCODE_BREAD("ORBMS") + 1);
     setAlive();

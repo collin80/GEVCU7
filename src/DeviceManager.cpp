@@ -204,16 +204,16 @@ void DeviceManager::removeAllEntriesForDevice(Device *dev)
 
 StatusEntry* DeviceManager::findStatusEntryByHash(uint32_t hash)
 {
-    for (int i = 0; i < statusEntries.size(); i++)
+    for (unsigned int i = 0; i < statusEntries.size(); i++)
     {
         if (statusEntries[i].getHash() == hash) return &statusEntries[i];
     }
     return nullptr;
 }
 
-StatusEntry* DeviceManager::FindStatusEntryByIdx(int idx)
+StatusEntry* DeviceManager::FindStatusEntryByIdx(unsigned int idx)
 {
-    if (idx > -1 && idx < statusEntries.size())
+    if (idx < statusEntries.size())
     {
         return &statusEntries[idx];
     }
@@ -615,6 +615,9 @@ void DeviceManager::createJsonDeviceList(DynamicJsonDocument &doc)
             break;
         case DeviceType::DEVICE_DCDC:
             devEntry["DeviceType"] = "DCDC";
+            break;
+        case DeviceType::DEVICE_HVAC:
+            devEntry["DeviceType"] = "HVAC";
             break;
         case DeviceType::DEVICE_ANY:
         case DeviceType::DEVICE_NONE:
