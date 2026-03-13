@@ -41,23 +41,43 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define MODE0_PIN   26
 #define MODE1_PIN   32
 
+//CANOpen Support
 enum SDO_COMMAND
 {
-    SDO_WRITE = 0x20,
-    SDO_READ = 0x40,
-    SDO_WRITEACK = 0x60,
+    SDO_WRITE = 1,
+    SDO_READ = 2,
+    SDO_WRITEACK = 3,
+    SDO_UPLOAD_INIT = 2,
+    SDO_UPLOAD_SEG_REQ = 3,
+    SDO_UPLOAD_SEG_RESP = 0,
+};
+
+struct SDO_CMD_STRUCT
+{
+    uint8_t cmdType:3;
+    uint8_t toggle:1;
+    uint8_t dataLength:2;
+    uint8_t expedited:1;
+    uint8_t sizeIndicated:1;
+};
+
+union SDO_CMD_UNION
+{
+    uint8_t cmd;
+    SDO_CMD_STRUCT cmdStruct;
 };
 
 struct SDO_FRAME
 {
-    uint8_t nodeID;
-    SDO_COMMAND cmd;
+    uint8_t targetID;
+    SDO_CMD_UNION cmd;
     uint16_t index;
     uint8_t subIndex;
     uint8_t dataLength;
-    uint8_t data[4];
+    uint8_t data[256];
 };
 
+//ISO-TP support
 enum ISOTP_MODE
 {
     SINGLE = 0,
@@ -211,6 +231,12 @@ private:
     CANFD_message_t build_out_fd;
     CAN_error_t errors;
     uint32_t check_time;
+    bool inUploadOperation;
+    bool canOpenToggle;
+    uint8_t largeBuffer[256];
+    uint8_t largeBufferPtr;
+    uint16_t storedIndex;
+    uint8_t storedSubIndex;
 
     void logFrame(const CAN_message_t &msg);
     void logFrame(const CANFD_message_t &msg_fd);

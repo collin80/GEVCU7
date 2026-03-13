@@ -107,6 +107,7 @@ CanHandler::CanHandler(CanBusNode canBusNode)
     check_time = 10000;
     errors.ECR = 0;
     errors.ESR1 = 0;
+    inUploadOperation = false;
 }
 
 /*
@@ -314,6 +315,10 @@ FLASHMEM void CanHandler::setBusSpeed(uint32_t newSpeed)
         if (busSpeed > 0)
         {
             Can0.setBaudRate(busSpeed);
+            Can0.setMaxMB(16);
+            Can0.enableFIFO();
+            Can0.enableFIFOInterrupt();
+            Can0.onReceive(canRX0);
         }
         else Can0.reset();
     }
@@ -873,10 +878,10 @@ void CanHandler::process(const CAN_message_t &msg)
                 }
                 if (msg.id == 0x600 + observer->getNodeID()) //SDO request targetted to our ID
                 {
-                    sFrame.nodeID = observer->getNodeID();
+                    sFrame.targetID = observer->getNodeID();
                     sFrame.index = msg.buf[1] + (msg.buf[2] * 256);
                     sFrame.subIndex = msg.buf[3];
-                    sFrame.cmd = (SDO_COMMAND)(msg.buf[0] & 0xF0);
+                    sFrame.cmd.cmd = msg.buf[0];
             
                     if ((msg.buf[0] != 0x40) && (msg.buf[0] != 0x60))
                     {
@@ -890,20 +895,75 @@ void CanHandler::process(const CAN_message_t &msg)
 
                 if (msg.id == 0x580 + observer->getNodeID()) //SDO reply to our ID
                 {
-                    sFrame.nodeID = observer->getNodeID();
+                    sFrame.targetID = observer->getNodeID();
                     sFrame.index = msg.buf[1] + (msg.buf[2] * 256);
                     sFrame.subIndex = msg.buf[3];
-                    sFrame.cmd = (SDO_COMMAND)(msg.buf[0] & 0xF0);
-            
-                    if ((msg.buf[0] != 0x40) && (msg.buf[0] != 0x60))
+                    sFrame.cmd.cmd = msg.buf[0];
+
+                    int bytesInThisSegment;
+                    switch (sFrame.cmd.cmdStruct.cmdType)
                     {
-                        sFrame.dataLength = (3 - ((msg.buf[0] & 0xC) >> 2)) + 1;            
-                    }
-                    else sFrame.dataLength = 0;
+                    case SDO_UPLOAD_SEG_RESP: //0
+                        canOpenToggle = !canOpenToggle; //toggle bit must be flipped for each segment
+                        bytesInThisSegment = 7 - ((msg.buf[0] & 0xE) >> 1);
+                        for (int x = 0; x < bytesInThisSegment; x++) largeBuffer[largeBufferPtr++] = msg.buf[1 +  x];
+                        if (!sFrame.cmd.cmdStruct.sizeIndicated)
+                        {
+                            sFrame.targetID = observer->getNodeID();
+                            sFrame.cmd.cmd = 0x60 + (canOpenToggle ? 0x10 : 0); 
+                            sFrame.dataLength = 0;
+                            sFrame.index = 0;
+                            sFrame.subIndex = 0;
+                            this->sendSDORequest(sFrame);                            
+                        }
+                        else //this is the end. Create an SDO message and send it to the observer for processing. The data length is the total length minus what we have already received in previous segments
+                        {
+                            sFrame.dataLength = largeBufferPtr;
+                            memcpy(sFrame.data, largeBuffer, sFrame.dataLength);
+                            sFrame.index = storedIndex;
+                            sFrame.subIndex = storedSubIndex;
+                            observer->handleSDOResponse(sFrame);
+                        }
+                        break;
+                    case SDO_WRITE: //1
+                        break;
+                    case SDO_READ: //2 also SDO_UPLOAD_INIT
+                        //all data contained in this frame so process and send off
+                        if (sFrame.cmd.cmdStruct.expedited)
+                        {
+                            if (sFrame.cmd.cmdStruct.sizeIndicated)
+                                sFrame.dataLength = (3 - ((msg.buf[0] & 0xC) >> 2)) + 1;
+                            else sFrame.dataLength = 4; //if size is not indicated, it is always 4 bytes of data
+                            for (int x = 0; x < sFrame.dataLength; x++) sFrame.data[x] = msg.buf[4 + x];
+                            observer->handleSDOResponse(sFrame);
+                        }
+                        else
+                        {
+                            if (sFrame.cmd.cmdStruct.sizeIndicated)
+                            {
+                                sFrame.dataLength = msg.buf[4] + (msg.buf[5] * 256);
+                                inUploadOperation = true;
+                                canOpenToggle = false;
+                                largeBufferPtr = 0;
+                                storedIndex = sFrame.index;
+                                storedSubIndex = sFrame.subIndex;
+                                sFrame.targetID = observer->getNodeID();
+                                sFrame.cmd.cmd = 0x60;
+                                sFrame.dataLength = 0;
+                                sFrame.index = 0;
+                                sFrame.subIndex = 0;
+                                this->sendSDORequest(sFrame);
+                                //sending out first request for multi-frame data
+                            }
+                        }
+                        break;
+                    case SDO_WRITEACK: //3, also SDO_UPLOAD_SEG_REQ
+                        //if it's a write ack we don't care but if it's an upload seg req we do
+                        if (inUploadOperation)
+                        {
 
-                    for (int x = 0; x < sFrame.dataLength; x++) sFrame.data[x] = msg.buf[4 + x];
-
-                    observer->handleSDOResponse(sFrame);                       
+                        }
+                    } 
                 }
             }
             else //raw canbus
@@ -1142,38 +1202,42 @@ void CanHandler::sendPDOMessage(int id, int length, unsigned char *data)
 
 void CanHandler::sendSDORequest(SDO_FRAME &sframe)
 {
-    sframe.nodeID &= 0x7F;
+    sframe.targetID &= 0x7F;
     CAN_message_t frame;
     frame.flags.extended = false;
     frame.len = 8;
-    frame.id = 0x600 + sframe.nodeID;
+    frame.id = 0x600 + sframe.targetID;
+    frame.buf[0] = sframe.cmd.cmd;
+    frame.buf[1] = sframe.index & 0xFF;
+    frame.buf[2] = sframe.index >> 8;
+    frame.buf[3] = sframe.subIndex;
+
     if (sframe.dataLength <= 4)
     {
-        frame.buf[0] = sframe.cmd;
         if (sframe.dataLength > 0) //request to write data
         {
+            //this sets E and S and also the 2 length bits
             frame.buf[0] |= 0x0F - ((sframe.dataLength - 1) * 4); //kind of dumb the way this works...
         }
-        frame.buf[1] = sframe.index & 0xFF;
-        frame.buf[2] = sframe.index >> 8;
-        frame.buf[3] = sframe.subIndex;
         for (int x = 0; x < sframe.dataLength; x++) frame.buf[4 + x] = sframe.data[x];
-        //SerialUSB.println("pulling trigger");
         sendFrame(frame);
-        //SerialUSB.println("sent frame");
+    }
+    else //this would be a download request but we don't support that yet 
+    {
+
     }
 }
 
 void CanHandler::sendSDOResponse(SDO_FRAME &sframe)
 {
-    sframe.nodeID &= 0x7f;
+    sframe.targetID &= 0x7f;
     CAN_message_t frame;
     frame.len = 8;
     frame.flags.extended = false;
-    frame.id = 0x580 + sframe.nodeID;
+    frame.id = 0x580 + sframe.targetID;
     if (sframe.dataLength <= 4)
     {
-        frame.buf[0] = sframe.cmd;
+        frame.buf[0] = sframe.cmd.cmd;
         if (sframe.dataLength > 0) //responding with data
         {
             frame.buf[0] |= 0x0F - ((sframe.dataLength - 1) * 4); 
@@ -1317,10 +1381,10 @@ void CanObserver::handlePDOFrame(const CAN_message_t &frame)
 
 void CanObserver::handleSDORequest(SDO_FRAME &frame)
 {
-    Logger::error("CanObserver does not implement handleSDORequest(), frame.id=0x%x", frame.nodeID);
+    Logger::error("CanObserver does not implement handleSDORequest(), frame.id=0x%x", frame.targetID);
 }
 
 void CanObserver::handleSDOResponse(SDO_FRAME &frame)
 {
-    Logger::error("CanObserver does not implement handleSDOResponse(), frame.id=%d", frame.nodeID);
+    Logger::error("CanObserver does not implement handleSDOResponse(), frame.id=%d", frame.targetID);
 }
