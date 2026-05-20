@@ -173,6 +173,11 @@ FLASHMEM void TickHandler::attach(TickObserver* observer, uint32_t interval) {
  * Remove an observer from all timers where it was registered.
  */
 FLASHMEM void TickHandler::detach(TickObserver* observer) {
+    if (!observer) 
+    {
+        Logger::debug("Attempt to call TickHandler::detach with a null ptr!");
+        return;
+    }
     for (int timer = 0; timer < NUM_TIMERS; timer++) {
         for (int observerIndex = 0; observerIndex < CFG_TIMER_NUM_OBSERVERS; observerIndex++) {
             if (timerEntry[timer].observer[observerIndex] == observer) {

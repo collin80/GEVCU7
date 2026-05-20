@@ -80,6 +80,12 @@ FLASHMEM void SerialConsole::printConfigEntry(const Device *dev, const ConfigEnt
 
     String descString;
     const char *descPtr = nullptr;
+
+    int32_t temp32;
+    int16_t temp16;
+    uint32_t tempu32;
+    uint32_t tempu16;
+
     if (entry.descFunc)
     {
         //TODO: Anyone know how to squash the compiler warning for this next line? I give up...
@@ -120,27 +126,35 @@ FLASHMEM void SerialConsole::printConfigEntry(const Device *dev, const ConfigEnt
         }
         break;
     case CFG_ENTRY_VAR_TYPE::INT16:
+        temp16 = *(int16_t *)entry.varPtr;
+        if (entry.precision < 0) temp16 = temp16 / (abs(entry.precision));
+        if (entry.precision > 0) temp16 = temp16 * entry.precision;
+
         if (descPtr)
         {
             str += "%i [%s] - " + entry.helpText;
-            Logger::console(str.c_str(), *(int16_t *)entry.varPtr, descPtr);
+            Logger::console(str.c_str(), temp16, descPtr);
         }
         else 
         {
             str += "%i - " + entry.helpText;
-            Logger::console(str.c_str(), *(int16_t *)entry.varPtr);
+            Logger::console(str.c_str(), temp16);
         }
         break;
     case CFG_ENTRY_VAR_TYPE::INT32:
+        temp32 = *(int32_t *)entry.varPtr;
+        if (entry.precision < 0) temp32 = temp32 / (abs(entry.precision));
+        if (entry.precision > 0) temp32 = temp32 * entry.precision;
+
         if (entry.descFunc)
         {
             str += "%i [%s] - " + entry.helpText;
-            Logger::console(str.c_str(), *(int32_t *)entry.varPtr, descPtr);
+            Logger::console(str.c_str(), temp32, descPtr);
         }
         else 
         {
             str += "%i - " + entry.helpText;
-            Logger::console(str.c_str(), *(int32_t *)entry.varPtr);
+            Logger::console(str.c_str(), temp32);
         }
         break;
     case CFG_ENTRY_VAR_TYPE::STRING:
@@ -148,31 +162,39 @@ FLASHMEM void SerialConsole::printConfigEntry(const Device *dev, const ConfigEnt
         Logger::console(str.c_str(), (char *)entry.varPtr);
         break;
     case CFG_ENTRY_VAR_TYPE::UINT16:
+        tempu16 = *(uint16_t *)entry.varPtr;
+        if (entry.precision < 0) tempu16 = tempu16 / (abs(entry.precision));
+        if (entry.precision > 0 && entry.precision != 16) tempu16 = tempu16 * entry.precision;
+
         if (entry.precision == 16) str += "0x%X";
         else str += "%u";
         if (descPtr)
         {
             str += " [%s] - " + entry.helpText;
-            Logger::console(str.c_str(), *(uint16_t *)entry.varPtr, descPtr);
+            Logger::console(str.c_str(), tempu16, descPtr);
         }
         else 
         {
             str += " - " + entry.helpText;
-            Logger::console(str.c_str(), *(uint16_t *)entry.varPtr);
+            Logger::console(str.c_str(), tempu16);
         }
         break;
     case CFG_ENTRY_VAR_TYPE::UINT32:
+        tempu32 = *(uint32_t *)entry.varPtr;
+        if (entry.precision < 0) tempu32 = tempu32 / (abs(entry.precision));
+        if (entry.precision > 0 && entry.precision != 16) tempu32 = tempu32 * entry.precision;
+
         if (entry.precision == 16) str += "0x%X";
         else str += "%u";
         if (descPtr)
         {
             str += " [%s] - " + entry.helpText;
-            Logger::console(str.c_str(), *(uint32_t *)entry.varPtr, descPtr);
+            Logger::console(str.c_str(), tempu32, descPtr);
         }
         else 
         {
             str += " - " + entry.helpText;
-            Logger::console(str.c_str(), *(uint32_t *)entry.varPtr);
+            Logger::console(str.c_str(), tempu32);
         }
         break;    
     }
@@ -221,7 +243,10 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
         ui8 = (uint8_t)strtol(valu, NULL, 0);
         if (ui8 < entry->minValue.u_int) result = 1;
         else if (ui8 > entry->maxValue.u_int) result = 2;
-        else *(uint8_t *)entry->varPtr = ui8;
+        else 
+        {
+            *(uint8_t *)entry->varPtr = ui8;
+        }
         break;
     case CFG_ENTRY_VAR_TYPE::FLOAT:
         fl = strtof(valu, NULL);
@@ -233,13 +258,23 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
         i16 = (int16_t)strtol(valu, NULL, 0);
         if (i16 < entry->minValue.s_int) result = 1;
         else if (i16 > entry->maxValue.s_int) result = 2;
-        else *(int16_t *)entry->varPtr = i16;
+        else
+        {
+            if (entry->precision < 0) i16 = i16 * (abs(entry->precision));
+            if (entry->precision > 0 && entry->precision != 16) i16 = i16 / entry->precision;
+            *(int16_t *)entry->varPtr = i16;
+        }
         break;
     case CFG_ENTRY_VAR_TYPE::INT32:
         i32 = (int32_t)strtol(valu, NULL, 0);
         if (i32 < entry->minValue.s_int) result = 1;
         else if (i32 > entry->maxValue.s_int) result = 2;
-        else *(int32_t *)entry->varPtr = i32;
+        else
+        {
+            if (entry->precision < 0) i32 = i32 * (abs(entry->precision));
+            if (entry->precision > 0 && entry->precision != 16) i32 = i32 / entry->precision;
+            *(int32_t *)entry->varPtr = i32;
+        }
         break;
     case CFG_ENTRY_VAR_TYPE::STRING:
         //this is an interesting one. It's easy in principle but we don't know
@@ -252,13 +287,23 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
         ui16 = (uint16_t)strtoul(valu, NULL, 0);
         if (ui16 < entry->minValue.u_int) result = 1;
         else if (ui16 > entry->maxValue.u_int) result = 2;
-        else *(uint16_t *)entry->varPtr = ui16;
+        else
+        {
+            if (entry->precision < 0) ui16 = ui16 * (abs(entry->precision));
+            if (entry->precision > 0 && entry->precision != 16) ui16 = ui16 / entry->precision;
+            *(uint16_t *)entry->varPtr = ui16;
+        }
         break;
     case CFG_ENTRY_VAR_TYPE::UINT32:
         ui32 = (uint32_t)strtoul(valu, NULL, 0);
         if (ui32 < entry->minValue.u_int) result = 1;
         else if (ui32 > entry->maxValue.u_int) result = 2;
-        else *(uint32_t *)entry->varPtr = ui32;
+        else
+        {
+            if (entry->precision < 0) ui32 = ui32 * (abs(entry->precision));
+            if (entry->precision > 0 && entry->precision != 16) ui32 = ui32 / entry->precision;
+            *(uint32_t *)entry->varPtr = ui32;
+        }
         break;
     }
     if (result == 0) //value was stored

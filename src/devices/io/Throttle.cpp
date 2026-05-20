@@ -56,24 +56,24 @@ void Throttle::setup()
     ThrottleConfiguration *config = (ThrottleConfiguration *) getConfiguration();
     cfgEntries.reserve(20);
 
-    ConfigEntry entry = {"TRNGMAX", "Tenths of a percent of pedal where regen is at max", &config->positionRegenMaximum, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    ConfigEntry entry = {"TRNGMAX", "Percent of pedal where regen is at max", &config->positionRegenMaximum, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TRNGMIN", "Tenths of a percent of pedal where regen is at min", &config->positionRegenMinimum, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    entry = {"TRNGMIN", "Percent of pedal where regen is at min", &config->positionRegenMinimum, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TFWD", "Tenths of a percent of pedal where forward motion starts", &config->positionForwardMotionStart, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    entry = {"TFWD", "Percent of pedal where forward motion starts", &config->positionForwardMotionStart, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    //entry = {"TMAP", "Tenths of a percent of pedal where 50% throttle will be", &config->positionHalfPower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr};
-    entry = {"TMAP1IN", "Tenths of a percent of pedal input where first map point is", &config->mapPoints[0].inputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    //entry = {"TMAP", "Percent of pedal where 50% throttle will be", &config->positionHalfPower, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr};
+    entry = {"TMAP1IN", "Percent of pedal input where first map point is", &config->mapPoints[0].inputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TMAP1OUT", "Tenths of a percent of throttle output where first map point is", &config->mapPoints[0].outputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    entry = {"TMAP1OUT", "Percent of throttle output where first map point is", &config->mapPoints[0].outputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TMAP2IN", "Tenths of a percent of pedal input where second map point is", &config->mapPoints[1].inputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    entry = {"TMAP2IN", "Percent of pedal input where second map point is", &config->mapPoints[1].inputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TMAP2OUT", "Tenths of a percent of throttle output where second map point is", &config->mapPoints[1].outputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    entry = {"TMAP2OUT", "Percent of throttle output where second map point is", &config->mapPoints[1].outputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TMAP3IN", "Tenths of a percent of pedal input where third map point is", &config->mapPoints[2].inputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    entry = {"TMAP3IN", "Percent of pedal input where third map point is", &config->mapPoints[2].inputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TMAP3OUT", "Tenths of a percent of throttle output where third map point is", &config->mapPoints[2].outputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    entry = {"TMAP3OUT", "Percent of throttle output where third map point is", &config->mapPoints[2].outputPosition, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
     entry = {"TMINRN", "Percent of full torque to use for min throttle regen", &config->minimumRegen, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
@@ -83,7 +83,7 @@ void Throttle::setup()
     cfgEntries.push_back(entry);
     entry = {"TSMOOTH", "Throttle smart smoothing level (0 to 100)", &config->smartSmooth, CFG_ENTRY_VAR_TYPE::BYTE, 0, 100, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"TSMOOTHCUT", "Tenths of a percent of raw throttle where smoothing is disabled", &config->smoothStop, CFG_ENTRY_VAR_TYPE::UINT16, 0, 1000, 0, nullptr, nullptr};
+    entry = {"TSMOOTHCUT", "Percent of raw throttle where smoothing is disabled", &config->smoothStop, CFG_ENTRY_VAR_TYPE::UINT16, 0, 100, -10, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     memset(sma_buffer, 0, 256 * sizeof(int16_t));
@@ -239,9 +239,11 @@ int16_t Throttle::mapPedalPosition(int16_t pedalPosition) {
 /*
  * Make sure input level stays within margins (min/max) then map the constrained
  * level linearly to a value from 0 to 1000.
+ * One should not use functions instead constrain. Save to variable and use that.
  */
 int16_t Throttle::normalizeAndConstrainInput(int32_t input, int32_t min, int32_t max) {
-    return constrain(normalizeInput(input, min, max), (int32_t) 0, (int32_t) 1000);
+    int32_t val = normalizeInput(input, min, max);
+    return constrain(val, (int32_t) 0, (int32_t) 1000);
 }
 
 /*

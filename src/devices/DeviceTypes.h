@@ -88,10 +88,19 @@ struct ConfigEntry
     CFG_ENTRY_VAR_TYPE varType; //what sort of variable were we pointing to?
     minMaxType minValue; //minimum acceptable value
     minMaxType maxValue; //maximum acceptable value
-    uint8_t precision; //number of decimal places to display. Obv. 0 for integers
+    int8_t precision; //number of decimal places to display for floats. For int types this is scaling factor
     DescribeValue descFunc; //if this function pointer is non-null it'll be used to turn values into strings.
     AfterUpdate afterUpdateFunc; //called after this value is updated 
 };
+
+/*The use of precision for integer scaling factor requires some explanation. A value of 0 is unity. No scaling
+  A negative number causes the displayed value to be the stored value divided by the magnitude of the negative
+  number. Likewise for positive but multiplied. So, a value of -10 means to divide the stored value by 10 when
+  displaying it and multiply the input value by 10 to store it. The reason for this addition is that things
+  in the throttle code are processed as 0-1000 while this is irritating to end users. They'd rather input
+  actual percentages which makes sense. So, we can scale to store values and internally use them as the stored
+  value but display them and input new values as if the value is different.
+*/
 
 /*StatusEntry records a data item that the device would like to expose to the world. This is different
 from ConfigEntry in that you cannot edit these values. Instead these values are only updated by the device
