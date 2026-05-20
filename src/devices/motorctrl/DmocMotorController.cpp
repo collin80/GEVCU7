@@ -115,7 +115,7 @@ void DmocMotorController::handleCanFrame(const CAN_message_t &frame) {
     int temp;
     setAlive(); //if a frame got to here then it passed the filter and must have been from the DMOC
 
-    Logger::debug(DMOC645, "CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug(DMOC645, "CAN received");
 
     switch (frame.id) {
     case 0x651: //Temperature status
@@ -285,8 +285,7 @@ void DmocMotorController::sendCmd1() {
 
     output.buf[7] = calcChecksum(output);
  
-    Logger::debug(DMOC645, "0x232 tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
-                  output.buf[4], output.buf[5], output.buf[6], output.buf[7]);
+    Logger::debug(DMOC645, "0x232 tx");
 
     attachedCANBus->sendFrame(output);
 }
@@ -367,9 +366,7 @@ void DmocMotorController::sendCmd2() {
 
     attachedCANBus->sendFrame(output);
 
-    timestamp();
-    Logger::debug(DMOC645, "Torque command: %X  %X  %X  %X  %X  %X  %X  CRC: %X",output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7]);
+    Logger::debug(DMOC645, "Torque command sent");
 
 }
 

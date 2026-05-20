@@ -10,8 +10,8 @@ DelphiDCDCController::DelphiDCDCController() : DCDCController()
 void DelphiDCDCController::handleCanFrame(const CAN_message_t &frame)
 {
     setAlive();
-    Logger::debug("DelphiDCDC msg: %X", frame.id);
-    Logger::debug("DelphiDCDC data: %X%X%X%X%X%X%X%X", frame.buf[0],frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
+    //Logger::debug("DelphiDCDC msg: %X", frame.id);
+    //Logger::debug("DelphiDCDC data: %X%X%X%X%X%X%X%X", frame.buf[0],frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
 }
 
 void DelphiDCDCController::setup()
@@ -80,8 +80,7 @@ void DelphiDCDCController::sendCmd()
 
     attachedCANBus->sendFrame(output);
     timestamp();
-    Logger::debug("Delphi DC-DC cmd: %X %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
+    Logger::debug("Delphi DC-DC cmd sent.");
     crashHandler.addBreadcrumb(ENCODE_BREAD("DELPH") + 1);
 }
 

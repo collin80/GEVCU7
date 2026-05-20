@@ -74,7 +74,7 @@ void C300MotorController::handleCanFrame(const CAN_message_t &frame) {
     bool isOK = false;
     uint8_t b0 = 0;
 
-    Logger::debug("C300 CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug("C300 CAN received");
 
     switch (frame.id) 
     {
@@ -310,8 +310,7 @@ void C300MotorController::sendCmdUS()
     output.buf[6] = (speedRequested & 0xFF00) >> 8;
     output.buf[7] = (speedRequested & 0x00FF);
  
-    Logger::debug("C300 Command tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
-                  output.buf[4], output.buf[5], output.buf[6], output.buf[7]);
+    Logger::debug("C300 Command sent");
 
     canHandlerIsolated.sendFrame(output);
 }
@@ -376,8 +375,7 @@ void C300MotorController::sendCmdCanada()
     if (getSelectedGear() == REVERSE) output.buf[5] = 2; //reverse
     output.buf[6] = alive;
 
-    Logger::debug("C300 Command tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
-                  output.buf[4], output.buf[5], output.buf[6], output.buf[7]);
+    Logger::debug("C300 Command sent");
 
     canHandlerIsolated.sendFrame(output);
 }

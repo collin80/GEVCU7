@@ -103,9 +103,7 @@ void EVIC::setup() {
 void EVIC::handleCanFrame(const CAN_message_t &frame)
 {
 
-    Logger::debug("EVIC received msg: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
-                  frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
-                  frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug("EVIC received msg.");
     setAlive();
     switch (frame.id)
     {
@@ -217,9 +215,7 @@ void EVIC::sendTestCmdCurtis()
 
     timestamp();
 
-    Logger::debug("EVIC Message: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
-
+    Logger::debug("EVIC Message sent.");
 }
 
 void EVIC::sendTestCmdOrion()
@@ -241,9 +237,7 @@ void EVIC::sendTestCmdOrion()
     canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
 
-    Logger::debug("Orion Message1: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
-
+    Logger::debug("Orion Message1 sent");
     //CAN_FRAME output;
     output.len = 8;
     output.id = 0x650;
@@ -260,9 +254,7 @@ void EVIC::sendTestCmdOrion()
     canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
 
-    Logger::debug("Orion Message2: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
-
+    Logger::debug("Orion Message2 sent");
 }
 
 void EVIC::sendCmdCurtis()
@@ -291,9 +283,7 @@ void EVIC::sendCmdCurtis()
 
     canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
-    Logger::debug("EVIC Message: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
-
+    Logger::debug("EVIC Message 601 sent");
 }
 
 void EVIC::sendCmdOrion()
@@ -347,9 +337,7 @@ void EVIC::sendCmdOrion()
 
     canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
-    Logger::debug("Orion Message1: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
-
+    Logger::debug("Orion Message1 150 sent");
     //Assemble our 650 frame output;
     output.len = 8;
     output.id = 0x650;
@@ -370,9 +358,7 @@ void EVIC::sendCmdOrion()
 
     canHandlerBus1.sendFrame(output);  //Mail it.
     timestamp();
-    Logger::debug("Orion Message2: %X  %X %X %X %X %X %X %X %X  %d:%d:%d.%d",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7], hours, minutes, seconds, milliseconds);
-
+    Logger::debug("Orion Message 650 sent");
 }
 
 

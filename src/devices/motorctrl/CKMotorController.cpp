@@ -167,7 +167,7 @@ void CKMotorController::sendPowerCmd() {
 
     output.buf[6] = calcChecksum(output);
 	
-	Logger::debug("CKInverter Sent Frame: %X  %X  %X  %X  %X  %X  %X  %X  %X", output.id, output.buf[0] , output.buf[1], output.buf[2], output.buf[3], output.buf[4], output.buf[5], output.buf[6]);
+	Logger::debug("CKInverter Sent Frame");
 
     canHandlerIsolated.sendFrame(output);
 }

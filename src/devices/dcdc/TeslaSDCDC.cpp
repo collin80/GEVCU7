@@ -28,8 +28,7 @@ byte 5 = dc output voltage in tenths of a volt
 */
 void TSDCDCController::handleCanFrame(const CAN_message_t &frame)
 {
-    Logger::debug("TS-DCDC msg: %X", frame.id);
-    Logger::debug("TS-DCDC data: %X%X%X%X%X%X%X%X", frame.buf[0],frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug("TS-DCDC msg received");
     if (frame.id == 0x210)
     {
         setAlive();
@@ -104,7 +103,7 @@ void TSDCDCController::sendCmd()
     output.buf[2] = 0; //not used
 
     attachedCANBus->sendFrame(output);
-    Logger::debug("Tesla S DC-DC cmd: %X %X %X ",output.id, output.buf[0], output.buf[1],output.buf[2]);
+    Logger::debug("Tesla S DC-DC cmd sent");
     crashHandler.addBreadcrumb(ENCODE_BREAD("TSDCC") + 1);
 }
 

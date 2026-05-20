@@ -1109,6 +1109,10 @@ void CanHandler::sendFrame(const CAN_message_t &msg)
         break;            
     }
 
+    if (Logger::isDebug()) //don't log if we're not in debug mode. It's expensive to log and we might be sending a lot of messages.
+        Logger::debug("CAN Bus %i ID %x TX: %X %X %X %X %X %X %X %X", busNum, msg.id, msg.buf[0], msg.buf[1], msg.buf[2], msg.buf[3],
+            msg.buf[4], msg.buf[5], msg.buf[6], msg.buf[7]);
+
     if (gvretMode) sendFrameToUSB(msg, busNum);
 }
 
@@ -1116,6 +1120,12 @@ void CanHandler::sendFrameFD(const CANFD_message_t& framefd)
 {
     if (canBusNode != CAN_BUS_2) return;
     Can2.write(framefd);
+    if (Logger::isDebug())
+    {
+        String dataBytes;
+        for (int i = 0; i < framefd.len; i++) dataBytes += String(framefd.buf[i], HEX) + ",";
+        Logger::debug("CANFD Bus 2 ID %X TX: %s", framefd.id, dataBytes.c_str());
+    }
     if (gvretMode) sendFrameToUSB(framefd, 2);
 }
 

@@ -127,9 +127,7 @@ void SevconMotorController::handleCanFrame(const CAN_message_t &frame)
     
     running = true;
     
-    Logger::debug("inverter msg: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
-                  frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
-                  frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug("inverter msg received");
 
     //inverter sends values as low byte followed by high byte.
     //need only look at third byte of ID

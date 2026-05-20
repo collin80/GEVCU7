@@ -40,9 +40,7 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
     uint16_t currentAmps = 0;
     uint8_t status = 0;
 
-    Logger::debug("TCCH msg: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
-                  frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
-                  frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug("TCCH msg received.");
 
     if (frame.id == 0x18FF50E5)
     {
@@ -143,8 +141,7 @@ void TCCHChargerController::sendCmd()
     output.buf[7] = 0; //unused
 
     attachedCANBus->sendFrame(output);
-    Logger::debug("TCCH Charger cmd: %X %X %X %X %X %X %X %X %X ",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7]);
+    Logger::debug("TCCH Charger cmd sent.");
     crashHandler.addBreadcrumb(ENCODE_BREAD("TCCHC") + 1);
 }
 

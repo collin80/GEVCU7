@@ -88,9 +88,8 @@ void CodaMotorController::handleCanFrame(const CAN_message_t &frame)
         faultHandler.cancelOngoingFault(CODAUQM, COMM_TIMEOUT);
     }
     running = true;
-    Logger::debug("UQM inverter msg: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
-                  frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
-                  frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug("UQM inverter msg received");
+
 
     switch (frame.id)
     {
@@ -293,8 +292,7 @@ void CodaMotorController::sendCmd2() {
 
     canHandlerIsolated.sendFrame(output);
     timestamp();
-    Logger::debug("Watchdog reset: %X  %X  %X  %d:%d:%d.%d",output.buf[0], output.buf[1],
-                  output.buf[2], hours, minutes, seconds, milliseconds);
+    Logger::debug("Watchdog reset sent");
 
     warning=false;
 }

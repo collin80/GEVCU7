@@ -78,8 +78,7 @@ void TeslaACGen2Controller::handleCanFrame(const CAN_message_t &frame)
         //float hvCurrent = (frame.buf[3] + (frame.buf[4] * 256)) * 0.1f;
         break;
     }
-    Logger::debug("TeslaACGen2 msg: %X", frame.id);
-    Logger::debug("TeslaACGen2 data: %X%X%X%X%X%X%X%X", frame.buf[0],frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug("TeslaACGen2 msg received");
 }
 
 void TeslaACGen2Controller::setup()
@@ -169,8 +168,7 @@ void TeslaACGen2Controller::sendCmd()
     }
 
     attachedCANBus->sendFrame(output);
-    Logger::debug("Tesla A/C cmd: %X %X %X %X %X %X %X %X %X ",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],output.buf[5],output.buf[6],output.buf[7]);
+    Logger::debug("Tesla A/C cmd sent");
     crashHandler.addBreadcrumb(ENCODE_BREAD("TG2AC") + 1);
 }
 

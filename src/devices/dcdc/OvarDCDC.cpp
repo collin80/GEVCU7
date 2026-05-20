@@ -36,9 +36,7 @@ void OvarDCDCController::handleCanFrame(const CAN_message_t &frame)
     uint16_t dcdcAmps = 0;
     //int16_t dcdcTemperature = 0;
     uint8_t dcdc_status = 0;
-    Logger::debug("Ovar DCDC: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
-                  frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
-                  frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug("Ovar DCDC frame received.");
 
     setAlive();
 

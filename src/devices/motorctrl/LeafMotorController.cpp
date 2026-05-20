@@ -91,8 +91,7 @@ void LeafMotorController::handleCanFrame(const CAN_message_t &frame) {
 
     setAlive();
 
-    Logger::debug(LEAFINV, "CAN received: %X  %X  %X  %X  %X  %X  %X  %X  %X", frame.id,frame.buf[0] ,frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],frame.buf[5],frame.buf[6],frame.buf[7]);
-
+    Logger::debug(LEAFINV, "CAN received");
 
     switch (frame.id)
     {
@@ -163,8 +162,7 @@ void LeafMotorController::sendFrame11A()
 
     calcChecksum(output); //fills out byte 7
  
-    Logger::debug(LEAFINV, "0x11A tx: %X %X %X %X %X %X %X %X", output.buf[0], output.buf[1], output.buf[2], output.buf[3],
-                  output.buf[4], output.buf[5], output.buf[6], output.buf[7]);
+    Logger::debug(LEAFINV, "0x11A tx");
 
     attachedCANBus->sendFrame(output);
 

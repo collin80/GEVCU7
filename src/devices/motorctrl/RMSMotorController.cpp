@@ -84,9 +84,7 @@ void RMSMotorController::handleCanFrame(const CAN_message_t &frame)
     
     running = true;
     
-    Logger::debug("inverter msg: %X   %X   %X   %X   %X   %X   %X   %X  %X", frame.id, frame.buf[0],
-                  frame.buf[1],frame.buf[2],frame.buf[3],frame.buf[4],
-                  frame.buf[5],frame.buf[6],frame.buf[7]);
+    Logger::debug("inverter msg received");
 
     //inverter sends values as low byte followed by high byte.
     switch (frame.id)
@@ -556,9 +554,7 @@ void RMSMotorController::sendCmdFrame()
     
     attachedCANBus->sendFrame(output);  //Mail it.
 
-    Logger::debug("CAN Command Frame: %X  %X  %X  %X  %X  %X  %X  %X",output.id, output.buf[0],
-                  output.buf[1],output.buf[2],output.buf[3],output.buf[4],
-				  output.buf[5],output.buf[6],output.buf[7]);
+    Logger::debug("CAN Command Frame sent");
 }
 
 uint32_t RMSMotorController::getTickInterval()
