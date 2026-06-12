@@ -386,10 +386,11 @@ void CanHandler::sendFrameToUSB(const CAN_message_t &msg, int busNum)
     buff[7] = (msg.id >> 8) & 0xFF;
     buff[8] = (msg.id >> 16) & 0xFF;
     buff[9] = (msg.id >> 24) & 0xFF;
-    if (busNum == -1)
-        buff[10] = (msg.bus << 4) + msg.len;
-    else
-        buff[10] = (busNum << 4) + msg.len;
+    //if (busNum == -1) //if a specific bus was passed use that
+        //buff[10] = (msg.bus << 4) + msg.len;
+    //else //otherwise use the bus number this object is registered to be handling
+    //The handler knows which bus it is. No need to second guess that.
+    buff[10] = ((int)canBusNode << 4) + msg.len;
     for (int i = 0; i < msg.len; i++)
     {
         buff[11 + i] = msg.buf[i];
