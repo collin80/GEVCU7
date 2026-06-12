@@ -39,7 +39,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //PWM3 = MM53 Digital Pin (24)
 //PWM4 = MM51 Digital Pin (25)
 
-uint8_t G7D_PWM_PINS[4] = {7, 8, 24, 25}; 
+//I made a mess of the pinout for digital outputs on GEVCU7, and it's worse for GEVCU7D.
+//Green = DOUT7, Black = DOUT6, Red = DOUT5, black = DOUT4, Yellow = DOUT0, White = DOUT1, Purple = DOUT2, Black =  DOUT3 
+//This table corrects the weirdness. Anything > 127 is an expander pin anything under is a hardware PWM pin
+//                                    0    1    2    3   4  5  6   7
+uint8_t G7D_DOUT_PINS[NUM_OUTPUT] = {128, 129, 130, 131, 25, 24, 8, 7}; 
 
 SystemIO::SystemIO() : Device()
 {
@@ -122,11 +126,15 @@ FLASHMEM void SystemIO::setup() {
     pinMode(41, INPUT); //basically the last 4 digital inputs
     pinMode(42, INPUT);
 
-    for (int i = 0; i < 4; i++)
-    {
-        pinMode(G7D_PWM_PINS[i], OUTPUT); //set all PWM pins to output
-        digitalWrite(G7D_PWM_PINS[i], LOW); //all off by default
-    }
+    pinMode(7, OUTPUT);
+    pinMode(8, OUTPUT);
+    pinMode(24, OUTPUT);
+    pinMode(25, OUTPUT);
+
+    digitalWrite(7, LOW); //all off by default
+    digitalWrite(8, LOW);
+    digitalWrite(24, LOW);
+    digitalWrite(25, LOW);
 
     pinMode(3, OUTPUT); //PWM0 = ADC Select A
     digitalWrite(3, LOW); 
@@ -172,6 +180,8 @@ FLASHMEM void SystemIO::setup() {
     adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::HIGH_SPEED );           // change the sampling speed
 
     setupStatusEntries();
+
+    sysType = (SystemType)sysConfig->systemType;
 
     ranSetup = true;
     //the need for ranSetup is based upon a kludge. This is set up as a device now but it gets initialized
@@ -332,7 +342,7 @@ void SystemIO::installExtendedIO(ExtIODevice *device)
     }
     numAnaIn = numAI;
 
-    int numAO = 0; //GEVCU has no real analog outputs - there are PWM but they're on the digital outputs
+    int numAO = 0; //GEVCU7a/b/c have no real analog outputs - there are PWM but they're on the digital outputs
     if (sysConfig->systemType == GEVCU7D) numAO = 4; //GEVCU7D does though
     for (int i = 0; i < NUM_EXT_IO; i++)
     {
@@ -453,7 +463,7 @@ boolean SystemIO::setAnalogOut(uint8_t which, int32_t level)
     {
         if (level < 0) level = 0;
         if (level > 4095) level = 4095;
-        analogWrite(G7D_PWM_PINS[which], level);
+        analogWrite(G7D_DOUT_PINS[7 - which], level);
         anaOutState[which] = level;
         return true;
     }
@@ -517,13 +527,28 @@ boolean SystemIO::getDigitalIn(uint8_t which) {
 void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
     if (which >= numDigOut) return;
 
-    if (sysType == GEVCU7D && which < 4)
+    if (sysConfig->systemType == GEVCU7D)
     {
-        digitalWrite(G7D_PWM_PINS[which], active ? HIGH : LOW);
-        digOutState[which] = active;
+        //on 7D the PWM pins are the last 4 and they're backward
+        uint8_t pin = G7D_DOUT_PINS[which];
+        if (pin < 128)
+        {
+            pinMode(pin, OUTPUT); //just to be sure in case it was PWM before
+            digitalWrite(pin, active ? HIGH : LOW);
+            digOutState[which] = active;
+        }
+        else
+        {
+            pin = pin - 128;
+            Logger::info("Expander pin %i", pin);
+            _pSetDigitalOutput(pin, active);
+            digPWMOutput[which].pwmActive = false;
+            digOutState[which] = active;
+        }
     }
     else if (which < NUM_OUTPUT)
     {
+        Logger::debug("Setting io extender pin to digital output %i", which);
         _pSetDigitalOutput(which, active);
         digPWMOutput[which].pwmActive = false;
         digOutState[which] = active;
@@ -540,9 +565,9 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
 boolean SystemIO::getDigitalOutput(uint8_t which) {
     if (which >= numDigOut) return false;
     
-    if (sysType == GEVCU7D && which < 4)
+    if (sysConfig->systemType == GEVCU7D && which < 4)
     {
-        return digitalRead(G7D_PWM_PINS[which]);
+        return 0;//digitalRead(G7D_PWM_PINS[which]);
     }
     else if (which < NUM_OUTPUT)
     {
