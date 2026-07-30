@@ -278,7 +278,11 @@ void Logger::console(const char *message, ...) {
     char buff[200];
     vsprintf(buff, message, args);
     if (Serial) Serial.println(buff);
-    if (esp32) esp32->sendLogString(buff);
+    if (esp32)
+    { 
+        esp32->sendLogString(buff);
+        delay(3); //slight delay to let the serial port write some data before the next line.
+    }
     va_end(args);
 }
 
@@ -370,9 +374,12 @@ void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list 
     outputString += buff;
     if (Serial) Serial.println(outputString);
     if (sdCardWorking) rb.println(outputString);
-    if (esp32) esp32->sendLogString(outputString); //if ESP32 module is loaded then try to send output to telnet as well
+    if (esp32) 
+    {
+        /*if (level > Debug) */
+        esp32->sendLogString(outputString); //if ESP32 module is loaded then try to send output to telnet as well
+    }
 }
-
 /*
  * When the deviceId is specified when calling the logger, print the name
  * of the device after the log-level. This makes it easier to identify the
