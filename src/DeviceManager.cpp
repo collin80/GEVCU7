@@ -164,7 +164,7 @@ void DeviceManager::sendMessage(DeviceType devType, DeviceId devId, uint32_t msg
                 {
                     if ( (devId == INVALID) || (devId == devices[i]->getId()) )
                     {
-                        Logger::debug("Sending msg to device with ID %X (%s)", devices[i]->getId(), devices[i]->getShortName());
+                        Logger::debug("Sending msg %x to device with ID %X (%s)", msgType, devices[i]->getId(), devices[i]->getShortName());
                         devices[i]->handleMessage(msgType, message);
                     }
                 }
@@ -244,7 +244,9 @@ void DeviceManager::enableAllStatusEntries()
 void DeviceManager::printAllStatusEntries()
 {
     StatusCSV *statusDevice = static_cast<StatusCSV *>(getDeviceByID(STATUSCSV));
-    
+    if (!statusDevice) return;
+    if (!((Device *)statusDevice)->isEnabled()) return;
+
     Device *dev;
     int idx = 0;
     Logger::console("All status entries:");
