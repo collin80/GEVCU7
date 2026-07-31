@@ -1,10 +1,12 @@
 #include "TCCHCharger.h"
+#include "../../DeviceManager.h"
 
 TCCHChargerController::TCCHChargerController() : ChargeController()
 {
     commonName = "TCCH or Ovar HV Charger";
     shortName = "TCCHCHGR";
     deviceId = TCCH_CHARGER;
+    tcch_status_bytes = 0;
 }
 
 void TCCHChargerController::setup()
@@ -23,6 +25,11 @@ void TCCHChargerController::setup()
     cfgEntries.push_back(entry);
     entry = {"TCCH-EVSEPIN", "Set input pin for EVSE connected", &config->evseConnectedPin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
+
+    StatusEntry stat;
+    //        name              var         type                  prevVal  obj
+    stat = {"TCCH_Status", &tcch_status_bytes, CFG_ENTRY_VAR_TYPE::INT32, 0, this};
+    deviceManager.addStatusEntry(stat);
 
     setAttachedCANBus(config->canbusNum);
 
@@ -47,22 +54,63 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
         setAlive();
 	    currentVoltage = (frame.buf[0] << 8) + (frame.buf[1]);
 	    currentAmps = (frame.buf[2] << 8) + (frame.buf[3]);
+        tcch_status_bytes = (frame.buf[4] << 24) + (frame.buf[5] << 16) + (frame.buf[6] << 8) + (frame.buf[7]);
         if (config->commVersion == 1)
         {
             status = frame.buf[4];
             isFaulted = status ? true : false;
-            if (status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
-            if (status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
-            if (status & 4) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);
-            if (status & 8) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);
-            if (status & 0x10) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);
-            if (status & 0x20) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);
-            if (status & 0x40) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTA);
-            if (status & 0x80) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTA);
+            if (status & 1)
+            {
+                faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
+                Logger::error("Hardware failure of charger");
+            }
+            if (status & 2)
+            {
+                faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
+                Logger::error("Charger over temperature!");
+            }
+            if (status & 4)
+            {
+                faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);
+                Logger::error("Input voltage out of spec!");
+            }
+            if (status & 8)
+            {
+                faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);
+                Logger::error("Input voltage out of spec!");
+            }
+            if (status & 0x10)
+            {
+                faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);
+                Logger::error("Output voltage out of spec!");
+            }
+            if (status & 0x20)
+            {
+                faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);
+                Logger::error("Output voltage out of spec!");
+            }
+            if (status & 0x40)
+            {
+                faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTA);
+                Logger::error("Output current out of spec!");
+            }
+            if (status & 0x80)
+            {
+                faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTA);
+                Logger::error("Output current out of spec!");
+            }
             status = frame.buf[5];
-            if (status & 1) faultHandler.raiseFault(getId(), COMM_TIMEOUT);
+            if (status & 1)
+            {
+                faultHandler.raiseFault(getId(), COMM_TIMEOUT);
+                Logger::error("Comm timeout. Failed!");
+            }
             uint8_t workingStatus = (status >> 1) & 3;
-            if (workingStatus == 0) faultHandler.raiseFault(getId(), GENERAL_FAULT);
+            if (workingStatus == 0)
+            {
+                faultHandler.raiseFault(getId(), GENERAL_FAULT);
+                Logger::error("General fault occurred!");
+            }
             //if it equals 2 or 3 then we're stopped and that might be OK so no fault
             //bit 3 is completion of init. Should key on that and not try to command power until it's OK
             //bit 4 is fan status (0 = stopped 1 = request to run)
@@ -70,7 +118,11 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
             status = frame.buf[6]; //all about charge port condition
             //uint8_t ccState = status & 3;
             //bit 2 is CP signal state (0 = nothing 1 = valid)
-            if (status & 8) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
+            if (status & 8)
+            {
+                //faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
+                //Logger::error("Charger over temperature!");
+            }
             //uint8_t lockState = (status >> 4) & 0x7;
             //bit 7 is S2 switch control status (0 = off 1 = on)
             deviceTemperature = frame.buf[7] - 40.0f;
@@ -79,13 +131,33 @@ void TCCHChargerController::handleCanFrame(const CAN_message_t &frame)
         {
             status = frame.buf[4];
             isFaulted = status ? true : false;
-            if (status & 1) faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);//Logger::error("Hardware failure of charger");
-            if (status & 2) faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);//Logger::error("Charger over temperature!");
-            if (status & 4) faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);//Logger::error("Input voltage out of spec!");
-            if (status & 8) faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);//Logger::error("Charger can't detect proper battery voltage");
-            if (status & 16) faultHandler.raiseFault(getId(), COMM_TIMEOUT);//Logger::error("Comm timeout. Failed!");
+            if (status & 1)
+            {
+                faultHandler.raiseFault(getId(), DEVICE_HARDWARE_FAULT);
+                Logger::error("Hardware failure of charger");
+            }
+            if (status & 2)
+            {
+                faultHandler.raiseFault(getId(), DEVICE_OVER_TEMP);
+                Logger::error("Charger over temperature!");
+            }
+            if (status & 4)
+            {
+                faultHandler.raiseFault(getId(), CHARGER_FAULT_INPUTV);
+                Logger::error("Input voltage out of spec!");
+            }
+            if (status & 8)
+            {
+                faultHandler.raiseFault(getId(), CHARGER_FAULT_OUTPUTV);
+                Logger::error("Charger can't detect proper battery voltage");
+            }
+            if (status & 16)
+            {
+                faultHandler.raiseFault(getId(), COMM_TIMEOUT);
+                Logger::error("Comm timeout. Failed!");
+            }
         }
-        Logger::debug("Charger    V: %f  A: %f   Status: %u", currentVoltage / 10.0f, currentAmps / 10.0f, frame.buf[4]);
+        Logger::info("Charger    V: %f  A: %f   Status: %u", currentVoltage / 10.0f, currentAmps / 10.0f, frame.buf[4]);
 
         //these two are part of the base class and will automatically be shown to interested parties
         outputVoltage = currentVoltage / 10.0f;
@@ -116,6 +188,7 @@ void TCCHChargerController::handleTick()
     else isEVSEConnected = false;
 
     sendCmd();   //Send our Delphi voltage control command
+
 }
 
 void TCCHChargerController::sendCmd()
@@ -132,10 +205,12 @@ void TCCHChargerController::sendCmd()
     output.buf[1] = (vOutput & 0xFF);
     output.buf[2] = (cOutput >> 8);
     output.buf[3] = (cOutput & 0xFF);
-    if (isEnabled)
+
+    //if (isEnabled)
         output.buf[4] = 0; // 0 = start charging 1 = stop charging 2 = charge end (go to sleep)
-    else
-    output.buf[4] = 1;
+    //else
+    //    output.buf[4] = 1;
+
     output.buf[5] = 0; // 0 = charging mode 1 = battery heating mode
     output.buf[6] = 0; //unused
     output.buf[7] = 0; //unused
@@ -144,7 +219,7 @@ void TCCHChargerController::sendCmd()
     Logger::debug("TCCH Charger cmd sent.");
     crashHandler.addBreadcrumb(ENCODE_BREAD("TCCHC") + 1);
 }
-
+ 
 uint32_t TCCHChargerController::getTickInterval()
 {
     return CFG_TICK_INTERVAL_TCCH;

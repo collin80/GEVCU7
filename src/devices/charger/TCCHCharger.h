@@ -62,5 +62,6 @@ public:
 
 private:
     void sendCmd();
+    uint32_t tcch_status_bytes;
     TCCHChargerConfiguration *config;
 };

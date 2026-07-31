@@ -62,6 +62,8 @@ void ChargeController::setup()
     ConfigEntry entry;
     entry = {"CHARGER-TARGETV", "Target output voltage for charger", &config->targetUpperVoltage, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1000.0}, 2, nullptr, nullptr};
     cfgEntries.push_back(entry);
+    entry = {"CHARGER-TARGETA", "Target output current for charger", &config->targetCurrentLimit, CFG_ENTRY_VAR_TYPE::FLOAT, {.floating = 0.0}, {.floating = 1000.0}, 2, nullptr, nullptr};
+    cfgEntries.push_back(entry);
     entry = {"CHARGER-REQHVREADY", "Enable charger only when HV is ready? (0=No, 1=Yes)", &config->requireHVReady, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
     entry = {"CHARGER-ENABLEPIN", "Output pin to use to enable charger (255 if not needed)", &config->enablePin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
@@ -76,8 +78,6 @@ void ChargeController::setup()
     stat = {"CHGR_Temperature", &deviceTemperature, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
     deviceManager.addStatusEntry(stat);
     stat = {"CHGR_IsEnabled", &isEnabled, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
-    deviceManager.addStatusEntry(stat);
-    stat = {"CHGR_IsEnabled", &isFaulted, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
     deviceManager.addStatusEntry(stat);
     stat = {"CHGR_EVSE_Connected", &isEVSEConnected, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
     deviceManager.addStatusEntry(stat);
@@ -120,7 +120,7 @@ void ChargeController::loadConfiguration()
     Device::loadConfiguration(); // call parent
 
     prefsHandler->read("TargetVoltage", &config->targetUpperVoltage, 360.5f);
-    prefsHandler->read("TargetAmps", &config->targetCurrentLimit, 20.0f);
+    prefsHandler->read("TargetAmps", &config->targetCurrentLimit, 10.0f);
     prefsHandler->read("ReqHVReady", &config->requireHVReady, 1);
     prefsHandler->read("EnablePin", &config->enablePin, 255);
 }
