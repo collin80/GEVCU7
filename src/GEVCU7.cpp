@@ -108,7 +108,8 @@ WDT_T4<WDT3> wdt; //use the RTWDT which should be the safest one
 #ifndef DEBUG_STARTUP_DELAY
 extern "C" void startup_middle_hook(void);
 extern "C" volatile uint32_t systick_millis_count;
-FLASHMEM void startup_middle_hook(void) {
+FLASHMEM void startup_middle_hook(void)
+{
     // OPTIONAL FASTER STARTUP: force millis() to be 300 to skip startup delays
     systick_millis_count = 300;
 }
@@ -262,7 +263,7 @@ FLASHMEM void setup() {
     pinMode(ESP32_BOOT, OUTPUT);
 
     digitalWrite(ESP32_ENABLE, LOW); //ESP32 starts turned off
-    digitalWrite(ESP32_BOOT, HIGH);
+    digitalWrite(ESP32_BOOT, HIGH); //high = normal mode, low = bootloader
 
     Logger::setLoglevel((Logger::LogLevel)0); //force debugging logging on during early start up
        
@@ -275,6 +276,7 @@ FLASHMEM void setup() {
     Serial.begin(1000000);
     SerialUSB1.begin(1000000);
     uint32_t timeAfterSerial = millis();
+    delay(2000);
 #endif
     
     deviceManager.sortDeviceTable();

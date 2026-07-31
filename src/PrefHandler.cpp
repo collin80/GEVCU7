@@ -66,7 +66,7 @@ void PrefHandler::dumpDeviceTable()
     }
 }
 
-void PrefHandler::checkTableValidity()
+FLASHMEM void PrefHandler::checkTableValidity()
 {
     uint16_t id;
     uint8_t failures = 0;
@@ -84,7 +84,7 @@ void PrefHandler::checkTableValidity()
     initDevTable();
 }
 
-void PrefHandler::processAutoEntry(uint16_t val, uint16_t pos)
+FLASHMEM void PrefHandler::processAutoEntry(uint16_t val, uint16_t pos)
 {
     if (val < 0x7FFF) val = val | 0x8000; //automatically set enabled bit
         else val = 0;
@@ -98,7 +98,7 @@ void PrefHandler::processAutoEntry(uint16_t val, uint16_t pos)
     Logger::info("Device ID: %X was placed into device table at entry: %i", (int)val, pos);      
 }
 
-void PrefHandler::initDevTable()
+FLASHMEM void PrefHandler::initDevTable()
 {
     uint16_t id;
     
@@ -126,7 +126,7 @@ void PrefHandler::initDevTable()
 
 //Given a device ID we must search the 64 entry table found in EEPROM to see if the device
 //has a spot in EEPROM. If it does not then add it
-PrefHandler::PrefHandler(DeviceId id_in) {
+FLASHMEM PrefHandler::PrefHandler(DeviceId id_in) {
     uint16_t id;
 
     enabled = false;
@@ -176,7 +176,7 @@ PrefHandler::PrefHandler(DeviceId id_in) {
 //A special static function that can be called whenever, wherever to turn a specific device on/off. Does not
 //attempt to do so at runtime so the user will still have to power cycle to change the device status.
 //returns true if it could make the change, false if it could not.
-bool PrefHandler::setDeviceStatus(uint16_t device, bool enabled)
+FLASHMEM bool PrefHandler::setDeviceStatus(uint16_t device, bool enabled)
 {
     uint16_t id;
 
@@ -214,7 +214,7 @@ actual drivers
 //given a hash value it looks for that in the table. If it finds
 //the hash it'll return 5 bytes higher which skips the hash and length
 //so the return location will be the start of the actual value itself.
-uint32_t PrefHandler::findSettingLocation(uint32_t hash)
+FLASHMEM uint32_t PrefHandler::findSettingLocation(uint32_t hash)
 {
     while (semKeyLookup);
     semKeyLookup = true;
@@ -240,7 +240,7 @@ uint32_t PrefHandler::findSettingLocation(uint32_t hash)
 
 //Works similarly to above but finds a hash value that has not been initialized and
 //returns the address of the hash value (not 5 higher as with the above function)
-uint32_t PrefHandler::findEmptySettingLoc()
+FLASHMEM uint32_t PrefHandler::findEmptySettingLoc()
 {
     uint32_t readHash;
     uint8_t readLength;
@@ -289,7 +289,7 @@ uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
     return address;
 }
 
-bool PrefHandler::eraseByKey(const char *key)
+FLASHMEM bool PrefHandler::eraseByKey(const char *key)
 {
     uint32_t address = keyToAddress(key, false);
     if (address >= 0xFFFFFFF) return false; //obviously does not exist
@@ -305,7 +305,7 @@ bool PrefHandler::eraseByKey(const char *key)
 //Now we have the actual functions that drivers will call to read and write things
 
 //Given a key, write an 8 bit value with that key name
-bool PrefHandler::write(const char *key, uint8_t val) {
+FLASHMEM bool PrefHandler::write(const char *key, uint8_t val) {
     uint32_t address = keyToAddress(key, true);
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
@@ -323,7 +323,7 @@ bool PrefHandler::write(const char *key, uint8_t val) {
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
-bool PrefHandler::write(const char *key, uint16_t val) {
+FLASHMEM bool PrefHandler::write(const char *key, uint16_t val) {
     uint32_t address = keyToAddress(key, true);
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
@@ -341,7 +341,7 @@ bool PrefHandler::write(const char *key, uint16_t val) {
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
-bool PrefHandler::write(const char *key, uint32_t val) {
+FLASHMEM bool PrefHandler::write(const char *key, uint32_t val) {
     uint32_t address = keyToAddress(key, true);
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
@@ -359,7 +359,7 @@ bool PrefHandler::write(const char *key, uint32_t val) {
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
-bool PrefHandler::write(const char *key, float val) {
+FLASHMEM bool PrefHandler::write(const char *key, float val) {
     uint32_t address = keyToAddress(key, true);    
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
@@ -377,7 +377,7 @@ bool PrefHandler::write(const char *key, float val) {
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
-bool PrefHandler::write(const char *key, double val) {
+FLASHMEM bool PrefHandler::write(const char *key, double val) {
     uint32_t address = keyToAddress(key, true);
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
@@ -395,7 +395,7 @@ bool PrefHandler::write(const char *key, double val) {
     return memCache->Write((uint32_t)address + base_address + lkg_address, val);
 }
 
-bool PrefHandler::write(const char *key, const char *val, size_t maxlen) {
+FLASHMEM bool PrefHandler::write(const char *key, const char *val, size_t maxlen) {
     uint32_t address = keyToAddress(key, true);    
     uint8_t len;
     size_t stringLen = strlen(val);
@@ -415,7 +415,7 @@ bool PrefHandler::write(const char *key, const char *val, size_t maxlen) {
     return memCache->Write((uint32_t)address + base_address + lkg_address, val, stringLen + 1);
 }
 
-bool PrefHandler::writeBlock(const char *key, uint8_t *data, size_t length)
+FLASHMEM bool PrefHandler::writeBlock(const char *key, uint8_t *data, size_t length)
 {
     uint32_t address = keyToAddress(key, true);    
     uint8_t len;
@@ -435,7 +435,7 @@ bool PrefHandler::writeBlock(const char *key, uint8_t *data, size_t length)
     return memCache->Write((uint32_t)address + base_address + lkg_address, data, length);
 }
 
-bool PrefHandler::read(const char *key, uint8_t *val, uint8_t defval) {
+FLASHMEM bool PrefHandler::read(const char *key, uint8_t *val, uint8_t defval) {
     uint32_t address = keyToAddress(key, false);
     if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
     else 
@@ -445,7 +445,7 @@ bool PrefHandler::read(const char *key, uint8_t *val, uint8_t defval) {
     }
 }
 
-bool PrefHandler::read(const char *key, uint16_t *val, uint16_t defval) {
+FLASHMEM bool PrefHandler::read(const char *key, uint16_t *val, uint16_t defval) {
     uint32_t address = keyToAddress(key, false);
     if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
     else 
@@ -455,7 +455,7 @@ bool PrefHandler::read(const char *key, uint16_t *val, uint16_t defval) {
     }
 }
 
-bool PrefHandler::read(const char *key, uint32_t *val, uint32_t defval) {
+FLASHMEM bool PrefHandler::read(const char *key, uint32_t *val, uint32_t defval) {
     uint32_t address = keyToAddress(key, false);
     if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
     else 
@@ -465,7 +465,7 @@ bool PrefHandler::read(const char *key, uint32_t *val, uint32_t defval) {
     }
 }
 
-bool PrefHandler::read(const char *key, float *val, float defval) {
+FLASHMEM bool PrefHandler::read(const char *key, float *val, float defval) {
     uint32_t address = keyToAddress(key, false);
     if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
     else 
@@ -475,7 +475,7 @@ bool PrefHandler::read(const char *key, float *val, float defval) {
     }
 }
 
-bool PrefHandler::read(const char *key, double *val, double defval) {
+FLASHMEM bool PrefHandler::read(const char *key, double *val, double defval) {
     uint32_t address = keyToAddress(key, false);
     if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, val);
     else 
@@ -485,7 +485,7 @@ bool PrefHandler::read(const char *key, double *val, double defval) {
     }
 }
 
-bool PrefHandler::read(const char *key, char *val, const char* defval)
+FLASHMEM bool PrefHandler::read(const char *key, char *val, const char* defval)
 {
     uint32_t address = keyToAddress(key, false);
     if (address < EE_DEVICE_SIZE) 
@@ -508,7 +508,7 @@ bool PrefHandler::read(const char *key, char *val, const char* defval)
     }
 }
 
-bool PrefHandler::readBlock(const char *key, uint8_t *data, size_t length) {
+FLASHMEM bool PrefHandler::readBlock(const char *key, uint8_t *data, size_t length) {
     uint32_t address = keyToAddress(key, false);
     if (address < EE_DEVICE_SIZE) return memCache->Read((uint32_t)address + base_address + lkg_address, data, length);
     else 
@@ -517,7 +517,7 @@ bool PrefHandler::readBlock(const char *key, uint8_t *data, size_t length) {
     }
 }
 
-uint8_t PrefHandler::calcChecksum() {
+FLASHMEM uint8_t PrefHandler::calcChecksum() {
     uint16_t counter;
     uint8_t accum = 0;
     uint8_t temp;
@@ -529,14 +529,14 @@ uint8_t PrefHandler::calcChecksum() {
 }
 
 //calculate the current checksum and save it to the proper place
-void PrefHandler::saveChecksum() {
+FLASHMEM void PrefHandler::saveChecksum() {
     uint8_t csum;
     csum = calcChecksum();
     Logger::debug("New checksum: %x", csum);
     memCache->Write(EE_CHECKSUM + base_address + lkg_address, csum);
 }
 
-bool PrefHandler::checksumValid() {
+FLASHMEM bool PrefHandler::checksumValid() {
     //get checksum from EEPROM and calculate the current checksum to see if they match
     uint8_t stored_chk, calc_chk;
     uint16_t stored_id;
@@ -568,7 +568,7 @@ bool PrefHandler::checksumValid() {
     return true;
 }
 
-void PrefHandler::forceCacheWrite()
+FLASHMEM void PrefHandler::forceCacheWrite()
 {
     memCache->FlushAllPages();
 }
@@ -590,7 +590,7 @@ uint32_t PrefHandler::fnvHash(const char *input)
 
 //Resets the EEPROM storage for this particular PrefHandler instance. Everything will be reset
 //to 0xFF's and the cache flushed so the settings will be fresh thereafter. 
-void PrefHandler::resetEEPROM()
+FLASHMEM void PrefHandler::resetEEPROM()
 {
     //write over all the settings 32 bits at a time
     uint32_t val = 0xFFFFFFFFul;

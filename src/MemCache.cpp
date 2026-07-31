@@ -39,7 +39,7 @@ MemCache::MemCache()
     agingTimer = 0;
 }
 
-void MemCache::setup() {
+FLASHMEM void MemCache::setup() {
     tickHandler.detach(this);
     for (int c = 0; c < NUM_CACHED_PAGES; c++) {
         pages[c].address = 0xFFFFFF; //maximum number. This is way over what our chip will actually support so it signals unused
@@ -74,7 +74,7 @@ void MemCache::handleTick()
 
 //this function flushes the first dirty page it finds. It should try to wait until enough time has elapsed since
 //a previous page has been written. Remember that page writes take about 7ms.
-void MemCache::FlushSinglePage()
+FLASHMEM void MemCache::FlushSinglePage()
 {
     int c;
     for (c = 0; c<NUM_CACHED_PAGES; c++) {
@@ -91,7 +91,7 @@ void MemCache::FlushSinglePage()
 
 //Flush every dirty page. It will block for 10ms per page so maybe things will be blocked for a long, long time
 //DO NOT USE THIS FUNCTION UNLESS YOU CAN ACCEPT THAT!
-void MemCache::FlushAllPages()
+FLASHMEM void MemCache::FlushAllPages()
 {
     int c;
     for (c = 0; c < NUM_CACHED_PAGES; c++) {
@@ -107,7 +107,7 @@ void MemCache::FlushAllPages()
 }
 
 //Flush a given page by the page ID. This is NOT by address so act accordingly. Likely no external code should ever use this
-void MemCache::FlushPage(uint8_t page) {
+FLASHMEM void MemCache::FlushPage(uint8_t page) {
     if (pages[page].dirty) {
         cache_writepage(page);
         Logger::avalanche("Writing page at cache index %i", page);
@@ -118,7 +118,7 @@ void MemCache::FlushPage(uint8_t page) {
 }
 
 //Flush a page by taking an address within the page.
-void MemCache::FlushAddress(uint32_t address) {
+FLASHMEM void MemCache::FlushAddress(uint32_t address) {
     uint32_t addr;
     uint8_t c;
 
@@ -128,7 +128,7 @@ void MemCache::FlushAddress(uint32_t address) {
 }
 
 //Like FlushPage but also marks the page invalid (unused) so if another read request comes it it'll have to be re-read from EEPROM
-void MemCache::InvalidatePage(uint8_t page)
+FLASHMEM void MemCache::InvalidatePage(uint8_t page)
 {
     if (page > NUM_CACHED_PAGES - 1) return; //invalid page, buddy!
     if (pages[page].dirty) {
@@ -141,7 +141,7 @@ void MemCache::InvalidatePage(uint8_t page)
 }
 
 //Mark a given page unused given an address within that page. Will write the page out if it was dirty.
-void MemCache::InvalidateAddress(uint32_t address)
+FLASHMEM void MemCache::InvalidateAddress(uint32_t address)
 {
     uint32_t addr;
     uint8_t c;
@@ -152,7 +152,7 @@ void MemCache::InvalidateAddress(uint32_t address)
 }
 
 //Mark all page cache entries unused (go back to clean slate). It will try to write any dirty pages so be prepared to wait.
-void MemCache::InvalidateAll()
+FLASHMEM void MemCache::InvalidateAll()
 {
     uint8_t c;
     for (c=0; c<NUM_CACHED_PAGES; c++) {
@@ -162,7 +162,7 @@ void MemCache::InvalidateAll()
 }
 
 //Cause a given page to be fully aged which will cause it to be written at the next opportunity
-void MemCache::AgeFullyPage(uint8_t page)
+FLASHMEM void MemCache::AgeFullyPage(uint8_t page)
 {
     if (page < NUM_CACHED_PAGES) { //if we did indeed have that page in cache
         pages[page].age = MAX_AGE;
@@ -170,7 +170,7 @@ void MemCache::AgeFullyPage(uint8_t page)
 }
 
 //Cause the page containing the given address to be fully aged and thus written as soon as possible.
-void MemCache::AgeFullyAddress(uint32_t address)
+FLASHMEM void MemCache::AgeFullyAddress(uint32_t address)
 {
     uint8_t thisCache;
     uint32_t page_addr;
@@ -186,7 +186,7 @@ void MemCache::AgeFullyAddress(uint32_t address)
 //Basically, print out the entire memcache table to the serial console
 //Remember, the address stored in the pages table is 1/256th of the real address as it stores the page,
 //not the true address. So, this code multiplies to bring it back to true address
-void MemCache::dumpCacheDiagnostics()
+FLASHMEM void MemCache::dumpCacheDiagnostics()
 {
     int c;
     for (c = 0; c < NUM_CACHED_PAGES; c++)
@@ -208,7 +208,7 @@ void MemCache::dumpCacheDiagnostics()
 
 //Write data into the memory cache. Takes the place of direct EEPROM writes
 //There are lots of versions of this
-boolean MemCache::Write(uint32_t address, uint8_t valu)
+FLASHMEM boolean MemCache::Write(uint32_t address, uint8_t valu)
 {
     uint32_t addr;
     uint8_t c;
@@ -228,35 +228,35 @@ boolean MemCache::Write(uint32_t address, uint8_t valu)
     return false;
 }
 
-boolean MemCache::Write(uint32_t address, uint16_t valu)
+FLASHMEM boolean MemCache::Write(uint32_t address, uint16_t valu)
 {
     boolean result;
     result = Write(address, &valu, 2);
     return result;
 }
 
-boolean MemCache::Write(uint32_t address, uint32_t valu)
+FLASHMEM boolean MemCache::Write(uint32_t address, uint32_t valu)
 {
     boolean result;
     result = Write(address, &valu, 4);
     return result;
 }
 
-boolean MemCache::Write(uint32_t address, float valu)
+FLASHMEM boolean MemCache::Write(uint32_t address, float valu)
 {
     boolean result;
     result = Write(address, &valu, 4);
     return result;
 }
 
-boolean MemCache::Write(uint32_t address, double valu)
+FLASHMEM boolean MemCache::Write(uint32_t address, double valu)
 {
     boolean result;
     result = Write(address, &valu, 8);
     return result;
 }
 
-boolean MemCache::Write(uint32_t address, const void* data, uint16_t len)
+FLASHMEM FLASHMEM boolean MemCache::Write(uint32_t address, const void* data, uint16_t len)
 {
     uint32_t addr;
     uint8_t c;
@@ -281,7 +281,7 @@ boolean MemCache::Write(uint32_t address, const void* data, uint16_t len)
     return false;
 }
 
-boolean MemCache::Read(uint32_t address, uint8_t* valu)
+FLASHMEM boolean MemCache::Read(uint32_t address, uint8_t* valu)
 {
     uint32_t addr;
     uint8_t c;
@@ -303,35 +303,35 @@ boolean MemCache::Read(uint32_t address, uint8_t* valu)
     }
 }
 
-boolean MemCache::Read(uint32_t address, uint16_t* valu)
+FLASHMEM boolean MemCache::Read(uint32_t address, uint16_t* valu)
 {
     boolean result;
     result = Read(address, valu, 2);
     return result;
 }
 
-boolean MemCache::Read(uint32_t address, uint32_t* valu)
+FLASHMEM boolean MemCache::Read(uint32_t address, uint32_t* valu)
 {
     boolean result;
     result = Read(address, valu, 4);
     return result;
 }
 
-boolean MemCache::Read(uint32_t address, float* valu)
+FLASHMEM boolean MemCache::Read(uint32_t address, float* valu)
 {
     boolean result;
     result = Read(address, valu, 4);
     return result;
 }
 
-boolean MemCache::Read(uint32_t address, double* valu)
+FLASHMEM boolean MemCache::Read(uint32_t address, double* valu)
 {
     boolean result;
     result = Read(address, valu, 8);
     return result;
 }
 
-boolean MemCache::Read(uint32_t address, void* data, uint16_t len)
+FLASHMEM boolean MemCache::Read(uint32_t address, void* data, uint16_t len)
 {
     uint32_t addr;
     uint8_t c;
@@ -354,13 +354,13 @@ boolean MemCache::Read(uint32_t address, void* data, uint16_t len)
     return false;
 }
 
-boolean MemCache::isWriting()
+FLASHMEM boolean MemCache::isWriting()
 {
     //if (WriteTimer) return true;
     return false;
 }
 
-uint8_t MemCache::cache_hit(uint32_t address)
+FLASHMEM uint8_t MemCache::cache_hit(uint32_t address)
 {
     uint8_t c;
     for (c = 0; c < NUM_CACHED_PAGES; c++) {
@@ -371,7 +371,7 @@ uint8_t MemCache::cache_hit(uint32_t address)
     return 0xFF;
 }
 
-void MemCache::cache_age()
+FLASHMEM void MemCache::cache_age()
 {
     uint8_t c;
     for (c = 0; c < NUM_CACHED_PAGES; c++) {
@@ -382,7 +382,7 @@ void MemCache::cache_age()
 }
 
 //try to find an empty page or one that can be removed from cache
-uint8_t MemCache::cache_findpage()
+FLASHMEM uint8_t MemCache::cache_findpage()
 {
     uint8_t c;
     uint8_t old_c, old_v;
@@ -423,7 +423,7 @@ uint8_t MemCache::cache_findpage()
     return old_c;
 }
 
-uint8_t MemCache::cache_readpage(uint32_t addr)
+FLASHMEM uint8_t MemCache::cache_readpage(uint32_t addr)
 {
     uint16_t c,d,e;
     uint32_t address = addr << 8;
@@ -456,7 +456,7 @@ uint8_t MemCache::cache_readpage(uint32_t addr)
     return c;
 }
 
-boolean MemCache::cache_writepage(uint8_t page)
+FLASHMEM boolean MemCache::cache_writepage(uint8_t page)
 {
     uint16_t d;
     uint32_t addr;
@@ -480,7 +480,7 @@ boolean MemCache::cache_writepage(uint8_t page)
 //erases the entire EEPROM back to 0xFF across all addresses. You will lose everything.
 //There is no erase command on our EEPROM chip so you must manually write FF's to every addss
 
-void MemCache::nukeFromOrbit()
+FLASHMEM void MemCache::nukeFromOrbit()
 {
     uint16_t d;
     uint32_t addr;

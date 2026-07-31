@@ -81,7 +81,7 @@ static inline void md5_final(uint8_t digets[16]) { }
 
 #endif
 
-esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
+FLASHMEM esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
 {
     esp_loader_error_t err;
     static uint8_t payload[1024];
@@ -138,7 +138,7 @@ esp_loader_error_t flash_esp32_binary(FsFile *file, size_t address)
     return ESP_LOADER_SUCCESS;
 }
 
-bool flashESP32(const char *filename, uint32_t address)
+FLASHMEM bool flashESP32(const char *filename, uint32_t address)
 {
     FsFile file;
     if (file.open(filename, O_READ))
@@ -149,15 +149,24 @@ bool flashESP32(const char *filename, uint32_t address)
         esp_loader_error_t err = esp_loader_connect(&conn);
         if (err != ESP_LOADER_SUCCESS) {
             Logger::error("Cannot connect to target. Error: %u", err);
+            file.close();
+            return false;
         }
-        Logger::info("Connected to ESP32 target.");
-        Logger::loop();
-        if (flash_esp32_binary(&file, address) == ESP_LOADER_SUCCESS)
+        else
         {
-            Logger::info("Successfully flashed ESP32.");
-            loader_port_reset_target();
-            SD.sdfs.remove(filename);
-            return true;
+            Logger::info("Connected to ESP32 target.");
+            Logger::loop();
+            if (flash_esp32_binary(&file, address) == ESP_LOADER_SUCCESS)
+            {
+                Logger::info("Successfully flashed ESP32.");
+                loader_port_reset_target();
+                SD.sdfs.remove(filename);
+                return true;
+            }
+            else
+            {
+                Logger::error("Failed to flash ESP32.");
+            }
         }
         file.close();    
         Logger::loop();    
@@ -171,7 +180,7 @@ static uint32_t timeout_per_mb(uint32_t size_bytes, uint32_t time_per_mb)
     return MAX(timeout, DEFAULT_FLASH_TIMEOUT);
 }
 
-esp_loader_error_t esp_loader_connect(esp_loader_connect_args_t *connect_args)
+FLASHMEM esp_loader_error_t esp_loader_connect(esp_loader_connect_args_t *connect_args)
 {
     uint32_t spi_config;
     esp_loader_error_t err;
@@ -303,7 +312,7 @@ static esp_loader_error_t spi_flash_command(spi_flash_cmd_t cmd, void *data_tx, 
     return ESP_LOADER_SUCCESS;
 }
 
-static esp_loader_error_t detect_flash_size(size_t *flash_size)
+FLASHMEM static esp_loader_error_t detect_flash_size(size_t *flash_size)
 {
     uint32_t flash_id = 0;
 
@@ -319,7 +328,7 @@ static esp_loader_error_t detect_flash_size(size_t *flash_size)
     return ESP_LOADER_SUCCESS;
 }
 
-esp_loader_error_t esp_loader_flash_start(uint32_t offset, uint32_t image_size, uint32_t block_size)
+FLASHMEM esp_loader_error_t esp_loader_flash_start(uint32_t offset, uint32_t image_size, uint32_t block_size)
 {
     uint32_t blocks_to_write = (image_size + block_size - 1) / block_size;
     uint32_t erase_size = block_size * blocks_to_write;
@@ -343,7 +352,7 @@ esp_loader_error_t esp_loader_flash_start(uint32_t offset, uint32_t image_size, 
 }
 
 
-esp_loader_error_t esp_loader_flash_write(void *payload, uint32_t size)
+FLASHMEM esp_loader_error_t esp_loader_flash_write(void *payload, uint32_t size)
 {
     uint32_t padding_bytes = s_flash_write_size - size;
     uint8_t *data = (uint8_t *)payload;
@@ -361,7 +370,7 @@ esp_loader_error_t esp_loader_flash_write(void *payload, uint32_t size)
 }
 
 
-esp_loader_error_t esp_loader_flash_finish(bool reboot)
+FLASHMEM esp_loader_error_t esp_loader_flash_finish(bool reboot)
 {
     loader_port_start_timer(DEFAULT_TIMEOUT);
 
