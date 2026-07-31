@@ -64,7 +64,7 @@ private:
     bool inhibitJSON;
     bool gotIPAddr;
     uint8_t serialReadBuffer[1024];
-    uint8_t serialWriteBuffer[1024];
+    uint8_t serialWriteBuffer[4096];
     DynamicJsonDocument *websocket_json;
     SerialFileSender *fileSender;
     bool didInitialStatus;

@@ -193,7 +193,7 @@ void ESP32Driver::setup()
     Serial2.addMemoryForRead(serialReadBuffer, sizeof(serialReadBuffer));
     Serial2.addMemoryForWrite(serialWriteBuffer, sizeof(serialWriteBuffer));
     Serial2.begin(230400);
-    //Serial2.setTimeout(2);
+    //Serial2.setTimeout(2); //timeout is only used for reading blocks of data. Not for TX
 
     fileSender = new SerialFileSender(&Serial2);
 
@@ -234,8 +234,8 @@ void ESP32Driver::handleTick() {
         if (desiredState == ESP32NS::NORMAL)
         {
             //TODO: this is naughty code! No delays allowed! Refactor this to remove the delays (use state machine?)
-            digitalWrite(ESP32_BOOT, HIGH);
-            digitalWrite(ESP32_ENABLE, LOW);
+            digitalWrite(ESP32_BOOT, HIGH); //boot high = boot into normal mode
+            digitalWrite(ESP32_ENABLE, LOW); //low means reset. High means run. So, we pulse low then high to reset the esp32
             delay(40);
             digitalWrite(ESP32_ENABLE, HIGH);
             if (sysConfig->systemType == GEVCU7B) delay(400); //seems we have to wait this long otherwise it won't stick
@@ -278,8 +278,15 @@ void ESP32Driver::handleTick() {
             (*websocket_json)["systemState"] = 8;
             if (!inhibitJSON)
             {
-                serializeJson((*websocket_json), Serial2);
-                Serial2.println();
+                if (Serial2.availableForWrite() >= (measureJson((*websocket_json)) + 2))
+                {
+                    serializeJson((*websocket_json), Serial2);
+                    Serial2.println();
+                }
+                else
+                {
+                    Logger::warn("ESP32 TX buffer full. Dropping JSON update");
+                }
 
                 //shall we send it to the serial console for debugging?
                 if (config->debugMode)
@@ -298,12 +305,14 @@ void ESP32Driver::handleTick() {
 void ESP32Driver::sendLogString(String str)
 {
     if (!isReady()) return; //can't do anything until the system is actually up
+    if (Serial2.availableForWrite() < (str.length() + 2)) return; //not enough room to send the whole string. Drop it.
     Serial2.println("~" + str); //~ prefix means this is a telnet message
 }
 
 void ESP32Driver::sendStatusCSV(String str)
 {
     if (!isReady()) return; //can't do anything until the system is actually up
+    if (Serial2.availableForWrite() < (str.length() + 2)) return; //not enough room to send the whole string. Drop it.
     Serial2.println("`" + str); //` prefix means this is a StatusCSV message which should go to the second telnet interface
 }
 
@@ -418,8 +427,11 @@ void ESP32Driver::sendWirelessConfig()
     doc["WIFIPW"] = config->ssid_pw;
     doc["WiFiMode"] = config->esp32_mode;
     doc["HostName"] = config->hostName;
-    serializeJson(doc, Serial2);
-    Serial2.println();
+    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
+    {
+        serializeJson(doc, Serial2);
+        Serial2.println();
+    }
 
     //shall we send it to the serial console for debugging?
     if (config->debugMode)
@@ -434,9 +446,11 @@ void ESP32Driver::sendDeviceList()
     DynamicJsonDocument doc(10000);
 
     deviceManager.createJsonDeviceList(doc);
-
-    serializeJson(doc, Serial2);
-    Serial2.println();
+    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
+    {
+        serializeJson(doc, Serial2);
+        Serial2.println();
+    }
 
     //shall we send it to the serial console for debugging?
     if (config->debugMode)
@@ -457,8 +471,11 @@ void ESP32Driver::sendDeviceDetails(uint16_t deviceID)
     deviceManager.createJsonConfigDocForID(doc, deviceID);
 
     //send minified json to ESP32
-    serializeJson(doc, Serial2);
-    Serial2.println();
+    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
+    {
+        serializeJson(doc, Serial2);
+        Serial2.println();
+    }
 
     //shall we send it to the serial console for debugging?
     if (config->debugMode)
@@ -487,8 +504,11 @@ void ESP32Driver::doTeensyUpdate()
 
     StaticJsonDocument<300> doc;
     doc["FWUPD"] = config->firmwareFile;
-    serializeJson(doc, Serial2);
-    Serial2.println();
+    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
+    {
+        serializeJson(doc, Serial2);
+        Serial2.println();
+    }
 
     //shall we send it to the serial console for debugging?
     if (config->debugMode)
@@ -507,8 +527,11 @@ void ESP32Driver::doESP32Update()
 
     StaticJsonDocument<300> doc;
     doc["ESPUPD"] = config->espUpdateType;
-    serializeJson(doc, Serial2);
-    Serial2.println();
+    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
+    {
+        serializeJson(doc, Serial2);
+        Serial2.println();
+    }
 
     //shall we send it to the serial console for debugging?
     if (config->debugMode)
