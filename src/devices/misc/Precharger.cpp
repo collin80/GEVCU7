@@ -172,10 +172,14 @@ void Precharger::handleTick() {
         {
             if (!systemIO.getDigitalIn(config->enableInput))
             {
-                if (config->prechargeRelay != 255) systemIO.setDigitalOutput(config->prechargeRelay, false);
-                if (config->mainRelay != 255) systemIO.setDigitalOutput(config->mainRelay, false);
-                isPrecharged = false;
-                state = PRECHARGE_INIT;
+                if (state != PRECHARGE_INIT)
+                {
+                    if (config->prechargeRelay != 255) systemIO.setDigitalOutput(config->prechargeRelay, false);
+                    if (config->mainRelay != 255) systemIO.setDigitalOutput(config->mainRelay, false);
+                    isPrecharged = false;
+                    state = PRECHARGE_INIT;
+                    Logger::info("Enable pin went low. Resetting precharge state and opening contactors.");
+                }
             }
         }
 #endif
