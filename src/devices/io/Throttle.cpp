@@ -49,6 +49,7 @@ Throttle::Throttle() : Device() {
     status = OK;
     sma_idx = 0;
     deviceType = DEVICE_THROTTLE;
+    bAboveCutoff = 0;
 }
 
 void Throttle::setup()
@@ -115,15 +116,29 @@ void Throttle::handleTick() {
     if (validateSignal(rawSignals)) { // validate the raw data
         pedalPosition = calculatePedalPosition(rawSignals); // bring the raw data into a range of 0-1000 (without mapping)
         rawThrottle = mapPedalPosition(pedalPosition);
-        sma_buffer[sma_idx] = rawThrottle;
-        sma_idx = (sma_idx + 1);
-        if (sma_idx >= config->smartSmooth) sma_idx = 0;
+        
         //if there is no smart smoothing or the pedal position is over the cutoff then go straight to the real value
-        if ((config->smartSmooth == 0) || (rawThrottle >= config->smoothStop)) level = rawThrottle;
+        if ((config->smartSmooth == 0) || (rawThrottle >= config->smoothStop)) 
+        {
+            bAboveCutoff = 1;
+            level = rawThrottle;
+        }
         else //smart smoothing enabled at some level
         {
-            //int diff = rawThrottle - level;
-            //level = level + (diff * 0.05f * (6.0f - config->smartSmooth) );
+            if (bAboveCutoff > 0)
+            {
+                bAboveCutoff = 0;
+                if (config->smartSmooth > 0) 
+                {
+                    for (int j = 0; j < config->smartSmooth; j++) sma_buffer[j] = config->smoothStop; //reset the buffer to the new value
+                    sma_idx = 0;
+                }
+            }
+            //store the new reading in our sma buffer
+            sma_buffer[sma_idx] = rawThrottle;
+            sma_idx = (sma_idx + 1);
+            if (sma_idx >= config->smartSmooth) sma_idx = 0;
+
             int32_t accum = 0;
             for (int i = 0; i < config->smartSmooth; i++) accum += sma_buffer[i];
             level = accum / config->smartSmooth;
