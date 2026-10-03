@@ -67,7 +67,7 @@ void AxiomaticWOC::setup() {
 
     setAlive();
 	
-    tickHandler.attach(this, CFG_TICK_INTERVAL_AXIOWOC);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_AXIOWOC, shortName);
 }
 
 /*

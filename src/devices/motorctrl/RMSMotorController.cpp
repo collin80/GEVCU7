@@ -68,7 +68,7 @@ void RMSMotorController::setup()
 	setAlive();
 
     operationState = ENABLE;
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER, shortName);
 }
 
 

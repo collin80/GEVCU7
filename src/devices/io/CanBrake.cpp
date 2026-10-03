@@ -88,7 +88,7 @@ void CanBrake::setup() {
     setAlive();
 
     attachedCANBus->attach(this, responseId, responseMask, responseExtended);
-    tickHandler.attach(this, CFG_TICK_INTERVAL_CAN_THROTTLE);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_CAN_THROTTLE, shortName);
 }
 
 /*

@@ -78,7 +78,7 @@ void TSDCDCController::setup()
     setAlive();
 
     attachedCANBus->attach(this, 0x210, 0x7ff, false);
-    tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC, shortName);
     crashHandler.addBreadcrumb(ENCODE_BREAD("TSDCC") + 0);
 }
 

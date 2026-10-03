@@ -74,7 +74,7 @@ void CodaMotorController::setup()
     setSelectedGear(DRIVE);
     setAlive();
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CODAUQM);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CODAUQM, shortName);
 }
 
 

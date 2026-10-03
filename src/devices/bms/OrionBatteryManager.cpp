@@ -56,7 +56,7 @@ void OrionBatteryManager::setup() {
 
     setAlive();
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_ORION);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_ORION, shortName);
     crashHandler.addBreadcrumb(ENCODE_BREAD("ORBMS") + 0);
 }
 

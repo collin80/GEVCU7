@@ -31,52 +31,43 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define TICKHANDLER_H_
 
 #include "config.h"
-#include <TeensyTimerTool.h>
+#include <TeensyThreads.h>
 #include "Logger.h"
 
-using namespace TeensyTimerTool;
-
-//its technically possible to register even more timers but the higher you go the more likely
-//you are to clobber timers being used by other things.
-#define NUM_TIMERS 12
+/*No longer using timers. Using threads instead. Also not grouping devices
+with same delay together. Each device can have its own thread and delay.
+This allows each thread to run independently and if it crashes it won't take down other threads.
+This will use up more CPU time and memory but hopefully there's enough of each
+*/
+#define NUM_THREADS 32
 
 class TickObserver {
 public:
     virtual void handleTick();
 };
 
-
 class TickHandler {
 public:
     TickHandler();
     void setup();
-    void attach(TickObserver *observer, uint32_t interval);
+    void attach(TickObserver *observer, uint32_t interval, const char *name = nullptr); // interval in microseconds
     void detach(TickObserver *observer);
     void handleInterrupt(int timerNumber); // must be public when from the non-class functions
-#ifdef CFG_TIMER_USE_QUEUING
-    void cleanBuffer();
-    void process();
-#endif
+    void showThreadInfo();
 
 protected:
 
 private:
-    struct TimerEntry {
+    struct ThreadEntry {
         long interval; // interval of timer in microseconds
         uint64_t maxInterval; //maximum achieveable interval for this timer (in microseconds)
-        TickObserver *observer[CFG_TIMER_NUM_OBSERVERS]; // array of pointers to observers with this interval
+        TickObserver *observer; // pointer to observer that should be called
+        String name; // name of the thread for debugging purposes
+        bool isRunning; // true if the timer is running, false if not
     };
-    TimerEntry timerEntry[NUM_TIMERS]; // array of timer entries
-#ifdef CFG_TIMER_USE_QUEUING
-    TickObserver *tickBuffer[CFG_TIMER_BUFFER_SIZE];
-    volatile uint16_t bufferHead, bufferTail;
-#endif
+    ThreadEntry threadEntry[NUM_THREADS]; // array of timer entries
     
-    int findTimer(long interval);
-    int findFreeTimer(uint64_t interval);
-    int findObserver(int timerNumber, TickObserver *observer);
-
-    PeriodicTimer* timers[NUM_TIMERS];
+    int findFreeThread(uint64_t interval);
 };
 
 extern TickHandler tickHandler;

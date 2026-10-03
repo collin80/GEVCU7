@@ -40,7 +40,7 @@ isotp<RX_BANKS_2, 512> udsIsoTPBroadcast;
 
 extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 extern FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
-extern FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
+extern FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
 
 /*
 Basic firmware updating idea - use UDS commands but as simply as possible. First off, the other side

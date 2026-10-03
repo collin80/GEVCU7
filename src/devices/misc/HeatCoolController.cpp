@@ -98,7 +98,7 @@ void HeatCoolController::setup() {
     stat = {"HC_PumpOn", &isPumpOn, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
     deviceManager.addStatusEntry(stat);    
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_HEATCOOL);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_HEATCOOL, shortName);
 }
 
 /*

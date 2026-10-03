@@ -50,7 +50,7 @@ void TestThrottle::setup() {
     Throttle::setup(); //call base class
 
     //Use same tick interval as a pot based pedal would have used.
-    tickHandler.attach(this, CFG_TICK_INTERVAL_POT_THROTTLE);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_POT_THROTTLE, shortName);
 }
 
 /*

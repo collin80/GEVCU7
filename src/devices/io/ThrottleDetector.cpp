@@ -94,7 +94,7 @@ void ThrottleDetector::detect() {
     startTime = millis();
     state = DetectMinWait;
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_POT_THROTTLE);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_POT_THROTTLE, "ThrottleDetector");
 }
 
 /*

@@ -70,7 +70,7 @@ void SimpleBatteryManager::setup() {
     stat = {"SBMS_CURRAH", &config->currentPackAH, CFG_ENTRY_VAR_TYPE::FLOAT, 0, this};
     deviceManager.addStatusEntry(stat);
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_SIMPLE);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_SIMPLE, shortName);
     crashHandler.addBreadcrumb(ENCODE_BREAD("SIBMS") + 0);
 }
 

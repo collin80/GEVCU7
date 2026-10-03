@@ -87,7 +87,7 @@ void SystemDevice::setup() {
     entry = {"SWCANMODE", "Set whether CAN0 is in SingleWire mode (only with hardware mods)", &config->swcanMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    tickHandler.attach(this, CFG_TICK_SYSTEM);
+    tickHandler.attach(this, CFG_TICK_SYSTEM, shortName);
 }
 
 /*

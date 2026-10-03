@@ -48,7 +48,7 @@ FLASHMEM void MemCache::setup() {
     }
     //WriteTimer = 0;
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MEM_CACHE);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MEM_CACHE, "MemCache");
 }
 
 

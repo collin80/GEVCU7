@@ -65,7 +65,7 @@ void C300MotorController::setup() {
 
     setAlive();
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_C300);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_C300, shortName);
 }
 
 void C300MotorController::handleCanFrame(const CAN_message_t &frame) {

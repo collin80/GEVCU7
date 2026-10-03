@@ -35,7 +35,7 @@ Heartbeat::Heartbeat() {
 void Heartbeat::setup() {
     tickHandler.detach(this);
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_HEARTBEAT);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_HEARTBEAT, "Heartbeat");
 }
 
 void Heartbeat::setThrottleDebug(bool debug) {

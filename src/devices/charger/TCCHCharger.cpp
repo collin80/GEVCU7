@@ -37,7 +37,7 @@ void TCCHChargerController::setup()
 
     //watch for the charger status message
     attachedCANBus->attach(this, 0x18FF50E5, 0x1FFFFFFF, true);
-    tickHandler.attach(this, CFG_TICK_INTERVAL_TCCH);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_TCCH, shortName);
     crashHandler.addBreadcrumb(ENCODE_BREAD("TCCHC") + 0);
 }
 

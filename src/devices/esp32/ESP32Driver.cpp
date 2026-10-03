@@ -207,7 +207,7 @@ void ESP32Driver::setup()
     //without a large read buffer this tick would have to be fast - like 4ms fast. With a large read buffer
     //the timing can be relaxed. It may be useful to directly catch the serial interrupt callback but then
     //code could be executing at any time. It's all around safer to have deterministic timing via the tick handler
-    tickHandler.attach(this, 40000);
+    tickHandler.attach(this, 40000, shortName);
     crashHandler.addBreadcrumb(ENCODE_BREAD("ESPTT") + 0);
     deviceManager.addStatusObserver(this); //we want all status updates sent to this object
     lastTime = millis();

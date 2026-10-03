@@ -332,7 +332,7 @@ void DeviceManager::setup()
 
     Logger::info("Adding tick handler for Device Manager");
 
-    tickHandler.attach(this, 100000ul); //10 times per second
+    tickHandler.attach(this, 100000ul, "DeviceManager"); //10 times per second
 
     //this should be large enough that you don't cause it to have to enlarge but not so large
     //that all RAM is taken up needlessly. So, tweak it in use to be big enough but not much more biggerer

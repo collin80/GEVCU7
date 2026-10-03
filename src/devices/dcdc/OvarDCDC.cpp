@@ -26,7 +26,7 @@ void OvarDCDCController::setup()
 
     //watch for the DC/DC status message
     attachedCANBus->attach(this, 0x1806F4D5, 0x1FFFFFFF, true);
-    tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC, shortName);
     crashHandler.addBreadcrumb(ENCODE_BREAD("OVRDC") + 0);
 }
 

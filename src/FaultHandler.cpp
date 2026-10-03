@@ -39,7 +39,7 @@ void FaultHandler::setup()
 
     loadFromEEPROM();
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_FAULTHANDLER);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_FAULTHANDLER, "FaultHandler");
 }
 
 

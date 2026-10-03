@@ -53,7 +53,7 @@ void TestMotorController::setup() {
     setSelectedGear(DRIVE);
     setOpState(ENABLE);
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_TEST);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_TEST, shortName);
 }
 
 void TestMotorController::handleTick() {

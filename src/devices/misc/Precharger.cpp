@@ -71,7 +71,7 @@ void Precharger::setup() {
     stat = {"IsPrechargeComplete", &isPrecharged, CFG_ENTRY_VAR_TYPE::BYTE, 0, this};
     deviceManager.addStatusEntry(stat);
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_PRECHARGE);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_PRECHARGE, shortName);
 }
 
 /*

@@ -33,7 +33,7 @@ void DelphiDCDCController::setup()
 
     attachedCANBus->attach(this, 0x1D5, 0x7ff, false);
     //Watch for 0x1D5 messages from Delphi converter
-    tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_DCDC, shortName);
     crashHandler.addBreadcrumb(ENCODE_BREAD("DELPH") + 0);
 }
 

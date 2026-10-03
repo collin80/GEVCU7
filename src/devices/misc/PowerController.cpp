@@ -71,7 +71,7 @@ void PowerController::setup() {
     entry = {"PWROUTPIN","Set pin to activate when awake (255 = Disabled)", &config->powerOutputPin, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_POWER);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_POWER, shortName);
 }
 
 /*

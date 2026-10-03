@@ -26,6 +26,7 @@
 
 #include "SerialConsole.h"
 #include <ArduinoJson.h>
+#include <TeensyThreads.h>
 
 template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Lets us stream SerialUSB
 
@@ -603,6 +604,12 @@ FLASHMEM void SerialConsole::handleShortCmd() {
         for (int tout = 0; tout < NUM_OUTPUT; tout++) systemIO.setDigitalOutput(tout, false);
         Logger::console("all outputs: OFF");
         break;
+    case 'P':
+        systemIO.setAnalogOut(0, 100);
+        systemIO.setAnalogOut(1, 1000);
+        systemIO.setAnalogOut(2, 1500);
+        systemIO.setAnalogOut(3, 3155);
+        break;
     case 'z': // detect throttle min/max & other details
         if (accelerator) {
             ThrottleDetector *detector = new ThrottleDetector(accelerator);
@@ -645,6 +652,11 @@ FLASHMEM void SerialConsole::handleShortCmd() {
         break;
     case 'S':
         deviceManager.printAllStatusEntries();
+        break;
+    case 't':
+    case 'T':
+        tickHandler.showThreadInfo();
+        //Serial.print(threads.threadsInfo());
         break;
     }
 }

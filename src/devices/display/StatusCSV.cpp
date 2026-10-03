@@ -86,7 +86,7 @@ void StatusCSV::setup() {
     entry = {"STATUS-ESP", "Also send output to ESP32? (0 = No 1 = Yes)", &config->bESPOutput, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 1}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_STATUS);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_STATUS, shortName);
 
     config->enableString[0] = 0;
     config->disableString[0] = 0;

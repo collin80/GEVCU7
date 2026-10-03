@@ -65,7 +65,7 @@ void VehicleSpecific::setup() {
     Device::setup(); //call base class
 
     //Use same tick interval as a pot based pedal would have used.
-    tickHandler.attach(this, CFG_TICK_INTERVAL_VEHICLE);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_VEHICLE, shortName);
 }
 
 /*

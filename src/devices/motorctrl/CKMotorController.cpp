@@ -59,7 +59,7 @@ void CKMotorController::setup()
     CK_milli = millis();
     setAlive();
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CK);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_CK, shortName);
 }
 
 /*

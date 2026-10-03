@@ -59,7 +59,7 @@ void LightController::setup() {
     entry = {"REQLEVEL","Required regen to trigger brake light (in 1/10 Nm) 0=Disabled", &config->reqRegenLevel, CFG_ENTRY_VAR_TYPE::INT16, {.s_int = -1000}, 0, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_LIGHTING);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_LIGHTING, shortName);
 }
 
 /*

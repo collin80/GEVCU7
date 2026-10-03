@@ -99,7 +99,7 @@ void DmocMotorController::setup() {
     sendCmd2();  //This is our torque command
     sendCmd3();
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_DMOC, shortName);
 }
 
 /*

@@ -94,7 +94,7 @@ void EVIC::setup() {
     elapsedtime=timemark = timemark2=millis();
     rpm=0;  //Increment all our test variables each time
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_EVIC);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_EVIC, shortName);
 
 }
 

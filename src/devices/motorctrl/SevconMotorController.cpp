@@ -111,7 +111,7 @@ void SevconMotorController::setup()
     attachedCANBus->setMasterID(0x7a);
 
     operationState = ENABLE;
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER, shortName);
 }
 
 

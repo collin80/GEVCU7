@@ -57,7 +57,7 @@ void ThinkBatteryManager::setup() {
 
     setAlive();
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_THINK);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_BMS_THINK, shortName);
     crashHandler.addBreadcrumb(ENCODE_BREAD("THBMS") + 0);
 }
 

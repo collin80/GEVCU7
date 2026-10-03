@@ -96,7 +96,7 @@ void Example::setup()
     
     //if you need to periodically do things then attach to the tickHandler. You give it the number of microseconds between ticks
     //it is best if you use the same value as other devices so they can share a timer. But, the hardware has a lot of timers anyway
-    tickHandler.attach(this, CFG_TICK_INTERVAL_EXAMPLE);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_EXAMPLE, shortName); //the shortName is optional but useful for debugging and logging. It will show up in the tickHandler's thread info.
 }
 
 //given as a parameter to a ConfigEntry above. This function looks at our configuration item called firstValue and returns

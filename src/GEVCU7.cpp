@@ -3,7 +3,7 @@
  New hardware version 7/20/2021 for Hardware 7.0
  Author: Collin Kidder
  
-Copyright (c) 2013-2025 Collin Kidder, Michael Neuweiler, Charles Galpin
+Copyright (c) 2013-2026 Collin Kidder, Michael Neuweiler, Charles Galpin
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -29,19 +29,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /*
 Notes on GEVCU7 conversion. This is somewhat a stream of consciousness but covers
 the state of the code and where I plan to take it.
-
-
-This revision does not have any required board level bodges to get it working. 
-The one remaining thing is that some voltage bleeds through the 5V regulator and 
-turns on the 12v light but a little bit dimly. This is still happening in
-production hardware! Whoops! The fix is to add a diode so that 
-voltage cannot backfeed through the regulator.
  
 D0 in documentation is Teensy Pin 4 and is connected to DIG_INT (interrupt from 16 way I/O expander)
 D1 in documentation is Teensy Pin 5 and is connected to SD_DET (detect SD card is inserted when line is low)
 
 Maybe consider switching to an RTOS but it seems like quite a large change and would probably break
-things all over the place. This is not an idea to take lightly. May never happen.
+things all over the place. This is not an idea to take lightly. Work has commenced on switching to using
+TeensyThreads which is a pre-emptive threading library.
 
 There should be a way for the system to signal it wants to shut down and either stay down or reboot. In those cases,
 it should be possible for devices to render things safe. For instance, a motor controller driver would probably
@@ -74,9 +68,9 @@ controlling the inverter then you aren't going unless it's working. So, this mig
 // The following includes are required in the .ino file by the Arduino IDE in order to properly
 // identify the required libraries for the build.
 #include <FlexCAN_T4.h>
-#include <TeensyTimerTool.h>
 #include "i2c_driver_wire.h"
 #include <SPI.h>
+#include <TeensyThreads.h>
 #include "SD.h"
 #include "Watchdog_t4.h"
 #include "devices/esp32/esp_loader.h"
@@ -378,19 +372,33 @@ FLASHMEM void setup() {
     //need to turn this on somewhere. Moved it down pretty low in the power on setup so that things like 
     //firmware updates don't require special handling with the watchdog (at least not power on fw updates)
     //but, it's before any of the non-system device drivers load in case one of them has a bug.
-    wdt.begin(config);
+    wdt.begin(config); 
 
     //force the system device to be set enabled. ALWAYS. It would not be good if it weren't enabled!
     Device *sysDev = deviceManager.getDeviceByID(SYSTEM);
     Device *sysIODev = deviceManager.getDeviceByID(SYSIO);
-    sysDev->earlyInit();
-    sysIODev->earlyInit();
+
+    if (sysDev) {
+        sysDev->earlyInit();
+    }
+    else {
+        Logger::error("System device not found. This is bad.");
+    }
+    if (sysIODev) {
+        sysIODev->earlyInit();
+    }
+    else {
+        Logger::error("System I/O device not found. This is bad.");
+    }
     //all the 0x7?00 devices should always be enabled.
-	PrefHandler::setDeviceStatus(SYSTEM, true);
+	
+    PrefHandler::setDeviceStatus(SYSTEM, true);
     PrefHandler::setDeviceStatus(HEARTBEAT, true);
     PrefHandler::setDeviceStatus(MEMCACHE, true);
     PrefHandler::setDeviceStatus(SYSIO, true);
-    //Also, the system device has to be initialized a bit early.    
+
+    //Also, the system device has to be initialized a bit early.
+    Logger::console("Starting system device setup");
     sysDev->setup();
 
     //log level is set by system device driver just above ^^^^^
@@ -482,6 +490,7 @@ void loop() {
 
     //it should go without saying that uncommenting the below line will give you a bad time... in 40 seconds
     //if (millis() > 40000)     *(volatile uint32_t *)0x30000000 = 0; // causes Data_Access_Violation if you uncomment it. Only for testing crash handler
+    threads.yield(); //let other threads run if they need to.
 }
 
 //Not interrupt driven but the callbacks should still happen quickly.

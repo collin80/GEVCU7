@@ -116,7 +116,7 @@ void TeslaACGen2Controller::setup()
     setAlive();
 
     attachedCANBus->attach(this, 0x203, 0x7CF, false); //need 0x223 and 0x233
-    tickHandler.attach(this, CFG_TICK_INTERVAL_COMPRESSOR);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_COMPRESSOR, shortName);
 
     crashHandler.addBreadcrumb(ENCODE_BREAD("TG2AC") + 0);
 }

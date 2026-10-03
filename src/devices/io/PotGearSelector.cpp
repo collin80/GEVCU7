@@ -56,7 +56,7 @@ void PotGearSelector::setup()
 
     Device::setup(); // run the parent class version of this function
 
-    tickHandler.attach(this, TICK_POTGEAR);
+    tickHandler.attach(this, TICK_POTGEAR, shortName);
 }
 
 void PotGearSelector::handleTick() {

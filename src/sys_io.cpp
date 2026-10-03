@@ -162,7 +162,7 @@ FLASHMEM void SystemIO::setup() {
         analogWriteFrequency(7, 1000); //1kHz
         numAnaOut = 4;
     }
-    tickHandler.attach(this, 1000); //interval is set in microseconds. We want 1ms timer
+    tickHandler.attach(this, 1000, "SystemIO"); //interval is set in microseconds. We want 1ms timer
     lastMicros = micros();
 
     pinMode(A0, INPUT);

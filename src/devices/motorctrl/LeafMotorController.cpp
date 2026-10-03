@@ -75,7 +75,7 @@ void LeafMotorController::setup() {
     ms=millis();
     setAlive();
 
-    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_LEAF);
+    tickHandler.attach(this, CFG_TICK_INTERVAL_MOTOR_CONTROLLER_LEAF, shortName);
 }
 
 /*
