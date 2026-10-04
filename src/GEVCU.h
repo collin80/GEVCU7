@@ -49,6 +49,7 @@ extern "C" {
 #endif
 void loop();
 void setup();
+void mainWorkLoop(void* param);
 
 #ifdef __cplusplus
 } // extern "C"

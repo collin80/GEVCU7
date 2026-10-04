@@ -95,6 +95,7 @@ uint8_t sdCardPresence; //0 = not inserted, positive numbers indicate it has bee
 bool sdCardWorking; //does it appear that the sdcard is currently working properly and able to be used?
 bool sdCardInitFailed; //got a presence signal but trying to init it failed. Quit trying until next insertion
 uint32_t bootTime;
+int mainThreadIdx;
 
 WDT_T4<WDT3> wdt; //use the RTWDT which should be the safest one
 
@@ -454,43 +455,56 @@ FLASHMEM void setup() {
     //    *(volatile uint32_t *)0x30000000 = 0; 
 
     Logger::flushFile();
+
+    mainThreadIdx = tickHandler.directAddThread(mainWorkLoop, NULL, MAIN_LOOP_STACK_SIZE, NULL, "MainLoop", MAIN_LOOP_INTERVAL);
 }
 
 //there really isn't much in the loop here. Most everything is done via interrupts and timer ticks. If you have
 //timer queuing on then those tasks will be dispatched here. Otherwise the loop just cycles very rapidly while
 //all the real work is done via interrupt.
-void loop() {
-#ifdef CFG_TIMER_USE_QUEUING
-	tickHandler.process();
-#endif
-    
-    //This needs to be called to handle sdCard writing though.
-    Logger::loop();
-    
-    //ESP32 would be our BT device now. Does it need a loop function?
-    //if (btDevice) btDevice->loop();
+void mainWorkLoop(void* param) 
+{
+    uint32_t now;
 
-    canEvents(); //get messages on all three CAN buses and dispatch them
+    while (1) {
+        now = micros();
+        //This needs to be called to handle sdCard writing though.
+        Logger::loop();
 
-    //Reads SerialUSB1 (if statusCSV isn't active) 
-    canHandlerBus0.loop();
+        canEvents(); //get messages on all three CAN buses and dispatch them
+
+        //Reads SerialUSB1 (if statusCSV isn't active) 
+        canHandlerBus0.loop();
     
-    wdt.feed(); //must feed the watchdog every so often or it'll get angry
+        wdt.feed(); //must feed the watchdog every so often or it'll get angry
 
-    //obviously only for hardware testing. Disable for normal builds.
-    /*
-    static uint32_t lastSentTest=0;
-    if (millis() - 1000 > lastSentTest)
-    {
-        sendTestCANFrames();
-        lastSentTest = millis();
+        //obviously only for hardware testing. Disable for normal builds.
+        /*
+        static uint32_t lastSentTest=0;
+        if (millis() - 1000 > lastSentTest)
+        {
+            sendTestCANFrames();
+            lastSentTest = millis();
+        }
+        */
+        //testGEVCUHardware();
+
+        uint32_t elapsed = micros() - now;
+        //each tread must delay for the appropriate amount of time before the next tick.
+        //This is done here so that the thread can be used for multiple observers with the same interval.
+        //we track the total time spent doing the work and then delay for the remainder of the interval. 
+        //If the work took longer than the interval, we log a warning.
+        if (elapsed > MAIN_LOOP_INTERVAL) {
+            Logger::warn("TickHandler thread %d took %u us to process, longer than interval of %u us", mainThreadIdx + 1, elapsed, MAIN_LOOP_INTERVAL);
+        }
+        else threads.delay(MAIN_LOOP_INTERVAL / 1000 - elapsed / 1000);
     }
-    */
-    //testGEVCUHardware();
+}
 
-    //it should go without saying that uncommenting the below line will give you a bad time... in 40 seconds
-    //if (millis() > 40000)     *(volatile uint32_t *)0x30000000 = 0; // causes Data_Access_Violation if you uncomment it. Only for testing crash handler
-    threads.yield(); //let other threads run if they need to.
+//loop here is empty. We use this as the "idle" loop. Thread 0 should then only happen when nothing else does.
+//This allows for tracking the total idle time of the system.
+void loop() 
+{
 }
 
 //Not interrupt driven but the callbacks should still happen quickly.

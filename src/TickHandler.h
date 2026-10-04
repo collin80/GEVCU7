@@ -54,6 +54,7 @@ public:
     void detach(TickObserver *observer);
     void handleInterrupt(int timerNumber); // must be public when from the non-class functions
     void showThreadInfo();
+    int directAddThread(ThreadFunction p, void * arg, int stack_size, void *stack, const char *name, uint32_t interval = 100000);
 
 protected:
 

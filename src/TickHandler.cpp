@@ -50,6 +50,37 @@ FLASHMEM void TickHandler::setup()
 {
 }
 
+
+/// @brief
+/// @param p 
+/// @param arg 
+/// @param stack_size 
+/// @param stack 
+/// @param name 
+/// @param interval
+/// @details Directly adds a thread to the system with the specified parameters. Fills in both types of thread bookkeeping.
+int TickHandler::directAddThread(ThreadFunction p, void * arg, int stack_size, void *stack, const char *name, uint32_t interval)
+{
+    int thread;
+    thread = findFreeThread(interval);	// no thread with given tick interval exist -> look for unused (interval == 0)
+    if (thread == -1) {
+        Logger::error("No free thread available for main thread with interval=%d", interval);
+        return;
+    }
+    threadEntry[thread].interval = interval;
+    threadEntry[thread].isRunning = false;
+    threadEntry[thread].name = name ? String(name) : String("");
+    threadEntry[thread].observer = nullptr; //not used in this case
+
+    //HERE NEED TO START THE THREAD IF IT IS NOT ALREADY RUNNING.
+    if (!threadEntry[thread].isRunning) {
+        Logger::debug("Starting main thread %d with interval %dus", thread + 1, interval);
+        threads.addThread(p, arg, stack_size, nullptr);
+        threadEntry[thread].isRunning = true;
+    }
+    return thread;
+}
+
 /**
  * Register an observer to be triggered in a certain interval.
  * TickObservers with the same interval are grouped to one thread to save resources.
@@ -136,7 +167,7 @@ void TickHandler::handleInterrupt(int threadNumber) {
 void TickHandler::showThreadInfo()
 {
     float threadTime;
-    Logger::info("Thread 0: MainLoop             State: RUNNING    interval: continuous CPU: %4.1f%% Time: %4.2fs", threads.getCPUUsage(0), threads.getSecondsUsed(0));
+    Logger::info("Thread 0: IdleLoop             State: RUNNING    interval: continuous CPU: %4.1f%% Time: %4.2fs", threads.getCPUUsage(0), threads.getSecondsUsed(0));
     for (int i = 0; i < NUM_THREADS; i++)
     {
         if (threadEntry[i].interval > 0)

@@ -38,7 +38,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //increment this every time a git commit is done.
 //I have done a TERRIBLE job of that. Trusting the compile
 //date and time is more accurate but an attempt is made to update this number too.
-#define CFG_BUILD_NUM	1086
+#define CFG_BUILD_NUM	1090
 
 #define portMEMORY_BARRIER()     __asm volatile ( "dmb" ::: "memory" )
 #define portDATA_SYNC_BARRIER()  __asm volatile ( "dsb" ::: "memory" )
@@ -47,6 +47,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define CPU_RESTART_VAL		(0x5FA0004)
 #define REBOOT			(*CPU_RESTART_ADDR = CPU_RESTART_VAL)
 
+#define MAIN_LOOP_INTERVAL 1000 //in microseconds. 100000 = 10hz, 10000 = 100hz, 1000 = 1khz
+#define MAIN_LOOP_STACK_SIZE 2048 //in bytes. 2048 = 2kb, 4096 = 4kb, 8192 = 8kb
 
 /*
  * SERIAL CONFIGURATION
