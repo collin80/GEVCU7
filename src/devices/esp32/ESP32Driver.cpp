@@ -233,13 +233,12 @@ void ESP32Driver::handleTick() {
     {
         if (desiredState == ESP32NS::NORMAL)
         {
-            //TODO: this is naughty code! No delays allowed! Refactor this to remove the delays (use state machine?)
             digitalWrite(ESP32_BOOT, HIGH); //boot high = boot into normal mode
             digitalWrite(ESP32_ENABLE, LOW); //low means reset. High means run. So, we pulse low then high to reset the esp32
-            delay(40);
+            threads.delay(40);
             digitalWrite(ESP32_ENABLE, HIGH);
             if (sysConfig->systemType == GEVCU7B) delay(400); //seems we have to wait this long otherwise it won't stick
-            else delay(40);
+            else threads.delay(40);
             currState = ESP32NS::NORMAL;
         }
     }

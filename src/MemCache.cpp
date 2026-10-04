@@ -31,6 +31,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "MemCache.h"
 #include <Watchdog_t4.h>
+#include <TeensyThreads.h>
 
 extern WDT_T4<WDT3> wdt;
 
@@ -83,7 +84,7 @@ FLASHMEM void MemCache::FlushSinglePage()
             Logger::avalanche("Writing page at cache index %i", c);
             pages[c].dirty = false;
             pages[c].age = 0; //freshly flushed!
-            delay(10); //naughty! But, for testing we'll allow it. TODO: switch to non-blocking wait
+            threads.delay(10);
             return;
         }
     }
@@ -100,7 +101,7 @@ FLASHMEM void MemCache::FlushAllPages()
             Logger::avalanche("Writing page at cache index %i", c);
             pages[c].dirty = false;
             pages[c].age = 0;
-            delay(10); //10ms is longest it would take to write a page according to datasheet
+            threads.delay(10); //10ms is longest it would take to write a page according to datasheet
             wdt.feed();
         }
     }
@@ -113,7 +114,7 @@ FLASHMEM void MemCache::FlushPage(uint8_t page) {
         Logger::avalanche("Writing page at cache index %i", page);
         pages[page].dirty = false;
         pages[page].age = 0; //freshly flushed!
-        delay(10); //can't write to eeprom again for around 8ms so delay here so it isnt possible. Bad solution though!
+        threads.delay(10); //can't write to eeprom again for around 8ms so delay here so it isnt possible. Bad solution though!
     }
 }
 
@@ -133,7 +134,7 @@ FLASHMEM void MemCache::InvalidatePage(uint8_t page)
     if (page > NUM_CACHED_PAGES - 1) return; //invalid page, buddy!
     if (pages[page].dirty) {
         cache_writepage(page);
-        delay(10);
+        threads.delay(10);
     }
     pages[page].dirty = false;
     pages[page].address = 0xFFFFFF;
@@ -498,7 +499,7 @@ FLASHMEM void MemCache::nukeFromOrbit()
         Wire.beginTransmission(i2c_id);
         Wire.write(buffer, 258);
         Wire.endTransmission(true);
-        delay(11);
+        threads.delay(11);
         wdt.feed();
     }
     //system should be forceably rebooted here to ensure nothing tries to write to eeprom

@@ -15,6 +15,7 @@
 
 #include "Arduino.h"
 #include "gevcu_port.h"
+#include <TeensyThreads.h>
 
 // #define SERIAL_DEBUG_ENABLE
 
@@ -122,7 +123,7 @@ void loader_port_reset_target(void)
 
 void loader_port_delay_ms(uint32_t ms)
 {
-    delay(ms);
+    threads.delay(ms);
 }
 
 

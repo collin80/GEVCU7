@@ -29,6 +29,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <Arduino.h>
 #include <vector>
+#include <TeensyThreads.h>
 #include "../config.h"
 #include "DeviceTypes.h"
 #include "../eeprom_layout.h"

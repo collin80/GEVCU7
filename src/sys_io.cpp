@@ -31,6 +31,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "devices/misc/SystemDevice.h"
 #include "i2c_driver_wire.h"
 #include "DeviceManager.h"
+#include <TeensyThreads.h>
 
 #undef HID_ENABLED
 
@@ -407,8 +408,6 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
         //but give it at least a few microseconds for everything to switch and the new value to
         //settle at the Teensy ADC pin.
         delayMicroseconds(5);
-        //delay(6); //really long delay!
-
     }
     //Analog inputs 0-3 are always on ADC0, 4-7 are on ADC1
     if (which < 4) 
@@ -699,7 +698,7 @@ bool SystemIO::calibrateADCOffset(int adc, bool update)
         //normally one shouldn't call watchdog reset in multiple
         //places but this is a special case.
         //watchdogReset();
-        delay(2);
+        threads.delay(2);
     }
     accum /= 500;
     sysConfig->adcOffset[adc] = accum;

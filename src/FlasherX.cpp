@@ -48,6 +48,7 @@
 #include "FlashTxx.h"		// TLC/T3x/T4x/TMM flash primitives
 #include "FlasherX.h"
 #include <Watchdog_t4.h>
+#include <TeensyThreads.h>
 #include "config.h"
 #include <Logger.h>
 
@@ -64,7 +65,7 @@ void setup_flasherx()
 
   pinMode(ledPin, OUTPUT);	// assign output
   digitalWrite(ledPin, HIGH);	// set the LED on
-  delay(200);			// delay
+  threads.delay(200);			// delay
   digitalWrite(ledPin, LOW);	// set the LED off
 }
 

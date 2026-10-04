@@ -281,7 +281,7 @@ void Logger::console(const char *message, ...) {
     if (esp32)
     { 
         esp32->sendLogString(buff);
-        delay(3); //slight delay to let the serial port write some data before the next line.
+        threads.delay(3); //slight delay to let the serial port write some data before the next line.
     }
     va_end(args);
 }
