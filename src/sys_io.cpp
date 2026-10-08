@@ -439,10 +439,7 @@ int16_t SystemIO::getAnalogIn(uint8_t which) {
         
     if (which < NUM_ANALOG)
     {
-        valu = _pGetAnalogRaw(which);
-        valu -= sysConfig->adcOffset[which];
-        valu = (valu * sysConfig->adcGain[which]) / 1024;
-        return valu;
+        return anaInState[which];
     }
     else //the return makes this superfluous...
     {        
@@ -492,26 +489,7 @@ boolean SystemIO::getDigitalIn(uint8_t which) {
     
     if (which < NUM_DIGITAL) 
     {
-        if (which < 8) return _pGetDigitalInput(which);
-        else 
-        {
-            switch (which)
-            {
-            case 8:
-                return !(digitalRead(40));
-                break;
-            case 9:
-                return !(digitalRead(41));
-                break;
-            case 10:
-                return !(digitalRead(42));
-                break;
-            case 11:
-                return !(digitalRead(9));
-                break;
-
-            }
-        }
+        return digInState[which];
     }
     else
     {
@@ -635,20 +613,51 @@ void SystemIO::handleTick()
     lastMicros = now;
     uint8_t outputMask;
     uint8_t tempCache = pcaDigitalOutputCache;
+    int16_t valu;
 
-    //each tick increment status index and maybe update one of the digital or analog inputs
+    //each tick increment status index and get a fresh copy of the digital and analog inputs.
     if (ioStatusIdx < NUM_DIGITAL)
     {
-        digInState[ioStatusIdx] = getDigitalIn(ioStatusIdx);
+        if (ioStatusIdx < 8) digInState[ioStatusIdx] = _pGetDigitalInput(ioStatusIdx);
+        else 
+        {
+            switch (ioStatusIdx)
+            {
+            case 8:
+                digInState[ioStatusIdx] = !(digitalRead(40));
+                break;
+            case 9:
+                digInState[ioStatusIdx] = !(digitalRead(41));
+                break;
+            case 10:
+                digInState[ioStatusIdx] = !(digitalRead(42));
+                break;
+            case 11:
+                digInState[ioStatusIdx] = !(digitalRead(9));
+                break;
+            }
+        }
     }
-    else if ((ioStatusIdx - NUM_DIGITAL) < NUM_ANALOG)
+    else if ((ioStatusIdx - NUM_DIGITAL) < NUM_ANALOG / 2)
     {
         int idx = ioStatusIdx - NUM_DIGITAL;
-        anaInState[idx] = getAnalogIn(idx);
+
+        //there are two ADC pins for each mux setting so capture both at once.
+        valu = _pGetAnalogRaw(idx);
+        valu -= sysConfig->adcOffset[idx];
+        valu = (valu * sysConfig->adcGain[idx]) / 1024;
+        anaInState[idx] = valu;
+
+        valu = _pGetAnalogRaw(idx + 4);
+        valu -= sysConfig->adcOffset[idx + 4];
+        valu = (valu * sysConfig->adcGain[idx + 4]) / 1024;
+        anaInState[idx + 4] = valu;
     }
     else ioStatusIdx = -1;
     ioStatusIdx++;
 
+
+//Here we start processing for the psuedo PWM outputs.
     for (int i = 0; i < NUM_OUTPUT; i++)
     {
         if (!digPWMOutput[i].pwmActive) continue;

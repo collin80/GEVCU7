@@ -50,7 +50,8 @@ extern "C" {
 void loop();
 void setup();
 void mainWorkLoop(void* param);
-
+void canProcTask(void *param);
+void sdCardLoop(void *param);
 #ifdef __cplusplus
 } // extern "C"
 #endif

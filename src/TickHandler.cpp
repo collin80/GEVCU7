@@ -32,9 +32,35 @@
 #include "TickHandler.h"
 #include "devices/Device.h"
 
+extern char _stext[], _etext[];
+extern char _ebss[], _heap_end[], *__brkval;
+
 void threadTrampoline(void* param) {
     auto tim = reinterpret_cast<uint32_t>(param);
     while (true) tickHandler.handleInterrupt(static_cast<int>(tim));
+}
+
+void memInfo () {
+    auto sp = (char*) __builtin_frame_address(0);
+
+    auto stack = sp - _ebss;
+    Logger::info("avail STACK %8d b %5d kb", stack, stack >> 10);
+
+    auto heap = _heap_end - __brkval;
+    Logger::info("avail HEAP  %8d b %5d kb", heap, heap >> 10);
+}
+
+
+
+FLASHMEM void   getFreeITCM() { // end of CODE ITCM, skip full 32 bits
+    uint32_t *ptrFreeITCM;  // Set to Usable ITCM free RAM
+    uint32_t  sizeofFreeITCM; // sizeof free RAM in uint32_t units.
+    uint32_t  SizeLeft_etext;
+
+    SizeLeft_etext = (32 * 1024) - (((uint32_t)&_etext - (uint32_t)&_stext) % (32 * 1024));
+    sizeofFreeITCM = SizeLeft_etext - 4;
+    sizeofFreeITCM /= sizeof(ptrFreeITCM[0]);
+    Logger::info("Size of Free ITCM in Bytes = %u", sizeofFreeITCM * sizeof(ptrFreeITCM[0]));
 }
 
 TickHandler::TickHandler()
@@ -65,7 +91,7 @@ int TickHandler::directAddThread(ThreadFunction p, void * arg, int stack_size, v
     thread = findFreeThread(interval);	// no thread with given tick interval exist -> look for unused (interval == 0)
     if (thread == -1) {
         Logger::error("No free thread available for main thread with interval=%d", interval);
-        return;
+        return -1;
     }
     threadEntry[thread].interval = interval;
     threadEntry[thread].isRunning = false;
@@ -167,7 +193,8 @@ void TickHandler::handleInterrupt(int threadNumber) {
 void TickHandler::showThreadInfo()
 {
     float threadTime;
-    Logger::info("Thread 0: IdleLoop             State: RUNNING    interval: continuous CPU: %4.1f%% Time: %4.2fs", threads.getCPUUsage(0), threads.getSecondsUsed(0));
+    Logger::info("Threading system runs at 100us tick interval. This is every 60,000 instructions.");
+    Logger::info("Thread  0: IdleLoop             State: RUNNING    interval: continuous CPU: %4.1f%% Time: %4.2fs", threads.getCPUUsage(0), threads.getSecondsUsed(0));
     for (int i = 0; i < NUM_THREADS; i++)
     {
         if (threadEntry[i].interval > 0)
@@ -199,9 +226,16 @@ void TickHandler::showThreadInfo()
                 break;
             }
             threadTime = threads.getSecondsUsed(i + 1);
-            Logger::info("Thread %d: %-20s State: %-10s interval: %8dus CPU: %4.1f%% Time: %4.2fs", i + 1, threadEntry[i].name.c_str(), stateStr, threadEntry[i].interval, threads.getCPUUsage(i + 1), threadTime);
+            Logger::info("Thread %2d: %-20s State: %-10s interval: %8dus CPU: %4.1f%% Time: %4.2fs", i + 1, threadEntry[i].name.c_str(), stateStr, threadEntry[i].interval, threads.getCPUUsage(i + 1), threadTime);
         }
     }
+    //now display the memory usage info for the system. This is useful to see if we are running out of memory or stack space.
+    //stack is ITCM and heap is DTCM. The stack is used for function calls and local variables. 
+    //The heap is used for dynamic memory allocation. 
+    //If the stack or heap is too small, the system will crash or behave unpredictably.
+    memInfo();
+    //free ITCM is of nearly no practical use to anyone. Could show it but it's not important.
+    //getFreeITCM();
 }
 
 /*

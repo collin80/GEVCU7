@@ -457,23 +457,34 @@ FLASHMEM void setup() {
     Logger::flushFile();
 
     mainThreadIdx = tickHandler.directAddThread(mainWorkLoop, NULL, MAIN_LOOP_STACK_SIZE, NULL, "MainLoop", MAIN_LOOP_INTERVAL);
+    tickHandler.directAddThread(canProcTask, NULL, 2048, NULL, "CANProc", 1000);
+    tickHandler.directAddThread(sdCardLoop, NULL, 2048, NULL, "SDCard", 1000);
 }
 
-//there really isn't much in the loop here. Most everything is done via interrupts and timer ticks. If you have
-//timer queuing on then those tasks will be dispatched here. Otherwise the loop just cycles very rapidly while
-//all the real work is done via interrupt.
+void canProcTask(void *param)
+{
+    while (1) {
+        canEvents(); //get messages on all three CAN buses and dispatch them
+        threads.delay(1);
+    }
+}
+
+void sdCardLoop(void *param)
+{
+    while (1) {
+        Logger::loop();
+        threads.delay(1);
+    }
+}
+
+/*
+Fires nominally every millisecond. Takes care of various bookkeeping like CAN RX/TX, SD card writing, second serial port.
+Likely needs to be broken up. writing to the sdcard could take a long time and block other parts of this loop from executing.
+*/
 void mainWorkLoop(void* param) 
 {
-    uint32_t now;
-
     while (1) {
-        now = micros();
-        //This needs to be called to handle sdCard writing though.
-        Logger::loop();
-
-        canEvents(); //get messages on all three CAN buses and dispatch them
-
-        //Reads SerialUSB1 (if statusCSV isn't active) 
+        //Reads SerialUSB1 (if statusCSV isn't active)
         canHandlerBus0.loop();
     
         wdt.feed(); //must feed the watchdog every so often or it'll get angry
@@ -488,21 +499,20 @@ void mainWorkLoop(void* param)
         }
         */
         //testGEVCUHardware();
-
-        uint32_t elapsed = micros() - now;
-        //each tread must delay for the appropriate amount of time before the next tick.
-        //This is done here so that the thread can be used for multiple observers with the same interval.
-        //we track the total time spent doing the work and then delay for the remainder of the interval. 
-        //If the work took longer than the interval, we log a warning.
-        if (elapsed > MAIN_LOOP_INTERVAL) {
-            Logger::warn("TickHandler thread %d took %u us to process, longer than interval of %u us", mainThreadIdx + 1, elapsed, MAIN_LOOP_INTERVAL);
-        }
-        else threads.delay(MAIN_LOOP_INTERVAL / 1000 - elapsed / 1000);
+        threads.delay(MAIN_LOOP_INTERVAL / 1000);
     }
 }
 
-//loop here is empty. We use this as the "idle" loop. Thread 0 should then only happen when nothing else does.
-//This allows for tracking the total idle time of the system.
+/*
+loop here is empty. We use this as the "idle" loop. Thread 0 should then only happen when nothing else does.
+This allows for tracking the total idle time of the system.
+Technically there are hidden Arduino function calls for things like serial processing done behind the scenes
+in the loop() function.
+If you put a threads.delay or threads.yield in here then it will cause more task switching
+which causes more overhead and other tasks will show more usage that's not real.
+But, I'm not your mother. It won't actually break anything to yield in here. 
+It just makes the CPU usage numbers less accurate.
+*/
 void loop() 
 {
 }
