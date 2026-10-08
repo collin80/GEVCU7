@@ -15,7 +15,7 @@ due to the advanced directory layout.
 You will need the following to have any hope of compiling and running the firmware:
 - A GEVCU board. This version supports GEVCU7 hardware (the one with Teessy MicroMod)
 - PlatformIO (Works well in Visual Studio Code)
-- TeensyDuino (1.58 or higher) (https://www.pjrc.com/teensy/td_download.html)
+- TeensyDuino (1.58 or higher) but PlatformIO will download and set this up automatically.
 - All libraries are bundled with TeensyDuino or included in the lib folder
 
 Follow these basic steps to get up and running:
@@ -26,6 +26,11 @@ Follow these basic steps to get up and running:
 5. Go the File menu and select "Open Folder". Open the folder where your GEVCU7 files are installed. This will cause the PlatformIO extension to find the platformio.ini file and begin to download the needed Teensy support files (Teensyduino). This will take some time. When it is finished there will be new PlatformIO controls at the bottom of the VSC window.
 6. Down there is a new icon that looks like a checkmark. This will let you compile GEVCU7. The Arrow icon next to it will cause it to compile and upload GEVCU7. 
 
+Note that a change committed in October of 2026 has transitioned the
+code to using TeensyThreads which causes a variety of code to run in 
+separate preemptively multitasked threads. Care should be taken when 
+passing data between threads. The multithreading is still being worked on.
+
 The canbus is supposed to be terminated on both ends of the bus. 
 If you are testing with a DMOC and GEVCU then you've got two devices, 
 each on opposing ends of the bus. GEVCU7 hardware is selectively terminated.
@@ -35,7 +40,7 @@ appropriate solder jumper.
 
 This software is MIT licensed:
 
-Copyright (c) 2021-2024 Collin Kidder, Michael Neuweiler, Charles Galpin, Jack Rickard
+Copyright (c) 2021-2026 Collin Kidder, Michael Neuweiler, Charles Galpin, Jack Rickard
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
