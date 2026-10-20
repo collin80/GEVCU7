@@ -32,7 +32,7 @@
 #include "devices/esp32/ESP32Driver.h"
 
 extern bool sdCardWorking;
-#define RING_BUF_CAPACITY 16 * 1024
+#define RING_BUF_CAPACITY 32 * 1024
 #define LOG_FILENAME "StatusOutput"
 #define MAX_LOGFILES 200
 
@@ -157,12 +157,19 @@ void StatusCSV::flushFile()
 //This method handles periodic tick calls received from the tasker.
 void StatusCSV::handleTick()
 {
+
+    //this touches a lot of stuff. Best to make it wait a little bit after start up so it knows everything is ready.
+    // A better approach would be to get a signal from the system when everything is certainly ready.
+    if (millis() < 6000) return;
+
     StatusEntry *ent = nullptr;
     esp32 = static_cast<ESP32Driver *>(deviceManager.getDeviceByID(0x0800));
     int c;
     String builder;
 
-    if (config->bFileOutput && sdCardWorking && !fileInitialized)
+    //if status output is enabled, we are doing file output, the sdCard is working, 
+    //and the file hasn't been initialized yet, then initialize it.
+    if (isEnabled && config->bFileOutput && sdCardWorking && !fileInitialized)
     {
         initializeFile();
     }
@@ -190,13 +197,14 @@ void StatusCSV::handleTick()
         if ((c == 's') || (c =='S'))
         {
             isEnabled = !isEnabled;
+            if (!isEnabled) needHeader = true; //reset header flag when we end output so that we will print it again when we start
         }
     }
 
     if (isEnabled && needHeader)
     {
         needHeader = false;
-        builder = "";
+        builder = "TimeStamp,";
         for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
         {
             if (!config->enabledStatusEntries[i]) continue;
@@ -231,6 +239,8 @@ void StatusCSV::handleTick()
     {
         tickCounter = 0;
         builder = "";
+        builder += millis();
+        builder += ",";
         //do processing
         for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
         {

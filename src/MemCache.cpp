@@ -33,8 +33,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <Watchdog_t4.h>
 #include <TeensyThreads.h>
 
-extern WDT_T4<WDT3> wdt;
-
 MemCache::MemCache()
 {
     agingTimer = 0;
@@ -56,6 +54,7 @@ FLASHMEM void MemCache::setup() {
 //Handle aging of dirty pages and flushing of aged out dirty pages
 void MemCache::handleTick()
 {
+    Threads::Scope m(memCacheMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
     int c;
     
     agingTimer++;
@@ -90,10 +89,11 @@ FLASHMEM void MemCache::FlushSinglePage()
     }
 }
 
-//Flush every dirty page. It will block for 10ms per page so maybe things will be blocked for a long, long time
-//DO NOT USE THIS FUNCTION UNLESS YOU CAN ACCEPT THAT!
+//Flush every dirty page. It will block for 10ms per page so it could take a while. However,
+//the whole system is multi-threaded so the rest of G7 will keep running while we're here stashing pages
 FLASHMEM void MemCache::FlushAllPages()
 {
+    Threads::Scope m(memCacheMutex);
     int c;
     for (c = 0; c < NUM_CACHED_PAGES; c++) {
         if (pages[c].dirty) { //found a dirty page so flush it
@@ -101,8 +101,7 @@ FLASHMEM void MemCache::FlushAllPages()
             Logger::avalanche("Writing page at cache index %i", c);
             pages[c].dirty = false;
             pages[c].age = 0;
-            threads.delay(10); //10ms is longest it would take to write a page according to datasheet
-            wdt.feed();
+            threads.delay(11); //10ms is longest it would take to write a page according to datasheet
         }
     }
 }
@@ -114,7 +113,7 @@ FLASHMEM void MemCache::FlushPage(uint8_t page) {
         Logger::avalanche("Writing page at cache index %i", page);
         pages[page].dirty = false;
         pages[page].age = 0; //freshly flushed!
-        threads.delay(10); //can't write to eeprom again for around 8ms so delay here so it isnt possible. Bad solution though!
+        threads.delay(10); //can't write to eeprom again for around 8ms so delay here so it isnt possible.
     }
 }
 
@@ -158,7 +157,6 @@ FLASHMEM void MemCache::InvalidateAll()
     uint8_t c;
     for (c=0; c<NUM_CACHED_PAGES; c++) {
         InvalidatePage(c);
-        wdt.feed();
     }
 }
 
@@ -500,7 +498,6 @@ FLASHMEM void MemCache::nukeFromOrbit()
         Wire.write(buffer, 258);
         Wire.endTransmission(true);
         threads.delay(11);
-        wdt.feed();
     }
     //system should be forceably rebooted here to ensure nothing tries to write to eeprom
     //or access anything.
