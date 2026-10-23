@@ -54,13 +54,16 @@ CanHandler canHandlerBus1 = CanHandler(CanHandler::CAN_BUS_1);
 CanHandler canHandlerBus2 = CanHandler(CanHandler::CAN_BUS_2);
 
 /*
-  putting these in DMAMEM saves a lot of tightly coupled RAM but I'm not entirely sure whether it should be done.
-  TCM is much faster and thus putting the CAN objects in DMAMEM slows down CAN access. However, the processor
-  runs at 600MHz and CAN runs only up to about 8Mb so it might be OK. Keep an eye on performance.
+  putting these in DMAMEM would save memory in theory but doesn't seem to work.
+  Currently there is enough TCM for these to all be in fast ram
 */
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0; //Reg CAN or SWCAN depending on mode
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1; //Isolated CAN
 FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> Can2; //Only CAN-FD capable output
+
+//It's best in this multi-threading context to have a mutex to protect hardware access
+//from being multi-threaded which could step on each other's toes.
+Threads::Mutex canbusMutex;
 
 void canRX0(const CAN_message_t &msg) 
 {
@@ -79,6 +82,7 @@ void canRX2(const CANFD_message_t &msg)
 
 void canEvents()
 {
+    Threads::Scope m(canbusMutex);
     canHandlerBus0.checkStatus();
     canHandlerBus1.checkStatus();
     canHandlerBus2.checkStatus();
@@ -121,6 +125,8 @@ void CanHandler::setup()
     uint32_t fdSpeed;
     CANFD_timings_t fdTimings;
     int busNum = 0;
+
+    Threads::Scope m(canbusMutex);
 
     //these pins control whether differential CAN or SingleWire CAN is found on CAN0
     pinMode(33, OUTPUT);
@@ -289,6 +295,8 @@ uint32_t CanHandler::getBusFDSpeed()
 
 FLASHMEM void CanHandler::setBusSpeed(uint32_t newSpeed)
 {
+    Threads::Scope m(canbusMutex);
+
     CANFD_timings_t fdTimings;
     uint32_t fdSpeed;
     int busNum = 0;
@@ -342,6 +350,8 @@ FLASHMEM void CanHandler::setBusSpeed(uint32_t newSpeed)
 
 FLASHMEM void CanHandler::setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed)
 {
+    Threads::Scope m(canbusMutex);
+
     CANFD_timings_t fdTimings;
     if (canBusNode != CAN_BUS_2) return; //only CAN2 can do FD mode
     if (nomSpeed > 125000ul)
@@ -1085,6 +1095,8 @@ void CanHandler::CANIO(const CAN_message_t &msg) {
 //(whatever happens to be open) or queue it to send (if nothing is open)
 void CanHandler::sendFrame(const CAN_message_t &msg)
 {
+    Threads::Scope m(canbusMutex);
+
     int busNum = -1;
     switch (canBusNode)
     {
@@ -1119,6 +1131,8 @@ void CanHandler::sendFrame(const CAN_message_t &msg)
 
 void CanHandler::sendFrameFD(const CANFD_message_t& framefd)
 {
+    Threads::Scope m(canbusMutex);
+
     if (canBusNode != CAN_BUS_2) return;
     Can2.write(framefd);
     if (Logger::isDebug())
