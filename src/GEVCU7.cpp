@@ -94,6 +94,7 @@ byte i = 0;
 uint8_t sdCardPresence; //0 = not inserted, positive numbers indicate it has been inserted for increasing time (up to a limit)
 bool sdCardWorking; //does it appear that the sdcard is currently working properly and able to be used?
 bool sdCardInitFailed; //got a presence signal but trying to init it failed. Quit trying until next insertion
+Threads::Mutex sdAccessMutex; //EVERYTHING that touches the sdcard must lock this mutex first once threading starts up!
 uint32_t bootTime;
 int mainThreadIdx;
 
@@ -301,8 +302,8 @@ FLASHMEM void setup() {
         delay(10); 
     }
     if (sdCardPresence > 1)
-    {
 #endif
+    {
         if (Serial) Serial.print("Attempting to mount sdCard ");
 	    //init SD card early so we can use it for logging everything else if needed.
         if (!SD.sdfs.begin(SdioConfig(FIFO_SDIO)))
@@ -320,8 +321,8 @@ FLASHMEM void setup() {
             //if the system crashed we ought to decode all the breadcrumbs and save them into the logfile.
             //Maybe within the above function?
         }
-#ifndef ASSUME_SDCARD_INSERTED
     }
+#ifndef ASSUME_SDCARD_INSERTED
     else
     {
         if (Serial) Serial.println("No sdCard detected.");
@@ -333,6 +334,7 @@ FLASHMEM void setup() {
 
     if (sdCardWorking)
     {
+        Threads::Scope m(sdAccessMutex);
         //here, directly after trying to find the SDCard is the best place to check the sdcard for firmware files
         //and flash them to the appropriate places if they exist.
         FsFile file;

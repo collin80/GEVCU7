@@ -38,6 +38,7 @@ extern bool sdCardWorking;
 
 // RingBuf for File type FsFile.
 DMAMEM RingBuf<FsFile, RING_BUF_CAPACITY> csvRingBuf;
+extern Threads::Mutex sdAccessMutex;
 
 /*
  * Constructor.
@@ -99,6 +100,7 @@ void StatusCSV::setup() {
 
 void StatusCSV::initializeFile()
 {
+    Threads::Scope m(sdAccessMutex);
     char fn1[100];
     char fn2[100];
     //basically, rename all files one number higher than they were then start a new log with no numbers
@@ -141,6 +143,7 @@ void StatusCSV::initializeFile()
 
 void StatusCSV::flushFile()
 {
+    Threads::Scope m(sdAccessMutex);
     size_t n = csvRingBuf.bytesUsed();
     int ret = 0;
     int writeBytes = min(n, 512u);

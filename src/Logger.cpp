@@ -41,6 +41,7 @@ your terminal program. Be cautious about enabling it.
 #include "devices/esp32/ESP32Driver.h"
 
 extern bool sdCardWorking;
+extern Threads::Mutex sdAccessMutex;
 FsFile logFile;
 
 // For efficiency the log has to be preallocated for a certain amount of space.
@@ -63,37 +64,31 @@ void Logger::initializeFile()
 {
     char fn1[100];
     char fn2[100];
-    //basically, rename all files one number higher than they were then start a new log with no numbers
-    //as the current log
-    for (int i = MAX_LOGFILES - 1; i > 0; i--)
-    {
-        snprintf(fn1, 200, "%s%d.txt", LOG_FILENAME, i);
-        snprintf(fn2, 200, "%s%d.txt", LOG_FILENAME, i - 1);
-        SD.sdfs.remove(fn1); //delete any file that may have been there
-        SD.sdfs.rename(fn2, fn1); //rename the file to the name we just (maybe) deleted
-    }
-    snprintf(fn1, 200, "%s1.txt", LOG_FILENAME);
-    snprintf(fn2, 200, "%s.txt", LOG_FILENAME);
-    SD.sdfs.remove(fn1);
-    SD.sdfs.rename(fn2, fn1);
 
-    logFile = SD.sdfs.open(fn2, O_RDWR | O_CREAT | O_TRUNC);
-    if (!logFile) {
-        Serial.println("open failed\n");
-        return;
-    }
-    else Serial.println("Log file has been opened for writing.");
-    // File must be pre-allocated to avoid huge
-    // delays searching for free clusters.
-    /*
-    if (!file.preAllocate(LOG_FILE_SIZE)) {
-        Serial.println("preAllocate failed\n");
-        file.close();
-        return;
-    }
-    else Serial.println("File Pre_Alloc OK");
-    */
-    
+    {
+        Threads::Scope m(sdAccessMutex);
+
+        //basically, rename all files one number higher than they were then start a new log with no numbers
+        //as the current log
+        for (int i = MAX_LOGFILES - 1; i > 0; i--)
+        {
+            snprintf(fn1, 200, "%s%d.txt", LOG_FILENAME, i);
+            snprintf(fn2, 200, "%s%d.txt", LOG_FILENAME, i - 1);
+            SD.sdfs.remove(fn1); //delete any file that may have been there
+            SD.sdfs.rename(fn2, fn1); //rename the file to the name we just (maybe) deleted
+        }
+        snprintf(fn1, 200, "%s1.txt", LOG_FILENAME);
+        snprintf(fn2, 200, "%s.txt", LOG_FILENAME);
+        SD.sdfs.remove(fn1);
+        SD.sdfs.rename(fn2, fn1);
+
+        logFile = SD.sdfs.open(fn2, O_RDWR | O_CREAT | O_TRUNC);
+        if (!logFile) {
+            Serial.println("open failed\n");
+            return;
+        }
+        else Serial.println("Log file has been opened for writing.");
+    }    
     // initialize the RingBuf.
     rb.begin(&logFile);
     Serial.println("Initialized RingBuff");
@@ -107,6 +102,7 @@ void Logger::initializeFile()
 
 void Logger::flushFile()
 {
+    Threads::Scope m(sdAccessMutex);
     size_t n = rb.bytesUsed();
     int ret = 0;
     int writeBytes = min(n, 512u);
@@ -125,6 +121,7 @@ void Logger::loop()
     esp32 = static_cast<ESP32Driver *>(deviceManager.getDeviceByID(0x0800));
     static uint32_t lastWriteTime = 0;
     if (!sdCardWorking) return;
+    
     size_t n = rb.bytesUsed();
     //Serial.println(n);
     //delay(100);
