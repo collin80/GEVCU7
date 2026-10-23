@@ -213,7 +213,7 @@ struct StatusEntry
 
     double getValueAsDouble()
     {
-        double out;
+        double out = 0.0;
         if (varType == BYTE)
         {
             uint8_t v = *((uint8_t*)varPtr);
@@ -223,7 +223,7 @@ struct StatusEntry
         if (varType == STRING) //this one is special. Sum all characters to give a numeric result
         {
             char *str = (char *)varPtr;
-            while (str) out += *str++;
+            while (*str) out += *str++;
             return out;
         }
         if (varType == INT16)

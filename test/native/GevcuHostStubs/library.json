@@ -1,0 +1,11 @@
+{
+  "name": "GevcuHostStubs",
+  "version": "1.0.0",
+  "description": "Host (native) stand-ins for the Teensy core, peripherals and GEVCU system singletons, used only by the unit tests.",
+  "frameworks": "*",
+  "platforms": "native",
+  "build": {
+    "includeDir": "include",
+    "srcDir": "src"
+  }
+}

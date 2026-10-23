@@ -79,7 +79,7 @@ FLASHMEM void MemCache::FlushSinglePage()
     int c;
     for (c = 0; c<NUM_CACHED_PAGES; c++) {
         if (pages[c].dirty) {
-            cache_writepage(c);
+            if (!cache_writepage(c)) return; //write failed, page stays dirty so nothing is lost
             Logger::avalanche("Writing page at cache index %i", c);
             pages[c].dirty = false;
             pages[c].age = 0; //freshly flushed!
@@ -97,7 +97,7 @@ FLASHMEM void MemCache::FlushAllPages()
     int c;
     for (c = 0; c < NUM_CACHED_PAGES; c++) {
         if (pages[c].dirty) { //found a dirty page so flush it
-            cache_writepage(c);
+            if (!cache_writepage(c)) continue; //write failed, leave it dirty to retry later
             Logger::avalanche("Writing page at cache index %i", c);
             pages[c].dirty = false;
             pages[c].age = 0;
@@ -109,7 +109,7 @@ FLASHMEM void MemCache::FlushAllPages()
 //Flush a given page by the page ID. This is NOT by address so act accordingly. Likely no external code should ever use this
 FLASHMEM void MemCache::FlushPage(uint8_t page) {
     if (pages[page].dirty) {
-        cache_writepage(page);
+        if (!cache_writepage(page)) return; //write failed, page stays dirty
         Logger::avalanche("Writing page at cache index %i", page);
         pages[page].dirty = false;
         pages[page].age = 0; //freshly flushed!
@@ -132,7 +132,7 @@ FLASHMEM void MemCache::InvalidatePage(uint8_t page)
 {
     if (page > NUM_CACHED_PAGES - 1) return; //invalid page, buddy!
     if (pages[page].dirty) {
-        cache_writepage(page);
+        if (!cache_writepage(page)) return; //can't drop a page whose data never reached EEPROM
         threads.delay(10);
     }
     pages[page].dirty = false;
@@ -439,14 +439,21 @@ FLASHMEM uint8_t MemCache::cache_readpage(uint32_t addr)
         Wire.write(buffer, 2);
         Wire.endTransmission(false); //do NOT generate stop
         //delayMicroseconds(50); //give TWI some time to send and chip some time to get page
+        //the return value of requestFrom is a uint8_t and so can't report 256 bytes. Count what arrives instead.
         Wire.requestFrom(i2c_id, 256); //this will generate stop though.
         for (e = 0; e < 256; e++)
         {
-            if(Wire.available())
-            {
-                d = Wire.read(); // receive a byte as character
-                pages[c].data[e] = d;
-            }
+            if (!Wire.available()) break;
+            d = Wire.read(); // receive a byte as character
+            pages[c].data[e] = d;
+        }
+        if (e < 256) //short read - don't cache partial or stale data
+        {
+            Logger::error("EEPROM read of page %x failed (%i of 256 bytes)", address, e);
+            pages[c].address = 0xFFFFFF;
+            pages[c].age = 0;
+            pages[c].dirty = false;
+            return 0xFF;
         }
         pages[c].address = addr;
         pages[c].age = 0;
@@ -471,7 +478,11 @@ FLASHMEM boolean MemCache::cache_writepage(uint8_t page)
     }
     Wire.beginTransmission(i2c_id);
     Wire.write(buffer, 258);
-    Wire.endTransmission(true);
+    if (Wire.endTransmission(true) != 0)
+    {
+        Logger::error("EEPROM write of page %x failed", addr);
+        return false;
+    }
     return true;
 }
 

@@ -1,11 +1,56 @@
+GEVCU7 unit tests
+=================
 
-This directory is intended for PlatformIO Test Runner and project tests.
+These tests run on the development machine (PlatformIO "native" platform),
+not on the Teensy. They compile the real, hardware-independent firmware
+sources against small host stand-ins for the Teensy core and peripherals.
 
-Unit Testing is a software testing method by which individual units of
-source code, sets of one or more MCU program modules together with associated
-control data, usage procedures, and operating procedures, are tested to
-determine whether they are fit for use. Unit testing finds problems early
-in the development cycle.
+Running
+-------
+    pio test -e native                     # whole suite
+    pio test -e native -f test_prefhandler # one suite
+    pio test -e native -v                  # show each test's output
 
-More information about PlatformIO Unit Testing:
-- https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+Plain `pio test` also works: the teensymm environment ignores all tests.
+
+Layout
+------
+test_intel_hex/          Intel HEX record parsing used by the firmware updater
+test_md5/                MD5 used to verify ESP32 images
+test_pid/                PID controller
+test_crash_breadcrumbs/  Breadcrumb encode/decode in CrashHandler
+test_memcache/           EEPROM write-back page cache (aging, eviction, flushing)
+test_prefhandler/        Device table and hashed key/value settings storage
+test_faulthandler/       Persistent circular fault log
+test_throttle/           Pedal mapping, regen, creep, smoothing, config save/load
+test_device/             Device lifecycle and StatusEntry
+
+native/GevcuHostStubs/   Host stand-ins, built as a library for the native env:
+  include/Arduino.h        core API, String, Print/Stream, virtual millis()
+  include/TeensyThreads.h  Mutex/Scope (records nesting), threads.delay()
+  include/FlexCAN_T4.h     CAN frame structs only
+  include/SD.h             FsFile reading from an in-memory string
+  src/host_arduino.cpp     virtual time + Wire backed by an emulated 256KB
+                           24-series I2C EEPROM (page writes, 4 banks)
+  src/host_logger.cpp      Logger that records messages for assertions
+  src/host_system.cpp      recording fakes for TickHandler, DeviceManager,
+                           CanHandler; defines memCache
+  include/host_test_support.h  test controls: hostResetAll(), EEPROM
+                           peek/poke/fault injection, log and registration
+                           inspection
+  include/gevcu_test.h     include this from tests
+
+Writing a test
+--------------
+Create test/test_<name>/test_<name>.cpp, include "gevcu_test.h" and the firmware
+header, call hostResetAll() in setUp(), and write a main() that runs the tests
+(see any existing suite). If the code under test lives in a source file not yet
+compiled for native, add it to build_src_filter in [env:native] in
+platformio.ini; if it needs a peripheral or singleton that isn't stubbed, add a
+stand-in under native/GevcuHostStubs. The host build uses -funsigned-char to
+match ARM, so char behaves as it does on the Teensy.
+
+Not covered here: code that talks directly to i.MX RT1062 registers or real
+buses (CanHandler, sys_io, FlasherX/FlashTxx, ESP32 loader, SerialConsole) and
+the individual device drivers. Those need on-target or hardware-in-the-loop
+testing.

@@ -53,6 +53,7 @@ void FaultHandler::handleTick()
 uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code)
 {
     bool incPtr = false;
+    uint16_t storedAt = faultWritePointer;
     globalTime = baseTime + (millis() / 100);
 
     //first try to see if this fault is already registered as ongoing. If so don't update the time but set ongoing status if necessary
@@ -62,6 +63,7 @@ uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code)
         if (faultList[j].ongoing && faultList[j].device == device && faultList[j].faultCode == code)
         {
             found = true;
+            storedAt = j;
             //faultList[j].timeStamp = globalTime;
             //Logger::error("Fault still ongoing");
             faultList[j].ongoing = true;
@@ -97,7 +99,7 @@ uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code)
         Logger::error(FAULTSYS, "Fault %x raised by device %x at uptime %i", code, device, globalTime);
     }
 
-    return faultWritePointer;
+    return storedAt;
 }
 
 void FaultHandler::cancelOngoingFault(uint16_t device, uint16_t code)
@@ -213,7 +215,7 @@ void FaultHandler::saveToEEPROM()
 
 void FaultHandler::writeFaultToEEPROM(int faultnum)
 {
-    if (faultnum > 0 && faultnum < CFG_FAULT_HISTORY_SIZE)
+    if (faultnum >= 0 && faultnum < CFG_FAULT_HISTORY_SIZE)
     {
         memCache->Write(EE_FAULT_LOG + EEFAULT_FAULTS_START + sizeof(FAULT) * faultnum, &faultList[faultnum], sizeof(FAULT));
     }
@@ -236,7 +238,7 @@ FAULT *FaultHandler::getNextFault()
 
 FAULT* FaultHandler::getFault(uint16_t fault)
 {
-    if (fault > 0 && fault < CFG_FAULT_HISTORY_SIZE) {
+    if (fault < CFG_FAULT_HISTORY_SIZE) { //slot 0 is a valid fault slot too
         return &faultList[fault];
     }
     return nullptr;
@@ -244,7 +246,7 @@ FAULT* FaultHandler::getFault(uint16_t fault)
 
 uint16_t FaultHandler::setFaultACK(uint16_t fault)
 {
-    if (fault > 0 && fault < CFG_FAULT_HISTORY_SIZE)
+    if (fault < CFG_FAULT_HISTORY_SIZE) //slot 0 is a valid fault slot too
     {
         faultList[fault].ack = 1;
         writeFaultToEEPROM(fault);
@@ -285,7 +287,7 @@ uint16_t FaultHandler::ackAllFaults()
 
 uint16_t FaultHandler::setFaultOngoing(uint16_t fault, bool ongoing)
 {
-    if (fault > 0 && fault < CFG_FAULT_HISTORY_SIZE)
+    if (fault < CFG_FAULT_HISTORY_SIZE) //slot 0 is a valid fault slot too
     {
         faultList[fault].ongoing = ongoing;
         writeFaultToEEPROM(fault);

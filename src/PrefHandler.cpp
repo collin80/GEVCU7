@@ -33,6 +33,7 @@ PrefHandler::PrefHandler() {
     lkg_address = EE_MAIN_OFFSET; //default to normal mode
     base_address = 0;
     semKeyLookup = false;
+    hasSlot = true;
 }
 
 bool PrefHandler::isEnabled()
@@ -131,6 +132,9 @@ FLASHMEM PrefHandler::PrefHandler(DeviceId id_in) {
 
     enabled = false;
     semKeyLookup = false;
+    hasSlot = true;
+    position = -1;
+    deviceID = (uint16_t)id_in;
 
     checkTableValidity();
 
@@ -168,7 +172,10 @@ FLASHMEM PrefHandler::PrefHandler(DeviceId id_in) {
     }
 
     //we found no matches and could not allocate a space. This is bad. Error out here
-    base_address = 0xF0F0;
+    //There is no safe EEPROM area for this device so it gets no storage at all rather than
+    //sharing (and corrupting) another device's block.
+    hasSlot = false;
+    base_address = 0;
     lkg_address = EE_MAIN_OFFSET;
     Logger::error("PrefManager - Device Table Full!!!");
 }
@@ -240,7 +247,7 @@ FLASHMEM uint32_t PrefHandler::findSettingLocation(uint32_t hash)
 
 //Works similarly to above but finds a hash value that has not been initialized and
 //returns the address of the hash value (not 5 higher as with the above function)
-FLASHMEM uint32_t PrefHandler::findEmptySettingLoc()
+FLASHMEM uint32_t PrefHandler::findEmptySettingLoc(size_t length)
 {
     uint32_t readHash;
     uint8_t readLength;
@@ -250,6 +257,8 @@ FLASHMEM uint32_t PrefHandler::findEmptySettingLoc()
         Logger::avalanche("Read Hash = %x", readHash);
         if (readHash == 0xFFFFFFFFul) //it's empty! Return this exact address
         {
+            //but only if the whole record (hash, length, value) fits in this device's block
+            if (idx + 5 + length > EE_DEVICE_SIZE) return 0xFFFFFFFFul;
             return (idx);
         }
         //otherwise, read length then skip the 4 for hash, 1 for length, and length too.
@@ -264,8 +273,9 @@ FLASHMEM uint32_t PrefHandler::findEmptySettingLoc()
 //Uses the above two functions to input a key name and see where it is stored
 //(if it exists). Can create a new entry if desired. Returns the location of 
 //the setting. Not to be called by external code.
-uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
+uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary, size_t length)
 {
+    if (!hasSlot) return 0xFFFFFFFFul;
     Logger::avalanche("Key look up for %s", key);
     uint32_t hash = fnvHash(key);
     uint32_t address = findSettingLocation(hash);
@@ -274,7 +284,7 @@ uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
         if (createIfNecessary)
         {
             Logger::avalanche("Must create new entry for this setting");
-            address = findEmptySettingLoc();        
+            address = findEmptySettingLoc(length);
             if (address >= EE_DEVICE_SIZE) return 0xFFFFFFFFul;
             //write the hash value to this entry because it's new
             Logger::avalanche("Setting stored at %x", address);
@@ -292,13 +302,14 @@ uint32_t PrefHandler::keyToAddress(const char *key, bool createIfNecessary)
 FLASHMEM bool PrefHandler::eraseByKey(const char *key)
 {
     uint32_t address = keyToAddress(key, false);
-    if (address >= 0xFFFFFFF) return false; //obviously does not exist
+    if (address >= EE_DEVICE_SIZE) return false; //obviously does not exist
     //but returned value is 5 bytes past the start. First 4 are hash, last one is length
     //can't change length or everything gets messed up but can ruin the hash
     uint32_t dummy = 0;
-    Logger::console("Erasing config entry at %x", address);
-    memCache->Write(address - 5, dummy);
-    memCache->AgeFullyAddress(address - 5); //cause the page to be written very soon
+    uint32_t hashAddr = address - 5 + base_address + lkg_address;
+    Logger::console("Erasing config entry at %x", hashAddr);
+    memCache->Write(hashAddr, dummy);
+    memCache->AgeFullyAddress(hashAddr); //cause the page to be written very soon
     return true;
 }
 
@@ -306,7 +317,8 @@ FLASHMEM bool PrefHandler::eraseByKey(const char *key)
 
 //Given a key, write an 8 bit value with that key name
 FLASHMEM bool PrefHandler::write(const char *key, uint8_t val) {
-    uint32_t address = keyToAddress(key, true);
+    uint32_t address = keyToAddress(key, true, 1);
+    if (address >= EE_DEVICE_SIZE) return false; //no room left for this setting
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
     if (len == 0)
@@ -324,7 +336,8 @@ FLASHMEM bool PrefHandler::write(const char *key, uint8_t val) {
 }
 
 FLASHMEM bool PrefHandler::write(const char *key, uint16_t val) {
-    uint32_t address = keyToAddress(key, true);
+    uint32_t address = keyToAddress(key, true, 2);
+    if (address >= EE_DEVICE_SIZE) return false; //no room left for this setting
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
     if (len == 0)
@@ -342,7 +355,8 @@ FLASHMEM bool PrefHandler::write(const char *key, uint16_t val) {
 }
 
 FLASHMEM bool PrefHandler::write(const char *key, uint32_t val) {
-    uint32_t address = keyToAddress(key, true);
+    uint32_t address = keyToAddress(key, true, 4);
+    if (address >= EE_DEVICE_SIZE) return false; //no room left for this setting
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
     if (len == 0)
@@ -360,7 +374,8 @@ FLASHMEM bool PrefHandler::write(const char *key, uint32_t val) {
 }
 
 FLASHMEM bool PrefHandler::write(const char *key, float val) {
-    uint32_t address = keyToAddress(key, true);    
+    uint32_t address = keyToAddress(key, true, 4);
+    if (address >= EE_DEVICE_SIZE) return false; //no room left for this setting
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
     if (len == 0)
@@ -378,7 +393,8 @@ FLASHMEM bool PrefHandler::write(const char *key, float val) {
 }
 
 FLASHMEM bool PrefHandler::write(const char *key, double val) {
-    uint32_t address = keyToAddress(key, true);
+    uint32_t address = keyToAddress(key, true, 8);
+    if (address >= EE_DEVICE_SIZE) return false; //no room left for this setting
     uint8_t len;
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
     if (len == 0)
@@ -396,7 +412,8 @@ FLASHMEM bool PrefHandler::write(const char *key, double val) {
 }
 
 FLASHMEM bool PrefHandler::write(const char *key, const char *val, size_t maxlen) {
-    uint32_t address = keyToAddress(key, true);    
+    uint32_t address = keyToAddress(key, true, maxlen + 1);
+    if (address >= EE_DEVICE_SIZE) return false; //no room left for this setting
     uint8_t len;
     size_t stringLen = strlen(val);
     if (stringLen > maxlen) stringLen = maxlen;
@@ -411,13 +428,15 @@ FLASHMEM bool PrefHandler::write(const char *key, const char *val, size_t maxlen
         Logger::error("Attempt to write improper length to variable %s!", key);
         return false;
     }
-    //then return whether we could write the value into the memory cache    
-    return memCache->Write((uint32_t)address + base_address + lkg_address, val, stringLen + 1);
+    //write the (possibly truncated) characters followed by a terminator so a truncated string is still terminated
+    if (!memCache->Write((uint32_t)address + base_address + lkg_address, val, stringLen)) return false;
+    return memCache->Write((uint32_t)address + base_address + lkg_address + stringLen, (uint8_t)0);
 }
 
 FLASHMEM bool PrefHandler::writeBlock(const char *key, uint8_t *data, size_t length)
 {
-    uint32_t address = keyToAddress(key, true);    
+    uint32_t address = keyToAddress(key, true, length);
+    if (address >= EE_DEVICE_SIZE) return false; //no room left for this setting
     uint8_t len;
     
     memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
@@ -491,12 +510,15 @@ FLASHMEM bool PrefHandler::read(const char *key, char *val, const char* defval)
     if (address < EE_DEVICE_SIZE) 
     {
         uint8_t c;
+        uint8_t len = 0;
         int i = 0;
-        while ( memCache->Read((uint32_t)address + base_address + lkg_address + i, &c) )
+        //never read past the end of this record; the length byte sits just before the value
+        memCache->Read((uint32_t)address + base_address + lkg_address - 1, &len);
+        while ( (i < len) && memCache->Read((uint32_t)address + base_address + lkg_address + i, &c) )
         {
+            if (c == 0) break;
             *val++ = c;
             i++;
-            if (c == 0) break;
         }
         *val = 0;
         return true;
@@ -530,6 +552,7 @@ FLASHMEM uint8_t PrefHandler::calcChecksum() {
 
 //calculate the current checksum and save it to the proper place
 FLASHMEM void PrefHandler::saveChecksum() {
+    if (!hasSlot) return;
     uint8_t csum;
     csum = calcChecksum();
     Logger::debug("New checksum: %x", csum);
@@ -540,6 +563,8 @@ FLASHMEM bool PrefHandler::checksumValid() {
     //get checksum from EEPROM and calculate the current checksum to see if they match
     uint8_t stored_chk, calc_chk;
     uint16_t stored_id;
+
+    if (!hasSlot) return false;
 
     memCache->Read(EE_CHECKSUM + base_address + lkg_address, &stored_chk);
     
@@ -592,6 +617,7 @@ uint32_t PrefHandler::fnvHash(const char *input)
 //to 0xFF's and the cache flushed so the settings will be fresh thereafter. 
 FLASHMEM void PrefHandler::resetEEPROM()
 {
+    if (!hasSlot) return;
     //write over all the settings 32 bits at a time
     uint32_t val = 0xFFFFFFFFul;
     for (uint32_t idx = SETTINGS_START; idx < EE_DEVICE_SIZE; idx = idx + 4)

@@ -87,13 +87,14 @@ private:
     uint16_t deviceID; //device ID of the device that registered this pref handler instance
     bool use_lkg; //use last known good config?
     bool enabled;
+    bool hasSlot; //false if no device table entry could be allocated. All reads then give defaults and writes fail.
     int position; //position within the device table
     volatile bool semKeyLookup;
 
     uint32_t fnvHash(const char *input);
     uint32_t findSettingLocation(uint32_t hash);
-    uint32_t findEmptySettingLoc();
-    uint32_t keyToAddress(const char *key, bool createIfNecessary);
+    uint32_t findEmptySettingLoc(size_t length);
+    uint32_t keyToAddress(const char *key, bool createIfNecessary, size_t length = 0);
     static void processAutoEntry(uint16_t val, uint16_t pos);
 };
 
