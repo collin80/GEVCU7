@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "devices/Device.h"
 
 class ExtIODevice;
+extern Threads::Mutex i2cMutex;
 
 enum SystemType 
 {

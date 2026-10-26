@@ -60,6 +60,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //Note that this is 10 years STRAIGHT. As in, you never turned it off for 10 years and every chance it got it wrote the page.
 //This should be plenty of EEPROM life.
 
+extern Threads::Mutex i2cMutex;
+
 typedef struct
 {
     uint8_t data[256];
@@ -110,7 +112,6 @@ private:
     uint8_t cache_readpage(uint32_t addr);
     boolean cache_writepage(uint8_t page);
     uint8_t agingTimer;
-    Threads::Mutex memCacheMutex;
 };
 
 #endif /* MEM_CACHE_H_ */

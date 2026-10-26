@@ -54,7 +54,6 @@ FLASHMEM void MemCache::setup() {
 //Handle aging of dirty pages and flushing of aged out dirty pages
 void MemCache::handleTick()
 {
-    Threads::Scope m(memCacheMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
     int c;
     
     agingTimer++;
@@ -93,7 +92,7 @@ FLASHMEM void MemCache::FlushSinglePage()
 //the whole system is multi-threaded so the rest of G7 will keep running while we're here stashing pages
 FLASHMEM void MemCache::FlushAllPages()
 {
-    Threads::Scope m(memCacheMutex);
+    Threads::Scope m(i2cMutex);
     int c;
     for (c = 0; c < NUM_CACHED_PAGES; c++) {
         if (pages[c].dirty) { //found a dirty page so flush it
@@ -424,6 +423,8 @@ FLASHMEM uint8_t MemCache::cache_findpage()
 
 FLASHMEM uint8_t MemCache::cache_readpage(uint32_t addr)
 {
+    Threads::Scope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
+
     uint16_t c,d,e;
     uint32_t address = addr << 8;
     uint8_t buffer[3];
@@ -441,6 +442,7 @@ FLASHMEM uint8_t MemCache::cache_readpage(uint32_t addr)
         //delayMicroseconds(50); //give TWI some time to send and chip some time to get page
         //the return value of requestFrom is a uint8_t and so can't report 256 bytes. Count what arrives instead.
         Wire.requestFrom(i2c_id, 256); //this will generate stop though.
+        //threads.delay(10);
         for (e = 0; e < 256; e++)
         {
             if (!Wire.available()) break;
@@ -449,7 +451,7 @@ FLASHMEM uint8_t MemCache::cache_readpage(uint32_t addr)
         }
         if (e < 256) //short read - don't cache partial or stale data
         {
-            Logger::error("EEPROM read of page %x failed (%i of 256 bytes)", address, e);
+            Logger::error("EEPROM read of page at %x failed (got %i of 256 bytes)", address, e);
             pages[c].address = 0xFFFFFF;
             pages[c].age = 0;
             pages[c].dirty = false;
@@ -464,6 +466,8 @@ FLASHMEM uint8_t MemCache::cache_readpage(uint32_t addr)
 
 FLASHMEM boolean MemCache::cache_writepage(uint8_t page)
 {
+    Threads::Scope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
+
     uint16_t d;
     uint32_t addr;
     uint8_t buffer[258];
@@ -478,9 +482,10 @@ FLASHMEM boolean MemCache::cache_writepage(uint8_t page)
     }
     Wire.beginTransmission(i2c_id);
     Wire.write(buffer, 258);
-    if (Wire.endTransmission(true) != 0)
+    d = Wire.endTransmission(true);
+    if (d != 0)
     {
-        Logger::error("EEPROM write of page %x failed", addr);
+        Logger::error("EEPROM write of page %x failed with code %u", addr, d);
         return false;
     }
     return true;
@@ -492,6 +497,8 @@ FLASHMEM boolean MemCache::cache_writepage(uint8_t page)
 
 FLASHMEM void MemCache::nukeFromOrbit()
 {
+    Threads::Scope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
+
     uint16_t d;
     uint32_t addr;
     uint8_t buffer[258];

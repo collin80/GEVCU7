@@ -685,6 +685,7 @@ void SystemIO::handleTick()
     //only update the chip if we actually changed anything
     if (pcaDigitalOutputCache != tempCache)
     {
+        Threads::Scope m(i2cMutex);
         Wire.beginTransmission(PCA_ADDR);
         Wire.write(PCA_WRITE_OUT0);
         Wire.write(pcaDigitalOutputCache);
@@ -763,6 +764,7 @@ bool SystemIO::calibrateADCGain(int adc, int32_t target, bool update)
 
 FLASHMEM void SystemIO::initDigitalMultiplexor()
 {
+    Threads::Scope m(i2cMutex);
     //all of port 0 are outputs, all of port 1 are inputs
     //1 in a config bit means input, 0 = output
     Wire.begin();
@@ -791,6 +793,7 @@ FLASHMEM void SystemIO::initDigitalMultiplexor()
 
 int SystemIO::_pGetDigitalInput(int pin) //all inputs are on port 1
 {
+    Threads::Scope m(i2cMutex);
     if ( (pin < 0) || (pin > 7) ) return 0;
     Wire.beginTransmission(PCA_ADDR);
     Wire.write(PCA_READ_IN1);
@@ -808,6 +811,7 @@ int SystemIO::_pGetDigitalInput(int pin) //all inputs are on port 1
 
 void SystemIO::_pSetDigitalOutput(int pin, int state)
 {
+    Threads::Scope m(i2cMutex);
     if ( (pin < 0) || (pin > 7) ) return;
 
     uint8_t outputMask = ~(1<<pin);
@@ -822,6 +826,7 @@ void SystemIO::_pSetDigitalOutput(int pin, int state)
 
 int SystemIO::_pGetDigitalOutput(int pin)
 {
+    Threads::Scope m(i2cMutex);
     if ( (pin < 0) || (pin > 7) ) return 0;
     Wire.beginTransmission(PCA_ADDR);
     Wire.write(PCA_READ_IN0);

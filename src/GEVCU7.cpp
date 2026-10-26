@@ -95,6 +95,7 @@ uint8_t sdCardPresence; //0 = not inserted, positive numbers indicate it has bee
 bool sdCardWorking; //does it appear that the sdcard is currently working properly and able to be used?
 bool sdCardInitFailed; //got a presence signal but trying to init it failed. Quit trying until next insertion
 Threads::Mutex sdAccessMutex; //EVERYTHING that touches the sdcard must lock this mutex first once threading starts up!
+Threads::Mutex i2cMutex; //likewise, everything that toucheth thine I2C bus shall henceforth lock this.
 uint32_t bootTime;
 int mainThreadIdx;
 
