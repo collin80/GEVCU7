@@ -33,6 +33,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "config.h"
 #include <TeensyThreads.h>
 #include "Logger.h"
+#include "RecursiveMutex.h"
 
 /*No longer using timers. Using threads instead. Also not grouping devices
 with same delay together. Each device can have its own thread and delay.
@@ -65,10 +66,14 @@ private:
         TickObserver *observer; // pointer to observer that should be called
         String name; // name of the thread for debugging purposes
         bool isRunning; // true if the timer is running, false if not
+        bool detached; // observer was detached. The thread keeps running idle and attach() can reuse it
     };
     ThreadEntry threadEntry[NUM_THREADS]; // array of timer entries
+    //attach/detach can be called from any thread (e.g. enabling/disabling a device from the console)
+    //so anything that changes threadEntry locks this first.
+    RecursiveMutex tickMutex;
     
-    int findFreeThread(uint64_t interval);
+    int findFreeThread(bool reuseIdle);
 };
 
 extern TickHandler tickHandler;

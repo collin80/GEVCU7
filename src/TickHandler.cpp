@@ -68,6 +68,7 @@ TickHandler::TickHandler()
     for (int i = 0; i < NUM_THREADS; i++) {
         threadEntry[i].interval = 0;
         threadEntry[i].isRunning = false;
+        threadEntry[i].detached = false;
         threadEntry[i].observer = NULL;
     }
 }
@@ -87,8 +88,9 @@ FLASHMEM void TickHandler::setup()
 /// @details Directly adds a thread to the system with the specified parameters. Fills in both types of thread bookkeeping.
 int TickHandler::directAddThread(ThreadFunction p, void * arg, int stack_size, void *stack, const char *name, uint32_t interval)
 {
+    RecursiveScope m(tickMutex);
     int thread;
-    thread = findFreeThread(interval);	// no thread with given tick interval exist -> look for unused (interval == 0)
+    thread = findFreeThread(false); //can't reuse an idle tick thread here as it runs threadTrampoline, not p
     if (thread == -1) {
         Logger::error("No free thread available for main thread with interval=%d", interval);
         return -1;
@@ -117,15 +119,17 @@ int TickHandler::directAddThread(ThreadFunction p, void * arg, int stack_size, v
  * well, the thread is configured and (re)started.
  */
 FLASHMEM void TickHandler::attach(TickObserver* observer, uint32_t interval, const char *name) {
+    RecursiveScope m(tickMutex);
     int thread;
-    thread = findFreeThread(interval);	// no thread with given tick interval exist -> look for unused (interval == 0)
+    thread = findFreeThread(true); //prefers an idle thread left behind by detach() before starting a new one
     if (thread == -1) {
         Logger::error("No free thread available for interval=%d", interval);
         return;
     }
     threadEntry[thread].interval = interval;
-    threadEntry[thread].isRunning = false;
     threadEntry[thread].name = name ? String(name) : String("");
+    threadEntry[thread].detached = false;
+    //set last. If this slot is being reused its thread is already running and will pick this up on its next loop
     threadEntry[thread].observer = observer;
     Logger::debug("attached TickObserver (%X) to thread %d, %dus interval", observer, thread + 1, interval);
 
@@ -139,6 +143,8 @@ FLASHMEM void TickHandler::attach(TickObserver* observer, uint32_t interval, con
 
 /**
  * Remove an observer from all timers where it was registered.
+ * The thread itself keeps running but idles (it no longer calls anything) and attach() will reuse it.
+ * Note that if the observer's handleTick() was already running when this is called it will still finish.
  */
 FLASHMEM void TickHandler::detach(TickObserver* observer) {
     if (!observer) 
@@ -146,19 +152,29 @@ FLASHMEM void TickHandler::detach(TickObserver* observer) {
         Logger::debug("Attempt to call TickHandler::detach with a null ptr!");
         return;
     }
+    RecursiveScope m(tickMutex);
     for (int thread = 0; thread < NUM_THREADS; thread++) {
         if (threadEntry[thread].observer == observer) {
             Logger::debug("removing TickObserver (%X) from thread %d", observer, thread + 1);
             threadEntry[thread].observer = nullptr;
-            threads.stop();
+            threadEntry[thread].detached = true;
         }
     }
 }
 
-/* Find a free slot 
+/* Find a free slot. If reuseIdle is set then a running tick thread whose observer was detached
+   is used first. Otherwise (or if there are none) an entry that has never been used is returned.
+   Must be called with tickMutex held.
 */
-int TickHandler::findFreeThread(uint64_t interval)
+int TickHandler::findFreeThread(bool reuseIdle)
 {
+    if (reuseIdle)
+    {
+        for (int i = 0; i < NUM_THREADS; i++)
+        {
+            if (threadEntry[i].detached && threadEntry[i].isRunning) return i;
+        }
+    }
     for (int i = 0; i < NUM_THREADS; i++)
     {
         //find empty thread entry
@@ -176,8 +192,10 @@ int TickHandler::findFreeThread(uint64_t interval)
  */
 void TickHandler::handleInterrupt(int threadNumber) {
     uint32_t now = micros();
-    if (threadEntry[threadNumber].observer != NULL) {
-        threadEntry[threadNumber].observer->handleTick();
+    //read it only once. detach() can clear it from another thread at any moment
+    TickObserver *observer = threadEntry[threadNumber].observer;
+    if (observer != NULL) {
+        observer->handleTick();
     }
     uint32_t elapsed = micros() - now;
     //each tread must delay for the appropriate amount of time before the next tick.
