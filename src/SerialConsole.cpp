@@ -58,6 +58,11 @@ void SerialConsole::init() {
 
     //State variables for serial console
     ptrBuffer = 0;
+    usbPtr = 0;
+    injectPtr = 0;
+    queueHead = 0;
+    queueTail = 0;
+    queueCount = 0;
     state = STATE_ROOT_MENU;
     loopcount=0;
     cancel=false;
@@ -408,26 +413,64 @@ void SerialConsole::serialEvent() {
         return;
     }
 
-    if (incoming == 10 || incoming == 13) { //command done. Parse it.
-        handleConsoleCmd();
-        ptrBuffer = 0; //reset line counter once the line has been processed
-    } else {
-        cmdBuffer[ptrBuffer++] = (unsigned char) incoming;
-        if (ptrBuffer > 79)
-            ptrBuffer = 79;
-    }
+    addInputChar((char)incoming, usbBuffer, usbPtr);
 }
 
 //this gets called by things like the esp32 to inject characters from places like telnet
 void SerialConsole::injectChar(char c)
 {
+    addInputChar(c, injectBuffer, injectPtr);
+}
+
+//Add a character to a source's line buffer. A line ending submits the line as a command.
+void SerialConsole::addInputChar(char c, char *lineBuf, int &linePtr)
+{
     if (c == 10 || c == 13) { //command done. Parse it.
-        handleConsoleCmd();
-        ptrBuffer = 0; //reset line counter once the line has been processed
+        submitLine(lineBuf, linePtr);
+        linePtr = 0; //reset line counter once the line has been processed
     } else {
-        cmdBuffer[ptrBuffer++] = (unsigned char) c;
-        if (ptrBuffer > 79)
-            ptrBuffer = 79;
+        lineBuf[linePtr++] = c;
+        if (linePtr > 79)
+            linePtr = 79;
+    }
+}
+
+//Queue a finished line to be run by runQueuedCommands(). This can be called from inside yield() on any
+//thread, possibly one that holds other locks, so it must never run the command itself.
+void SerialConsole::submitLine(const char *line, int len)
+{
+    if (len == 0) return; //blank line (CR and LF both arriving). Nothing to do
+    bool dropped = false;
+    {
+        RecursiveScope m(consoleMutex);
+        if (queueCount < CONSOLE_QUEUE_SIZE)
+        {
+            memcpy(lineQueue[queueHead], line, len);
+            lineQueueLen[queueHead] = len;
+            queueHead = (queueHead + 1) % CONSOLE_QUEUE_SIZE;
+            queueCount++;
+        }
+        else dropped = true;
+    }
+    if (dropped) Logger::warn("Console command queue full. Dropped a command.");
+}
+
+//Run any queued command lines, one at a time. Called from loop() (thread 0) which holds no other locks
+//so commands are free to use the SD card, EEPROM, etc. without any lock ordering concerns.
+void SerialConsole::runQueuedCommands()
+{
+    while (true)
+    {
+        {
+            RecursiveScope m(consoleMutex);
+            if (queueCount == 0) return;
+            memcpy(cmdBuffer, lineQueue[queueTail], lineQueueLen[queueTail]);
+            ptrBuffer = lineQueueLen[queueTail];
+            queueTail = (queueTail + 1) % CONSOLE_QUEUE_SIZE;
+            queueCount--;
+        }
+        handleConsoleCmd(); //run with the queue unlocked so new input can still be queued meanwhile
+        ptrBuffer = 0;
     }
 }
 

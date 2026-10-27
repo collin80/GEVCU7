@@ -42,12 +42,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "devices/bms/BatteryManager.h"
 #include "devices/misc/Precharger.h"
 
+#define CONSOLE_QUEUE_SIZE 4 //# of complete command lines that can be waiting to run
+
 class SerialConsole {
 public:
     SerialConsole(MemCache* memCache);
     SerialConsole(MemCache* memCache, Heartbeat* heartbeat);
     void injectChar(char c);
     void loop();
+    void runQueuedCommands();
     void setup();
     void printMenu();
 
@@ -61,8 +64,21 @@ private:
     MemCache* memCache;
     Heartbeat* heartbeat;
     bool handlingEvent;
-    char cmdBuffer[80];
+    char cmdBuffer[80]; //the line currently being executed. Only touched by runQueuedCommands (thread 0)
     int ptrBuffer;
+    //USB serial and the ESP32 (telnet) both feed the console from different threads, often from inside
+    //yield() in whatever thread happened to call it, so each builds its line in its own buffer. Finished
+    //lines are only queued there. runQueuedCommands() runs them later from loop() where no other locks are held.
+    char usbBuffer[80];
+    int usbPtr;
+    char injectBuffer[80];
+    int injectPtr;
+    char lineQueue[CONSOLE_QUEUE_SIZE][80];
+    int lineQueueLen[CONSOLE_QUEUE_SIZE];
+    int queueHead; //next slot to fill
+    int queueTail; //next slot to run
+    int queueCount;
+    RecursiveMutex consoleMutex; //guards the line queue only
     int state;
     int loopcount;
     bool cancel;
@@ -70,6 +86,8 @@ private:
 
     void init();
     void serialEvent();
+    void addInputChar(char c, char *lineBuf, int &linePtr);
+    void submitLine(const char *line, int len);
     void handleConsoleCmd();
     void handleShortCmd();
     void handleConfigCmd();

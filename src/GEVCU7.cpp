@@ -515,9 +515,12 @@ If you put a threads.delay or threads.yield in here then it will cause more task
 which causes more overhead and other tasks will show more usage that's not real.
 But, I'm not your mother. It won't actually break anything to yield in here. 
 It just makes the CPU usage numbers less accurate.
+The one thing done here is running console commands. Input is only queued from inside yield() (which can
+happen in any thread, even one holding locks) and the commands themselves are run here where nothing is held.
 */
 void loop() 
 {
+    if (serialConsole) serialConsole->runQueuedCommands();
 }
 
 //Not interrupt driven but the callbacks should still happen quickly.
