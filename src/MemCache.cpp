@@ -439,7 +439,7 @@ FLASHMEM uint8_t MemCache::cache_findpage()
 
 FLASHMEM uint8_t MemCache::cache_readpage(uint32_t addr)
 {
-    Threads::Scope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
+    RecursiveScope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
 
     uint16_t c,d,e;
     uint32_t address = addr << 8;
@@ -482,7 +482,7 @@ FLASHMEM uint8_t MemCache::cache_readpage(uint32_t addr)
 
 FLASHMEM boolean MemCache::cache_writepage(uint8_t page)
 {
-    Threads::Scope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
+    RecursiveScope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
 
     uint16_t d;
     uint32_t addr;
@@ -514,7 +514,7 @@ FLASHMEM boolean MemCache::cache_writepage(uint8_t page)
 FLASHMEM void MemCache::nukeFromOrbit()
 {
     RecursiveScope c(cacheMutex); //nobody else gets to use the cache while the EEPROM is being wiped
-    Threads::Scope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
+    RecursiveScope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
 
     uint16_t d;
     uint32_t addr;

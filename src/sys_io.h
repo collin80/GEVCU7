@@ -41,7 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "devices/Device.h"
 
 class ExtIODevice;
-extern Threads::Mutex i2cMutex;
+extern RecursiveMutex i2cMutex; //also guards pcaDigitalOutputCache and digPWMOutput in SystemIO
 
 enum SystemType 
 {
@@ -133,6 +133,9 @@ private:
     bool ranSetup;
 
     int adcMuxSelect;
+    //_pGetAnalogRaw is used by the tick and by the calibration routines (console thread). This keeps
+    //the analog mux setting and the ADC read together so one can't switch the mux under the other.
+    RecursiveMutex adcMutex;
 
     int ioStatusIdx;
 

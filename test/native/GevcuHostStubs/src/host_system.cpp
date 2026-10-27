@@ -12,7 +12,7 @@
 
 MemCache *memCache = nullptr;
 RecursiveMutex sdAccessMutex;
-Threads::Mutex i2cMutex;
+RecursiveMutex i2cMutex;
 bool sdCardWorking = false;
 
 // ------------------------------------------------------------ TickHandler ---

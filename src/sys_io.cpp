@@ -382,7 +382,8 @@ int16_t SystemIO::_pGetAnalogRaw(uint8_t which)
     {
         return 0;
     }
-        
+
+    RecursiveScope m(adcMutex);
     int neededMux = which % 4;
     //we don't change the analog mux unless absolutely necessary
     if (neededMux != adcMuxSelect) //must change mux to read this
@@ -518,16 +519,20 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
         {
             pin = pin - 128;
             Logger::info("Expander pin %i", pin);
-            _pSetDigitalOutput(pin, active);
+            //PWM must be turned off before setting the pin or the tick could overwrite it in between
+            RecursiveScope m(i2cMutex);
             digPWMOutput[which].pwmActive = false;
+            _pSetDigitalOutput(pin, active);
             digOutState[which] = active;
         }
     }
     else if (which < NUM_OUTPUT)
     {
         Logger::debug("Setting io extender pin to digital output %i", which);
-        _pSetDigitalOutput(which, active);
+        //PWM must be turned off before setting the pin or the tick could overwrite it in between
+        RecursiveScope m(i2cMutex);
         digPWMOutput[which].pwmActive = false;
+        _pSetDigitalOutput(which, active);
         digOutState[which] = active;
     }
     else
@@ -569,6 +574,7 @@ void SystemIO::setDigitalOutputPWM(uint8_t which, uint8_t freq, uint16_t duty)
     if (which >= NUM_OUTPUT) return;
     if (duty > 1000) return;
     if (freq == 0) return;
+    RecursiveScope m(i2cMutex); //the tick reads all of these fields
     digPWMOutput[which].progress = 0;
     digPWMOutput[which].pwmActive = true;
     digPWMOutput[which].freqInterval = 1000000ul / freq; //# of uS in each full cycle
@@ -583,6 +589,7 @@ void SystemIO::updateDigitalPWMDuty(uint8_t which, uint16_t duty)
 {
     if (which >= NUM_OUTPUT) return;
     if (duty > 1000) return;
+    RecursiveScope m(i2cMutex); //the tick reads all of these fields
     double prog = duty / 1000.0;
     digPWMOutput[which].triggerPoint = (uint32_t)(digPWMOutput[which].freqInterval * prog);
 }
@@ -591,6 +598,7 @@ void SystemIO::updateDigitalPWMFreq(uint8_t which, uint8_t freq)
 {
     if (which >= NUM_OUTPUT) return;
     if (freq == 0) return;
+    RecursiveScope m(i2cMutex); //the tick reads all of these fields
     uint32_t newval = 1000000ul / freq;
     double ratio = (double)newval / (double)digPWMOutput[which].freqInterval;
     digPWMOutput[which].freqInterval = newval; //# of uS in each full cycle
@@ -612,7 +620,7 @@ void SystemIO::handleTick()
     uint32_t interval = now - lastMicros;
     lastMicros = now;
     uint8_t outputMask;
-    uint8_t tempCache = pcaDigitalOutputCache;
+    uint8_t tempCache;
     int16_t valu;
 
     //each tick increment status index and get a fresh copy of the digital and analog inputs.
@@ -658,6 +666,10 @@ void SystemIO::handleTick()
 
 
 //Here we start processing for the psuedo PWM outputs.
+    //pcaDigitalOutputCache and digPWMOutput are also changed by setDigitalOutput and friends from other
+    //threads so hold the lock from reading the cache until the new value has been written to the chip.
+    RecursiveScope m(i2cMutex);
+    tempCache = pcaDigitalOutputCache;
     for (int i = 0; i < NUM_OUTPUT; i++)
     {
         if (!digPWMOutput[i].pwmActive) continue;
@@ -685,7 +697,6 @@ void SystemIO::handleTick()
     //only update the chip if we actually changed anything
     if (pcaDigitalOutputCache != tempCache)
     {
-        Threads::Scope m(i2cMutex);
         Wire.beginTransmission(PCA_ADDR);
         Wire.write(PCA_WRITE_OUT0);
         Wire.write(pcaDigitalOutputCache);
@@ -764,7 +775,7 @@ bool SystemIO::calibrateADCGain(int adc, int32_t target, bool update)
 
 FLASHMEM void SystemIO::initDigitalMultiplexor()
 {
-    Threads::Scope m(i2cMutex);
+    RecursiveScope m(i2cMutex);
     //all of port 0 are outputs, all of port 1 are inputs
     //1 in a config bit means input, 0 = output
     Wire.begin();
@@ -793,7 +804,7 @@ FLASHMEM void SystemIO::initDigitalMultiplexor()
 
 int SystemIO::_pGetDigitalInput(int pin) //all inputs are on port 1
 {
-    Threads::Scope m(i2cMutex);
+    RecursiveScope m(i2cMutex);
     if ( (pin < 0) || (pin > 7) ) return 0;
     Wire.beginTransmission(PCA_ADDR);
     Wire.write(PCA_READ_IN1);
@@ -811,7 +822,7 @@ int SystemIO::_pGetDigitalInput(int pin) //all inputs are on port 1
 
 void SystemIO::_pSetDigitalOutput(int pin, int state)
 {
-    Threads::Scope m(i2cMutex);
+    RecursiveScope m(i2cMutex);
     if ( (pin < 0) || (pin > 7) ) return;
 
     uint8_t outputMask = ~(1<<pin);
@@ -826,7 +837,7 @@ void SystemIO::_pSetDigitalOutput(int pin, int state)
 
 int SystemIO::_pGetDigitalOutput(int pin)
 {
-    Threads::Scope m(i2cMutex);
+    RecursiveScope m(i2cMutex);
     if ( (pin < 0) || (pin > 7) ) return 0;
     Wire.beginTransmission(PCA_ADDR);
     Wire.write(PCA_READ_IN0);

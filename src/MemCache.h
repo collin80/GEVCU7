@@ -61,7 +61,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //Note that this is 10 years STRAIGHT. As in, you never turned it off for 10 years and every chance it got it wrote the page.
 //This should be plenty of EEPROM life.
 
-extern Threads::Mutex i2cMutex;
+extern RecursiveMutex i2cMutex;
 
 typedef struct
 {
