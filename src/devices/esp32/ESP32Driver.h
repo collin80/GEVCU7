@@ -66,6 +66,9 @@ private:
     uint8_t serialReadBuffer[1024];
     uint8_t serialWriteBuffer[4096];
     DynamicJsonDocument *websocket_json;
+    //websocket_json is filled by handleMessage (called on the DeviceManager thread) and serialized/cleared
+    //by handleTick on this device's own thread so both lock this around any use of it.
+    RecursiveMutex jsonMutex;
     SerialFileSender *fileSender;
     bool didInitialStatus;
     int statusIdx;

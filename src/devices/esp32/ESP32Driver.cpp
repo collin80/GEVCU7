@@ -128,6 +128,7 @@ ESP32Driver::ESP32Driver() : Device()
 void ESP32Driver::packageAndSendEntry(StatusEntry *entry)
 {
     if (!isReady()) return;
+    RecursiveScope m(jsonMutex);
     //ESP32Configuration *config = (ESP32Configuration *) getConfiguration();
      
     (*websocket_json)[entry->statusName] = entry->getValueAsString();
@@ -247,8 +248,8 @@ void ESP32Driver::handleTick() {
     {
         if (!didInitialStatus)
         {
-            StatusEntry *entry = deviceManager.FindStatusEntryByIdx(statusIdx++);
-            if (entry) packageAndSendEntry(entry);
+            StatusEntry entry;
+            if (deviceManager.getStatusEntryByIdx(statusIdx++, entry)) packageAndSendEntry(&entry);
             else 
             {
                 statusIdx = 0; //start over
@@ -273,6 +274,7 @@ void ESP32Driver::handleTick() {
             }
             if (seconds < 10) buff += "0";
             buff += String(seconds);
+            RecursiveScope m(jsonMutex);
             (*websocket_json)["timeRunning"] = buff;
             (*websocket_json)["systemState"] = 8;
             if (!inhibitJSON)

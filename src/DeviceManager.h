@@ -56,8 +56,8 @@ public:
     bool addStatusObserver(Device *dev);
     bool removeStatusObserver(Device *dev);
     void enableAllStatusEntries();
-    StatusEntry* findStatusEntryByHash(uint32_t hash);
-    StatusEntry* FindStatusEntryByIdx(unsigned int idx);
+    bool getStatusEntryByHash(uint32_t hash, StatusEntry &entry); //copies the entry out. False if not found
+    bool getStatusEntryByIdx(unsigned int idx, StatusEntry &entry); //copies the entry out. False if out of range
     uint8_t getNumThrottles();
     uint8_t getNumControllers();
     uint8_t getNumBMS();
@@ -87,6 +87,11 @@ private:
     MotorController *motorController;
 
     std::vector<StatusEntry> statusEntries;
+    std::vector<StatusEntry> changedEntries; //only used inside handleTick to hold changes until they're dispatched
+    //Guards statusEntries and statusObservers. Devices add entries from whichever thread runs their setup
+    //while handleTick walks the list on the DeviceManager thread. Never held while calling into other devices
+    //(observers are called after it's released) so nothing else is ever locked while holding it except logging.
+    RecursiveMutex statusMutex;
 
     int8_t findDevice(Device *device);
     uint8_t countDeviceType(DeviceType deviceType);

@@ -175,6 +175,7 @@ void DeviceManager::sendMessage(DeviceType devType, DeviceId devId, uint32_t msg
 
 void DeviceManager::addStatusEntry(StatusEntry entry)
 {
+    RecursiveScope m(statusMutex);
     statusEntries.push_back(entry);
 }
 
@@ -187,8 +188,9 @@ void DeviceManager::removeStatusEntry(StatusEntry entry)
 
 void DeviceManager::removeStatusEntry(String statusName)
 {
+    RecursiveScope m(statusMutex);
     for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ) {
-        if (it->statusName == statusName) statusEntries.erase(it);
+        if (it->statusName == statusName) it = statusEntries.erase(it);
         else ++it;
     }
 }
@@ -196,49 +198,51 @@ void DeviceManager::removeStatusEntry(String statusName)
 //if a device is unloaded it'd be necessary to remove all entries it added. We do that here.
 void DeviceManager::removeAllEntriesForDevice(Device *dev)
 {
+    RecursiveScope m(statusMutex);
     for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ) {
-        if (it->device == dev) statusEntries.erase(it);
+        if (it->device == dev) it = statusEntries.erase(it);
         else ++it;
     }
 }
 
-StatusEntry* DeviceManager::findStatusEntryByHash(uint32_t hash)
+//These copy the entry out instead of returning a pointer into statusEntries. The list can be changed
+//(and reallocated) by other threads at any time so a pointer could go stale while the caller uses it.
+//The copy's varPtr still points at the device's own variable which is fine as devices are never freed.
+bool DeviceManager::getStatusEntryByHash(uint32_t hash, StatusEntry &entry)
 {
+    RecursiveScope m(statusMutex);
     for (unsigned int i = 0; i < statusEntries.size(); i++)
     {
-        if (statusEntries[i].getHash() == hash) return &statusEntries[i];
+        if (statusEntries[i].getHash() == hash)
+        {
+            entry = statusEntries[i];
+            return true;
+        }
     }
-    return nullptr;
+    return false;
 }
 
-StatusEntry* DeviceManager::FindStatusEntryByIdx(unsigned int idx)
+bool DeviceManager::getStatusEntryByIdx(unsigned int idx, StatusEntry &entry)
 {
+    RecursiveScope m(statusMutex);
     if (idx < statusEntries.size())
     {
-        return &statusEntries[idx];
+        entry = statusEntries[idx];
+        return true;
     }
-    else return nullptr;
+    return false;
 }
 
 void DeviceManager::enableAllStatusEntries()
 {
     StatusCSV *statusDevice = static_cast<StatusCSV *>(getDeviceByID(STATUSCSV));
     if (!statusDevice) return;
-    int idx = 0;
-    StatusEntry *ent = nullptr;
-    uint32_t hash;
 
+    RecursiveScope m(statusMutex);
     for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
     {
-        ent = FindStatusEntryByIdx(idx);
-        if (ent)
-        {
-            hash = ent->getHash();
-            statusDevice->enableByHash(hash);
-        }
-        idx++;
+        statusDevice->enableByHash(it->getHash());
     }
-
 }
 
 void DeviceManager::printAllStatusEntries()
@@ -250,6 +254,7 @@ void DeviceManager::printAllStatusEntries()
     Device *dev;
     int idx = 0;
     Logger::console("All status entries:");
+    RecursiveScope m(statusMutex);
     for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
     {
         idx++;
@@ -274,6 +279,7 @@ void DeviceManager::printAllStatusEntries()
 
 bool DeviceManager::addStatusObserver(Device *dev)
 {
+    RecursiveScope m(statusMutex);
     for (int i = 0; i < CFG_STATUS_NUM_OBSERVERS; i++)
     {
         if (!statusObservers[i] || (statusObservers[i] == dev) )
@@ -287,6 +293,7 @@ bool DeviceManager::addStatusObserver(Device *dev)
 
 bool DeviceManager::removeStatusObserver(Device *dev)
 {
+    RecursiveScope m(statusMutex);
     for (int i = 0; i < CFG_STATUS_NUM_OBSERVERS; i++)
     {
         if (statusObservers[i] == dev)
@@ -298,10 +305,17 @@ bool DeviceManager::removeStatusObserver(Device *dev)
     return false;
 }
 
+//Observers are called without statusMutex held so they're free to lock their own things
+//(or call back into DeviceManager) without any chance of a deadlock.
 void DeviceManager::dispatchToObservers(const StatusEntry &entry)
 {
+    Device *observers[CFG_STATUS_NUM_OBSERVERS];
+    {
+        RecursiveScope m(statusMutex);
+        for (int i = 0; i < CFG_STATUS_NUM_OBSERVERS; i++) observers[i] = statusObservers[i];
+    }
     for (int i = 0; i < CFG_STATUS_NUM_OBSERVERS; i++)
-        if (statusObservers[i]) statusObservers[i]->handleMessage(MSG_CONFIG_CHANGE, &entry);
+        if (observers[i]) observers[i]->handleMessage(MSG_CONFIG_CHANGE, &entry);
 }
 
 /*
@@ -310,19 +324,28 @@ void DeviceManager::dispatchToObservers(const StatusEntry &entry)
   the observer callbacks should be done via a queue and not all at once instantly. This processor
   is extremely fast but some entries are going to update all of the time and thus we could end up
   with a huge number of calls here.
+  Changed entries are copied out while the list is locked then dispatched after it is released.
 */
 void DeviceManager::handleTick()
 {
     double currVal = 0.0;
-    for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
+    changedEntries.clear();
     {
-        currVal = it->getValueAsDouble();
-        if ( fabs(currVal - it->lastValue) > 0.001) //has the value changed?
+        RecursiveScope m(statusMutex);
+        for (std::vector<StatusEntry>::iterator it = statusEntries.begin(); it != statusEntries.end(); ++it) 
         {
-            Logger::avalanche("Value of %s has changed", it->statusName.c_str());
-            dispatchToObservers(*it);
-            it->lastValue = currVal;
+            currVal = it->getValueAsDouble();
+            if ( fabs(currVal - it->lastValue) > 0.001) //has the value changed?
+            {
+                Logger::avalanche("Value of %s has changed", it->statusName.c_str());
+                it->lastValue = currVal;
+                changedEntries.push_back(*it);
+            }
         }
+    }
+    for (std::vector<StatusEntry>::iterator it = changedEntries.begin(); it != changedEntries.end(); ++it)
+    {
+        dispatchToObservers(*it);
     }
 }
 
@@ -336,6 +359,7 @@ void DeviceManager::setup()
 
     //this should be large enough that you don't cause it to have to enlarge but not so large
     //that all RAM is taken up needlessly. So, tweak it in use to be big enough but not much more biggerer
+    RecursiveScope m(statusMutex);
     statusEntries.reserve(200);
 }
 

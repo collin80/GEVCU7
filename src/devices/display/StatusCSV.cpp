@@ -165,7 +165,7 @@ void StatusCSV::handleTick()
     // A better approach would be to get a signal from the system when everything is certainly ready.
     if (millis() < 6000) return;
 
-    StatusEntry *ent = nullptr;
+    StatusEntry ent;
     esp32 = static_cast<ESP32Driver *>(deviceManager.getDeviceByID(0x0800));
     int c;
     String builder;
@@ -211,10 +211,9 @@ void StatusCSV::handleTick()
         for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
         {
             if (!config->enabledStatusEntries[i]) continue;
-            ent = deviceManager.findStatusEntryByHash(config->enabledStatusEntries[i]);
-            if (ent)
+            if (deviceManager.getStatusEntryByHash(config->enabledStatusEntries[i], ent))
             {
-                builder += ent->statusName + ",";                
+                builder += ent.statusName + ",";                
             }
         }
         builder += "\n";
@@ -254,10 +253,9 @@ void StatusCSV::handleTick()
         for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
         {
             if (!config->enabledStatusEntries[i]) continue;
-            ent = deviceManager.findStatusEntryByHash(config->enabledStatusEntries[i]);
-            if (ent)
+            if (deviceManager.getStatusEntryByHash(config->enabledStatusEntries[i], ent))
             {
-                String val = ent->getValueAsString();
+                String val = ent.getValueAsString();
                 builder += val + ",";
             }
         }
@@ -283,15 +281,14 @@ void StatusCSV::enableStatusHash(char * str)
     {
         int idx;
         uint32_t hash;
-        StatusEntry *ent = nullptr;
+        StatusEntry ent;
         char *tok = strtok(str, ",");
         while (tok)
         {
             idx = strtoul(tok, NULL, 0) - 1; //arrays are 0 based but indexes in program are 1 based
-            ent = deviceManager.FindStatusEntryByIdx(idx);
-            if (ent)
+            if (deviceManager.getStatusEntryByIdx(idx, ent))
             {
-                hash = ent->getHash();
+                hash = ent.getHash();
                 enableByHash(hash);
             }
             tok = strtok(NULL, ","); //get next one
@@ -314,15 +311,14 @@ void StatusCSV::disableStatusHash(char * str)
     {
         int idx;
         uint32_t hash;
-        StatusEntry *ent = nullptr;
+        StatusEntry ent;
         char *tok = strtok(str, ",");
         while (tok)
         {
             idx = strtoul(tok, NULL, 0) - 1;
-            ent = deviceManager.FindStatusEntryByIdx(idx);
-            if (ent)
+            if (deviceManager.getStatusEntryByIdx(idx, ent))
             {
-                hash = ent->getHash();
+                hash = ent.getHash();
                 disableByHash(hash);
             }
             tok = strtok(NULL, ","); //get next one
