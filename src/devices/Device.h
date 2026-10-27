@@ -30,6 +30,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <Arduino.h>
 #include <vector>
 #include <TeensyThreads.h>
+#include "../RecursiveMutex.h"
 #include "../config.h"
 #include "DeviceTypes.h"
 #include "../eeprom_layout.h"
@@ -38,7 +39,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "../FaultHandler.h"
 #include "../CrashHandler.h"
 
-extern Threads::Mutex sdAccessMutex;
+extern RecursiveMutex sdAccessMutex;
 
 /*
  * A abstract class to hold device configuration. It is to be accessed

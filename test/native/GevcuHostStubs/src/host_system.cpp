@@ -11,7 +11,8 @@
 #include "host_test_support.h"
 
 MemCache *memCache = nullptr;
-Threads::Mutex sdAccessMutex;
+RecursiveMutex sdAccessMutex;
+Threads::Mutex i2cMutex;
 bool sdCardWorking = false;
 
 // ------------------------------------------------------------ TickHandler ---

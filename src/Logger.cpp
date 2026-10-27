@@ -41,7 +41,7 @@ your terminal program. Be cautious about enabling it.
 #include "devices/esp32/ESP32Driver.h"
 
 extern bool sdCardWorking;
-extern Threads::Mutex sdAccessMutex;
+extern RecursiveMutex sdAccessMutex;
 FsFile logFile;
 
 // For efficiency the log has to be preallocated for a certain amount of space.
@@ -57,6 +57,17 @@ FsFile logFile;
 // RingBuf for File type FsFile.
 DMAMEM RingBuf<FsFile, RING_BUF_CAPACITY> rb;
 
+#define LOG_BUFFER_SIZE 256
+
+//log() can be called from any thread so this shared output buffer is guarded by logMutex.
+//That also keeps lines from different threads from being interleaved on the outputs.
+//The mutex is recursive because Serial.println can call yield() which can run the serial console
+//which might log again on this same thread. That nested message is dropped (see logDepth) as it
+//would otherwise overwrite the line we're still in the middle of sending.
+static RecursiveMutex logMutex;
+static char logBuffer[LOG_BUFFER_SIZE];
+static int logDepth = 0;
+
 uint32_t Logger::lastLogTime = 0;
 ESP32Driver* Logger::esp32 = nullptr;
 
@@ -66,7 +77,7 @@ void Logger::initializeFile()
     char fn2[100];
 
     {
-        Threads::Scope m(sdAccessMutex);
+        RecursiveScope m(sdAccessMutex);
 
         //basically, rename all files one number higher than they were then start a new log with no numbers
         //as the current log
@@ -102,7 +113,7 @@ void Logger::initializeFile()
 
 void Logger::flushFile()
 {
-    Threads::Scope m(sdAccessMutex);
+    RecursiveScope m(sdAccessMutex);
     size_t n = rb.bytesUsed();
     int ret = 0;
     int writeBytes = min(n, 512u);
@@ -270,17 +281,21 @@ void Logger::error(DeviceId deviceId, const char *message, ...) {
  * printf() style, see Logger::logMessage()
  */
 void Logger::console(const char *message, ...) {
+    char buff[200];
     va_list args;
     va_start(args, message);
-    char buff[200];
-    vsprintf(buff, message, args);
-    if (Serial) Serial.println(buff);
-    if (esp32)
-    { 
-        esp32->sendLogString(buff);
-        threads.delay(3); //slight delay to let the serial port write some data before the next line.
-    }
+    vsnprintf(buff, sizeof(buff), message, args);
     va_end(args);
+
+    {
+        //same lock as log() so console lines and log lines from other threads don't get mixed together
+        RecursiveScope lock(logMutex);
+        if (Serial) Serial.println(buff);
+        if (esp32) esp32->sendLogString(buff);
+    }
+    //slight delay to let the serial port write some data before the next line.
+    //Done after releasing the lock so other threads aren't held up waiting on it.
+    if (esp32) threads.delay(3);
 }
 
 /*
@@ -331,62 +346,54 @@ boolean Logger::isDebug() {
 void Logger::log(DeviceId deviceId, LogLevel level, const char *format, va_list args) {
     lastLogTime = millis();
     uint32_t thisTime = micros();
-    String outputString;// = String(lastLogTime) + " - ";
+    char levelChar;
 
     switch (level) {
-    case Off:
-        return;
-        break;
     case Avalanche:
-        outputString += "~";
+        levelChar = '~';
         break;
     case Debug:
-        //Serial.print("D");
-        outputString += "D";
+        levelChar = 'D';
         break;
     case Info:
-        //Serial.print("I");
-        outputString += "I";
+        levelChar = 'I';
         break;
     case Warn:
-        //Serial.print("W");
-        outputString += "W";
+        levelChar = 'W';
         break;
     case Error:
-        //Serial.print("E");
-        outputString += "E";
+        levelChar = 'E';
         break;
+    default: //Off or anything unknown
+        return;
     }
-    char buff[200];
-    snprintf(buff, 200, "(%f) ", thisTime / 1000000.0f);
-    outputString += buff;
 
+    RecursiveScope lock(logMutex);
+    if (logDepth > 0) return; //re-entered on this thread while sending a line. See note at logBuffer
+    logDepth++;
+
+    int len = snprintf(logBuffer, LOG_BUFFER_SIZE, "%c(%f) ", levelChar, thisTime / 1000000.0f);
+    if (len >= LOG_BUFFER_SIZE) len = LOG_BUFFER_SIZE - 1;
+
+    //When the deviceId is specified print the name of the device after the log-level.
+    //This makes it easier to identify the source of the logged message.
     if (deviceId)
-        outputString += printDeviceName(deviceId);
-        //Serial.print(printDeviceName(deviceId));
+    {
+        Device *dev = deviceManager.getDeviceByID(deviceId);
+        if (dev) len += snprintf(logBuffer + len, LOG_BUFFER_SIZE - len, "[%s] ", dev->getShortName());
+        else len += snprintf(logBuffer + len, LOG_BUFFER_SIZE - len, " ");
+        if (len >= LOG_BUFFER_SIZE) len = LOG_BUFFER_SIZE - 1;
+    }
 
-    //outputString += logMessage(format, args);
-    //Serial.println(outputString);
-    vsnprintf(buff, 200, format, args);
-    outputString += buff;
-    if (Serial) Serial.println(outputString);
-    if (sdCardWorking) rb.println(outputString);
-    if (esp32) 
+    vsnprintf(logBuffer + len, LOG_BUFFER_SIZE - len, format, args);
+    if (Serial) Serial.println(logBuffer);
+    if (sdCardWorking) rb.println(logBuffer);
+    if (esp32)
     {
         /*if (level > Debug) */
-        esp32->sendLogString(outputString); //if ESP32 module is loaded then try to send output to telnet as well
+        esp32->sendLogString(logBuffer); //if ESP32 module is loaded then try to send output to telnet as well
     }
-}
-/*
- * When the deviceId is specified when calling the logger, print the name
- * of the device after the log-level. This makes it easier to identify the
- * source of the logged message.
- */
-String Logger::printDeviceName(DeviceId deviceId) {
-    Device *dev = deviceManager.getDeviceByID(deviceId);
-    if (!dev) return String(" ");
-    String devString = String("[") + dev->getShortName() + String("] ");
-    return devString;
+    logDepth--;
 }
 
 

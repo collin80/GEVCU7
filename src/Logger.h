@@ -63,7 +63,6 @@ private:
 
     static void log(DeviceId, LogLevel, const char *format, va_list);
     static String logMessage(const char *format, va_list args);
-    static String printDeviceName(DeviceId);
 };
 
 #endif /* LOGGER_H_ */

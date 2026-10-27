@@ -39,7 +39,7 @@ public:
     void disableDevice();
     ESP32Driver();
     void processSerial();
-    void sendLogString(String str);
+    void sendLogString(const char *str);
     void sendStatusCSV(String str);
     void doTeensyUpdate();
     void doESP32Update();

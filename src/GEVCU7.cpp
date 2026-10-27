@@ -94,7 +94,7 @@ byte i = 0;
 uint8_t sdCardPresence; //0 = not inserted, positive numbers indicate it has been inserted for increasing time (up to a limit)
 bool sdCardWorking; //does it appear that the sdcard is currently working properly and able to be used?
 bool sdCardInitFailed; //got a presence signal but trying to init it failed. Quit trying until next insertion
-Threads::Mutex sdAccessMutex; //EVERYTHING that touches the sdcard must lock this mutex first once threading starts up!
+RecursiveMutex sdAccessMutex; //EVERYTHING that touches the sdcard must lock this mutex first once threading starts up!
 Threads::Mutex i2cMutex; //likewise, everything that toucheth thine I2C bus shall henceforth lock this.
 uint32_t bootTime;
 int mainThreadIdx;
@@ -335,7 +335,7 @@ FLASHMEM void setup() {
 
     if (sdCardWorking)
     {
-        Threads::Scope m(sdAccessMutex);
+        RecursiveScope m(sdAccessMutex);
         //here, directly after trying to find the SDCard is the best place to check the sdcard for firmware files
         //and flash them to the appropriate places if they exist.
         FsFile file;

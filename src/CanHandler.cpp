@@ -28,6 +28,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include "CanHandler.h"
+#include "RecursiveMutex.h"
 #include "sys_io.h"
 #include "devices/misc/SystemDevice.h"
 #include "sys_io.h"
@@ -63,7 +64,7 @@ FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> Can2; //Only CAN-FD capable output
 
 //It's best in this multi-threading context to have a mutex to protect hardware access
 //from being multi-threaded which could step on each other's toes.
-Threads::Mutex canbusMutex;
+RecursiveMutex canbusMutex;
 
 void canRX0(const CAN_message_t &msg) 
 {
@@ -82,7 +83,7 @@ void canRX2(const CANFD_message_t &msg)
 
 void canEvents()
 {
-    Threads::Scope m(canbusMutex);
+    RecursiveScope m(canbusMutex);
     canHandlerBus0.checkStatus();
     canHandlerBus1.checkStatus();
     canHandlerBus2.checkStatus();
@@ -126,7 +127,7 @@ void CanHandler::setup()
     CANFD_timings_t fdTimings;
     int busNum = 0;
 
-    Threads::Scope m(canbusMutex);
+    RecursiveScope m(canbusMutex);
 
     //these pins control whether differential CAN or SingleWire CAN is found on CAN0
     pinMode(33, OUTPUT);
@@ -295,7 +296,7 @@ uint32_t CanHandler::getBusFDSpeed()
 
 FLASHMEM void CanHandler::setBusSpeed(uint32_t newSpeed)
 {
-    Threads::Scope m(canbusMutex);
+    RecursiveScope m(canbusMutex);
 
     CANFD_timings_t fdTimings;
     uint32_t fdSpeed;
@@ -350,7 +351,7 @@ FLASHMEM void CanHandler::setBusSpeed(uint32_t newSpeed)
 
 FLASHMEM void CanHandler::setBusFDSpeed(uint32_t nomSpeed, uint32_t dataSpeed)
 {
-    Threads::Scope m(canbusMutex);
+    RecursiveScope m(canbusMutex);
 
     CANFD_timings_t fdTimings;
     if (canBusNode != CAN_BUS_2) return; //only CAN2 can do FD mode
@@ -1095,7 +1096,7 @@ void CanHandler::CANIO(const CAN_message_t &msg) {
 //(whatever happens to be open) or queue it to send (if nothing is open)
 void CanHandler::sendFrame(const CAN_message_t &msg)
 {
-    Threads::Scope m(canbusMutex);
+    RecursiveScope m(canbusMutex);
 
     int busNum = -1;
     switch (canBusNode)
@@ -1131,7 +1132,7 @@ void CanHandler::sendFrame(const CAN_message_t &msg)
 
 void CanHandler::sendFrameFD(const CANFD_message_t& framefd)
 {
-    Threads::Scope m(canbusMutex);
+    RecursiveScope m(canbusMutex);
 
     if (canBusNode != CAN_BUS_2) return;
     Can2.write(framefd);

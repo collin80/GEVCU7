@@ -39,6 +39,7 @@ MemCache::MemCache()
 }
 
 FLASHMEM void MemCache::setup() {
+    RecursiveScope m(cacheMutex);
     tickHandler.detach(this);
     for (int c = 0; c < NUM_CACHED_PAGES; c++) {
         pages[c].address = 0xFFFFFF; //maximum number. This is way over what our chip will actually support so it signals unused
@@ -54,6 +55,7 @@ FLASHMEM void MemCache::setup() {
 //Handle aging of dirty pages and flushing of aged out dirty pages
 void MemCache::handleTick()
 {
+    RecursiveScope m(cacheMutex);
     int c;
     
     agingTimer++;
@@ -75,6 +77,7 @@ void MemCache::handleTick()
 //a previous page has been written. Remember that page writes take about 7ms.
 FLASHMEM void MemCache::FlushSinglePage()
 {
+    RecursiveScope m(cacheMutex);
     int c;
     for (c = 0; c<NUM_CACHED_PAGES; c++) {
         if (pages[c].dirty) {
@@ -89,10 +92,11 @@ FLASHMEM void MemCache::FlushSinglePage()
 }
 
 //Flush every dirty page. It will block for 10ms per page so it could take a while. However,
-//the whole system is multi-threaded so the rest of G7 will keep running while we're here stashing pages
+//the whole system is multi-threaded so the rest of G7 will keep running while we're here stashing pages.
+//Anything else that tries to use the cache will wait until this is done though.
 FLASHMEM void MemCache::FlushAllPages()
 {
-    Threads::Scope m(i2cMutex);
+    RecursiveScope m(cacheMutex);
     int c;
     for (c = 0; c < NUM_CACHED_PAGES; c++) {
         if (pages[c].dirty) { //found a dirty page so flush it
@@ -107,6 +111,7 @@ FLASHMEM void MemCache::FlushAllPages()
 
 //Flush a given page by the page ID. This is NOT by address so act accordingly. Likely no external code should ever use this
 FLASHMEM void MemCache::FlushPage(uint8_t page) {
+    RecursiveScope m(cacheMutex);
     if (pages[page].dirty) {
         if (!cache_writepage(page)) return; //write failed, page stays dirty
         Logger::avalanche("Writing page at cache index %i", page);
@@ -118,6 +123,7 @@ FLASHMEM void MemCache::FlushPage(uint8_t page) {
 
 //Flush a page by taking an address within the page.
 FLASHMEM void MemCache::FlushAddress(uint32_t address) {
+    RecursiveScope m(cacheMutex);
     uint32_t addr;
     uint8_t c;
 
@@ -129,6 +135,7 @@ FLASHMEM void MemCache::FlushAddress(uint32_t address) {
 //Like FlushPage but also marks the page invalid (unused) so if another read request comes it it'll have to be re-read from EEPROM
 FLASHMEM void MemCache::InvalidatePage(uint8_t page)
 {
+    RecursiveScope m(cacheMutex);
     if (page > NUM_CACHED_PAGES - 1) return; //invalid page, buddy!
     if (pages[page].dirty) {
         if (!cache_writepage(page)) return; //can't drop a page whose data never reached EEPROM
@@ -142,6 +149,7 @@ FLASHMEM void MemCache::InvalidatePage(uint8_t page)
 //Mark a given page unused given an address within that page. Will write the page out if it was dirty.
 FLASHMEM void MemCache::InvalidateAddress(uint32_t address)
 {
+    RecursiveScope m(cacheMutex);
     uint32_t addr;
     uint8_t c;
 
@@ -153,6 +161,7 @@ FLASHMEM void MemCache::InvalidateAddress(uint32_t address)
 //Mark all page cache entries unused (go back to clean slate). It will try to write any dirty pages so be prepared to wait.
 FLASHMEM void MemCache::InvalidateAll()
 {
+    RecursiveScope m(cacheMutex);
     uint8_t c;
     for (c=0; c<NUM_CACHED_PAGES; c++) {
         InvalidatePage(c);
@@ -162,6 +171,7 @@ FLASHMEM void MemCache::InvalidateAll()
 //Cause a given page to be fully aged which will cause it to be written at the next opportunity
 FLASHMEM void MemCache::AgeFullyPage(uint8_t page)
 {
+    RecursiveScope m(cacheMutex);
     if (page < NUM_CACHED_PAGES) { //if we did indeed have that page in cache
         pages[page].age = MAX_AGE;
     }
@@ -170,6 +180,7 @@ FLASHMEM void MemCache::AgeFullyPage(uint8_t page)
 //Cause the page containing the given address to be fully aged and thus written as soon as possible.
 FLASHMEM void MemCache::AgeFullyAddress(uint32_t address)
 {
+    RecursiveScope m(cacheMutex);
     uint8_t thisCache;
     uint32_t page_addr;
 
@@ -186,6 +197,7 @@ FLASHMEM void MemCache::AgeFullyAddress(uint32_t address)
 //not the true address. So, this code multiplies to bring it back to true address
 FLASHMEM void MemCache::dumpCacheDiagnostics()
 {
+    RecursiveScope m(cacheMutex);
     int c;
     for (c = 0; c < NUM_CACHED_PAGES; c++)
     {    
@@ -208,6 +220,7 @@ FLASHMEM void MemCache::dumpCacheDiagnostics()
 //There are lots of versions of this
 FLASHMEM boolean MemCache::Write(uint32_t address, uint8_t valu)
 {
+    RecursiveScope m(cacheMutex);
     uint32_t addr;
     uint8_t c;
 
@@ -256,6 +269,7 @@ FLASHMEM boolean MemCache::Write(uint32_t address, double valu)
 
 FLASHMEM FLASHMEM boolean MemCache::Write(uint32_t address, const void* data, uint16_t len)
 {
+    RecursiveScope m(cacheMutex);
     uint32_t addr;
     uint8_t c;
     uint16_t count;
@@ -281,6 +295,7 @@ FLASHMEM FLASHMEM boolean MemCache::Write(uint32_t address, const void* data, ui
 
 FLASHMEM boolean MemCache::Read(uint32_t address, uint8_t* valu)
 {
+    RecursiveScope m(cacheMutex);
     uint32_t addr;
     uint8_t c;
 
@@ -331,6 +346,7 @@ FLASHMEM boolean MemCache::Read(uint32_t address, double* valu)
 
 FLASHMEM boolean MemCache::Read(uint32_t address, void* data, uint16_t len)
 {
+    RecursiveScope m(cacheMutex);
     uint32_t addr;
     uint8_t c;
     uint16_t count;
@@ -497,6 +513,7 @@ FLASHMEM boolean MemCache::cache_writepage(uint8_t page)
 
 FLASHMEM void MemCache::nukeFromOrbit()
 {
+    RecursiveScope c(cacheMutex); //nobody else gets to use the cache while the EEPROM is being wiped
     Threads::Scope m(i2cMutex); //lock the memcache mutex so that we don't have any other threads trying to read/write to it while we're doing this
 
     uint16_t d;

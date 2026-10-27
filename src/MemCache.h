@@ -33,6 +33,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "config.h"
 #include "TickHandler.h"
 #include "i2c_driver_wire.h"
+#include "RecursiveMutex.h"
 
 //Total # of allowable pages to cache. Limits RAM usage
 //note that a page is 256 bytes so 4 pages is a kilobyte. Don't go nuts here
@@ -104,6 +105,11 @@ public:
     MemCache();
 
 private:
+    //Every public function that touches pages[] locks this first. It's held for the whole operation
+    //(including the EEPROM write delays) so one thread can't evict or flush a page another thread is using.
+    //The typed Read/Write overloads just call the void* versions so they're covered too.
+    //Lock order: cacheMutex then i2cMutex. Never the other way around.
+    RecursiveMutex cacheMutex;
     PageCache pages[NUM_CACHED_PAGES];
     boolean isWriting();
     uint8_t cache_hit(uint32_t address);
