@@ -19,6 +19,14 @@ static void freshCache()
     memCache->setup();
 }
 
+// Copy of a fault slot; fails the test if the slot is out of range.
+static FAULT faultAt(uint16_t slot)
+{
+    FAULT f;
+    TEST_ASSERT_TRUE(fh->getFault(slot, f));
+    return f;
+}
+
 static void bootFaultHandler()
 {
     delete fh;
@@ -60,7 +68,8 @@ void test_setup_initializes_blank_eeprom()
     TEST_ASSERT_EQUAL_HEX8(0xB2, hostEepromData()[EE_FAULT_LOG]);
     TEST_ASSERT_EQUAL_UINT16(0, fh->getStoredFaultCount());
     TEST_ASSERT_EQUAL_UINT16(0, fh->getUnAckFaultCount());
-    TEST_ASSERT_NULL(fh->getNextFault());
+    FAULT f;
+    TEST_ASSERT_FALSE(fh->getNextFault(f));
 }
 
 void test_setup_registers_tick()
@@ -82,13 +91,13 @@ void test_raise_records_fault()
     TEST_ASSERT_EQUAL_UINT16(1, fh->getUnAckFaultCount());
     TEST_ASSERT_TRUE(hostLogContains(4, "Fault 7 raised by device 1000"));
 
-    FAULT *f = fh->getNextFault();
-    TEST_ASSERT_NOT_NULL(f);
-    TEST_ASSERT_EQUAL_HEX16(DEV1, f->device);
-    TEST_ASSERT_EQUAL_UINT16(7, f->faultCode);
-    TEST_ASSERT_EQUAL_UINT32(123, f->timeStamp); // tenths of a second
-    TEST_ASSERT_TRUE(f->ongoing);
-    TEST_ASSERT_FALSE(f->ack);
+    FAULT f;
+    TEST_ASSERT_TRUE(fh->getNextFault(f));
+    TEST_ASSERT_EQUAL_HEX16(DEV1, f.device);
+    TEST_ASSERT_EQUAL_UINT16(7, f.faultCode);
+    TEST_ASSERT_EQUAL_UINT32(123, f.timeStamp); // tenths of a second
+    TEST_ASSERT_TRUE(f.ongoing);
+    TEST_ASSERT_FALSE(f.ack);
 }
 
 void test_ongoing_fault_is_not_duplicated()
@@ -115,7 +124,7 @@ void test_cancelled_fault_can_be_raised_again()
     fh->raiseFault(DEV2, 1);      // slot 0
     fh->raiseFault(DEV1, 5);      // slot 1
     fh->cancelOngoingFault(DEV1, 5);
-    TEST_ASSERT_FALSE(fh->getFault(1)->ongoing);
+    TEST_ASSERT_FALSE(faultAt(1).ongoing);
     fh->raiseFault(DEV1, 5);
     TEST_ASSERT_EQUAL_UINT16(3, fh->getStoredFaultCount());
 }
@@ -127,16 +136,16 @@ void test_cancel_device_faults()
     fh->raiseFault(DEV1, 2);
     fh->raiseFault(DEV2, 3);
     fh->cancelDeviceFaults(DEV1);
-    TEST_ASSERT_FALSE(fh->getFault(1)->ongoing);
-    TEST_ASSERT_FALSE(fh->getFault(2)->ongoing);
-    TEST_ASSERT_TRUE(fh->getFault(3)->ongoing);
+    TEST_ASSERT_FALSE(faultAt(1).ongoing);
+    TEST_ASSERT_FALSE(faultAt(2).ongoing);
+    TEST_ASSERT_TRUE(faultAt(3).ongoing);
 }
 
 void test_cancel_all_faults()
 {
     for (int i = 0; i < 5; i++) fh->raiseFault(DEV1, i);
     fh->cancelAllFaults();
-    for (int i = 1; i < 5; i++) TEST_ASSERT_FALSE(fh->getFault(i)->ongoing);
+    for (int i = 1; i < 5; i++) TEST_ASSERT_FALSE(faultAt(i).ongoing);
 }
 
 void test_log_wraps_after_history_size()
@@ -145,12 +154,12 @@ void test_log_wraps_after_history_size()
     {
         uint16_t slot = fh->raiseFault(DEV1, 100 + i);
         TEST_ASSERT_EQUAL_UINT16(i % CFG_FAULT_HISTORY_SIZE, slot);
-        TEST_ASSERT_EQUAL_UINT16(100 + i, fh->getFault(slot)->faultCode);
+        TEST_ASSERT_EQUAL_UINT16(100 + i, faultAt(slot).faultCode);
     }
     TEST_ASSERT_EQUAL_UINT16(CFG_FAULT_HISTORY_SIZE, fh->getStoredFaultCount());
     // Slot 3 was overwritten by the 54th fault (code 153).
-    TEST_ASSERT_EQUAL_UINT16(153, fh->getFault(3)->faultCode);
-    TEST_ASSERT_EQUAL_UINT16(105, fh->getFault(5)->faultCode);
+    TEST_ASSERT_EQUAL_UINT16(153, faultAt(3).faultCode);
+    TEST_ASSERT_EQUAL_UINT16(105, faultAt(5).faultCode);
 }
 
 // ----------------------------------------------------------- acknowledging
@@ -181,7 +190,8 @@ void test_ack_all()
     TEST_ASSERT_EQUAL_UINT16(0, fh->getUnAckFaultCount());
     TEST_ASSERT_EQUAL_UINT16(4, fh->getStoredFaultCount());
     TEST_ASSERT_EQUAL_UINT16(0, fh->ackAllFaults());
-    TEST_ASSERT_NULL(fh->getNextFault());
+    FAULT f;
+    TEST_ASSERT_FALSE(fh->getNextFault(f));
 }
 
 void test_get_next_fault_visits_every_unacked_fault()
@@ -192,17 +202,18 @@ void test_get_next_fault_visits_every_unacked_fault()
     bool seen[3] = {false, false, false};
     for (int i = 0; i < 3; i++)
     {
-        FAULT *f = fh->getNextFault();
-        TEST_ASSERT_NOT_NULL(f);
-        seen[f->faultCode - 10] = true;
+        FAULT f;
+        TEST_ASSERT_TRUE(fh->getNextFault(f));
+        seen[f.faultCode - 10] = true;
     }
     TEST_ASSERT_TRUE(seen[0] && seen[1] && seen[2]);
 }
 
 void test_out_of_range_accessors()
 {
-    TEST_ASSERT_NULL(fh->getFault(CFG_FAULT_HISTORY_SIZE));
-    TEST_ASSERT_NULL(fh->getFault(0xFFFF));
+    FAULT f;
+    TEST_ASSERT_FALSE(fh->getFault(CFG_FAULT_HISTORY_SIZE, f));
+    TEST_ASSERT_FALSE(fh->getFault(0xFFFF, f));
     TEST_ASSERT_EQUAL_HEX16(0xFFFF, fh->setFaultOngoing(CFG_FAULT_HISTORY_SIZE, false));
 }
 
@@ -217,8 +228,8 @@ void test_faults_survive_power_cycle()
     powerCycle();
     TEST_ASSERT_EQUAL_UINT16(2, fh->getStoredFaultCount());
     TEST_ASSERT_EQUAL_UINT16(1, fh->getUnAckFaultCount());
-    TEST_ASSERT_EQUAL_UINT16(22, fh->getFault(1)->faultCode);
-    TEST_ASSERT_TRUE(fh->getFault(1)->ack);
+    TEST_ASSERT_EQUAL_UINT16(22, faultAt(1).faultCode);
+    TEST_ASSERT_TRUE(faultAt(1).ack);
     // Write pointer restored: next fault lands in slot 2.
     TEST_ASSERT_EQUAL_UINT16(2, fh->raiseFault(DEV1, 23));
 }
@@ -230,9 +241,9 @@ void test_runtime_accumulates_across_boots()
     powerCycle(0);
     hostSetMillis(10000);   // +100 tenths in this boot
     fh->raiseFault(DEV1, 1);
-    FAULT *f = fh->getNextFault();
-    TEST_ASSERT_NOT_NULL(f);
-    TEST_ASSERT_EQUAL_UINT32(700, f->timeStamp);
+    FAULT f;
+    TEST_ASSERT_TRUE(fh->getNextFault(f));
+    TEST_ASSERT_EQUAL_UINT32(700, f.timeStamp);
 }
 
 void test_corrupt_magic_reinitializes_log()
@@ -249,7 +260,8 @@ void test_corrupt_magic_reinitializes_log()
 void test_first_slot_accessible()
 {
     fh->raiseFault(DEV1, 1);
-    TEST_ASSERT_NOT_NULL(fh->getFault(0));
+    FAULT f;
+    TEST_ASSERT_TRUE(fh->getFault(0, f));
     TEST_ASSERT_EQUAL_UINT16(0, fh->setFaultACK(0));
 }
 

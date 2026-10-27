@@ -46,12 +46,14 @@ void FaultHandler::setup()
 //Every tick update the global time and save it to EEPROM (delayed saving)
 void FaultHandler::handleTick()
 {
+    RecursiveScope m(faultMutex);
     globalTime = baseTime + (millis() / 100);
     memCache->Write(EE_FAULT_LOG + EEFAULT_RUNTIME, globalTime);
 }
 
 uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code)
 {
+    RecursiveScope m(faultMutex);
     bool incPtr = false;
     uint16_t storedAt = faultWritePointer;
     globalTime = baseTime + (millis() / 100);
@@ -104,6 +106,7 @@ uint16_t FaultHandler::raiseFault(uint16_t device, uint16_t code)
 
 void FaultHandler::cancelOngoingFault(uint16_t device, uint16_t code)
 {
+    RecursiveScope m(faultMutex);
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
         if (faultList[i].ongoing && (faultList[i].device == device) && (faultList[i].faultCode == code) )
@@ -115,6 +118,7 @@ void FaultHandler::cancelOngoingFault(uint16_t device, uint16_t code)
 
 void FaultHandler::cancelDeviceFaults(uint16_t device)
 {
+    RecursiveScope m(faultMutex);
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
         if (faultList[i].ongoing && (faultList[i].device == device) )
@@ -126,6 +130,7 @@ void FaultHandler::cancelDeviceFaults(uint16_t device)
 
 void FaultHandler::cancelAllFaults()
 {
+    RecursiveScope m(faultMutex);
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
         setFaultOngoing(i, false);
@@ -134,6 +139,7 @@ void FaultHandler::cancelAllFaults()
 
 uint16_t FaultHandler::getStoredFaultCount()
 {
+    RecursiveScope m(faultMutex);
     int count = 0;
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
@@ -147,6 +153,7 @@ uint16_t FaultHandler::getStoredFaultCount()
 
 uint16_t FaultHandler::getUnAckFaultCount()
 {
+    RecursiveScope m(faultMutex);
     int count = 0;
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
@@ -163,6 +170,7 @@ uint16_t FaultHandler::getUnAckFaultCount()
 //it does not use PrefHandler
 void FaultHandler::loadFromEEPROM()
 {
+    RecursiveScope m(faultMutex);
     uint8_t validByte;
     memCache->Read(EE_FAULT_LOG, &validByte);
     if (validByte == 0xB2) //magic byte value for a valid fault cache
@@ -204,6 +212,7 @@ void FaultHandler::loadFromEEPROM()
 
 void FaultHandler::saveToEEPROM()
 {
+    RecursiveScope m(faultMutex);
     memCache->Write(EE_FAULT_LOG + EEFAULT_READPTR, faultReadPointer);
     memCache->Write(EE_FAULT_LOG + EEFAULT_WRITEPTR, faultWritePointer);
     memCache->Write(EE_FAULT_LOG + EEFAULT_RUNTIME, globalTime);
@@ -215,37 +224,44 @@ void FaultHandler::saveToEEPROM()
 
 void FaultHandler::writeFaultToEEPROM(int faultnum)
 {
+    RecursiveScope m(faultMutex);
     if (faultnum >= 0 && faultnum < CFG_FAULT_HISTORY_SIZE)
     {
         memCache->Write(EE_FAULT_LOG + EEFAULT_FAULTS_START + sizeof(FAULT) * faultnum, &faultList[faultnum], sizeof(FAULT));
     }
 }
 
-FAULT *FaultHandler::getNextFault()
+//Returns a copy rather than a pointer into faultList so the caller never reads it while another thread changes it
+bool FaultHandler::getNextFault(FAULT &fault)
 {
+    RecursiveScope m(faultMutex);
     uint16_t j;
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
         j = (faultReadPointer + i + 1) % CFG_FAULT_HISTORY_SIZE;
         if (faultList[j].ack == false) {
             faultReadPointer = j;
-            return &faultList[j];            
+            fault = faultList[j];
+            return true;
         }
     }
     Logger::info("No fault to return");
-    return nullptr;
+    return false;
 }
 
-FAULT* FaultHandler::getFault(uint16_t fault)
+bool FaultHandler::getFault(uint16_t faultNum, FAULT &fault)
 {
-    if (fault < CFG_FAULT_HISTORY_SIZE) { //slot 0 is a valid fault slot too
-        return &faultList[fault];
+    RecursiveScope m(faultMutex);
+    if (faultNum < CFG_FAULT_HISTORY_SIZE) { //slot 0 is a valid fault slot too
+        fault = faultList[faultNum];
+        return true;
     }
-    return nullptr;
+    return false;
 }
 
 uint16_t FaultHandler::setFaultACK(uint16_t fault)
 {
+    RecursiveScope m(faultMutex);
     if (fault < CFG_FAULT_HISTORY_SIZE) //slot 0 is a valid fault slot too
     {
         faultList[fault].ack = 1;
@@ -257,6 +273,7 @@ uint16_t FaultHandler::setFaultACK(uint16_t fault)
 
 uint16_t FaultHandler::setAckForDevice(uint16_t device)
 {
+    RecursiveScope m(faultMutex);
     int ret = 0;
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
@@ -272,6 +289,7 @@ uint16_t FaultHandler::setAckForDevice(uint16_t device)
 
 uint16_t FaultHandler::ackAllFaults()
 {
+    RecursiveScope m(faultMutex);
     int ret = 0;
     for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
     {
@@ -287,6 +305,7 @@ uint16_t FaultHandler::ackAllFaults()
 
 uint16_t FaultHandler::setFaultOngoing(uint16_t fault, bool ongoing)
 {
+    RecursiveScope m(faultMutex);
     if (fault < CFG_FAULT_HISTORY_SIZE) //slot 0 is a valid fault slot too
     {
         faultList[fault].ongoing = ongoing;

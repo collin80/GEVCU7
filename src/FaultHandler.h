@@ -36,6 +36,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "config.h"
 #include "Logger.h"
 #include "MemCache.h"
+#include "RecursiveMutex.h"
 
 extern MemCache *memCache;
 
@@ -60,8 +61,8 @@ public:
     void cancelOngoingFault(uint16_t device, uint16_t code); //if this fault was registered as ongoing then cancel it (set not ongoing) otherwise do nothing
     void cancelDeviceFaults(uint16_t device);
     void cancelAllFaults();
-    FAULT* getNextFault(); //get the next un-ack'd fault. Will also get first fault if the first call and you forgot to call getFirstFault
-    FAULT* getFault(uint16_t fault);
+    bool getNextFault(FAULT &fault); //copy the next un-ack'd fault into fault. Returns false if there are none
+    bool getFault(uint16_t faultNum, FAULT &fault); //copy the given fault slot into fault. Returns false if out of range
     uint16_t getStoredFaultCount();
     uint16_t getUnAckFaultCount();
     void handleTick();
@@ -82,6 +83,9 @@ private:
     FAULT faultList[CFG_FAULT_HISTORY_SIZE]; //store up to 50 faults for a long history. 50*9 = 450 bytes of EEPROM
     uint32_t globalTime; //how long the unit has been running in total (across all start ups).
     uint32_t baseTime; //the time loaded at system start up. millis() / 100 is added to this to get the above time
+    //raiseFault and friends are called from device threads and the CAN thread so everything that touches
+    //the members above locks this first. Lock order: faultMutex, then the MemCache / I2C mutexes.
+    RecursiveMutex faultMutex;
 };
 
 extern FaultHandler faultHandler;
