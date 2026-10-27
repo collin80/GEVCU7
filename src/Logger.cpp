@@ -136,7 +136,11 @@ void Logger::loop()
     size_t n = rb.bytesUsed();
     //Serial.println(n);
     //delay(100);
-    if ( ( (n >= 512) || ((millis() - lastWriteTime) > 1000) ) && !logFile.isBusy()) {
+    if ( (n >= 512) || ((millis() - lastWriteTime) > 1000) ) {
+      //isBusy() talks to the card so it has to be under the lock too. Re-check sdCardWorking
+      //in case the card was pulled while we waited for the lock.
+      RecursiveScope m(sdAccessMutex);
+      if (!sdCardWorking || logFile.isBusy()) return;
       // Not busy only allows one sector before possible busy wait.
       // Write one sector from RingBuf to file.
       flushFile();

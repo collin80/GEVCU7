@@ -105,6 +105,7 @@ void SystemDevice::handleTick()
     if (sdCardPresence > 10) sdCardPresence = 10;
     if (!sdCardWorking && (sdCardPresence == 10) && !sdCardInitFailed) //freshly inserted
     {
+        RecursiveScope sd(sdAccessMutex);
         Logger::info("SDCard has been inserted. Attempting to initialize it.");
         if (!SD.sdfs.begin(SdioConfig(FIFO_SDIO)))
 	    {
@@ -124,6 +125,7 @@ void SystemDevice::handleTick()
 
     if (sdCardWorking && sdCardPresence == 0) //sdcard has been removed
     {
+        RecursiveScope sd(sdAccessMutex); //so anything in the middle of writing finishes before we mark it gone
         Logger::info("SDCard has been removed! No logging, loading, or saving will be possible.");
         sdCardInitFailed = false;
         sdCardWorking = false;

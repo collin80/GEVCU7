@@ -664,6 +664,7 @@ FLASHMEM void SerialConsole::handleShortCmd() {
 //create a binary snapshot of the entire EEPROM and save it on the sdcard
 FLASHMEM void SerialConsole::generateEEPROMBinary()
 {
+    RecursiveScope sd(sdAccessMutex);
     // Open or create file - truncate existing file.
     if (!file.open("eeprom.bin", O_RDWR | O_CREAT | O_TRUNC)) {
         Logger::error("Could not create the eeprom binary file! Aborting!");
@@ -699,39 +700,42 @@ FLASHMEM void SerialConsole::generateEEPROMBinary()
 //load binary snapshot of eeprom from sdcard
 FLASHMEM void SerialConsole::loadEEPROMBinary()
 {
-    // Open or create file - truncate existing file.
-    if (!file.open("eeprom.bin", O_READ)) {
-        Logger::error("Could not open the eeprom binary file! Aborting!");
-        return;
-    }
-    Logger::console("Reading from sdCard and writing to EEPROM");
-    uint8_t buffer[130];
-    int x = 0;
-    for (int i = 0; i < (1024 * 256); i = i + 128)
     {
-        if (file.read(buffer, 128))
+        RecursiveScope sd(sdAccessMutex); //only held while the file is in use. Not needed for the cache flush below
+        // Open or create file - truncate existing file.
+        if (!file.open("eeprom.bin", O_READ)) {
+            Logger::error("Could not open the eeprom binary file! Aborting!");
+            return;
+        }
+        Logger::console("Reading from sdCard and writing to EEPROM");
+        uint8_t buffer[130];
+        int x = 0;
+        for (int i = 0; i < (1024 * 256); i = i + 128)
         {
-            if (!memCache->Write(i, buffer, 128))
+            if (file.read(buffer, 128))
             {
-                Logger::error("Error writing to EEPROM. Aborting!");
+                if (!memCache->Write(i, buffer, 128))
+                {
+                    Logger::error("Error writing to EEPROM. Aborting!");
+                    file.close();
+                    return;
+                }
+            }
+            else 
+            {
+                Logger::error("Error reading from sdCard. Aborting!");
                 file.close();
                 return;
             }
+            x++;
+            if (x == 256)
+            {
+                x = 0;
+                Logger::console("Still working...");
+            }
         }
-        else 
-        {
-            Logger::error("Error reading from sdCard. Aborting!");
-            file.close();
-            return;
-        }
-        x++;
-        if (x == 256)
-        {
-            x = 0;
-            Logger::console("Still working...");
-        }
+        file.close();
     }
-    file.close();
     Logger::console("Flushing all eeprom caches.");
     memCache->InvalidateAll();
     Logger::console("Successfully updated EEPROM from sdCard. Please reboot now.");
@@ -741,16 +745,17 @@ FLASHMEM void SerialConsole::loadEEPROMBinary()
 //their config items. Really easy to hand edit!
 FLASHMEM void SerialConsole::generateEEPROMJSON()
 {
+    DynamicJsonDocument doc(20000);
+
+    //make call to DeviceManager to get the json
+    deviceManager.createJsonConfigDoc(doc);
+
+    RecursiveScope sd(sdAccessMutex);
     if (!file.open("gevcu7_settings.json", O_RDWR | O_CREAT | O_TRUNC)) {
         Logger::error("Could not create a json file on the sdcard. Aborting.");
         return;
     }
     Logger::console("Creating json settings document on sdcard.");
-
-    DynamicJsonDocument doc(20000);
-
-    //make call to DeviceManager to get the json
-    deviceManager.createJsonConfigDoc(doc);
 
     //can send it to screen for debugging but don't leave that on
     //serializeJsonPretty(doc, Serial);
@@ -772,14 +777,17 @@ FLASHMEM void SerialConsole::loadEEPROMJSON()
 {
     DynamicJsonDocument doc(20000);
 
-    // Open or create file - truncate existing file.
-    if (!file.open("gevcu7_settings.json", O_READ)) {
-        Logger::error("Could not open the json file! Aborting!");
-        return;
-    }
-    Logger::console("Reading json from SDCard and writing settings to EEPROM");
+    {
+        RecursiveScope sd(sdAccessMutex); //only needed while reading the file in
+        if (!file.open("gevcu7_settings.json", O_READ)) {
+            Logger::error("Could not open the json file! Aborting!");
+            return;
+        }
+        Logger::console("Reading json from SDCard and writing settings to EEPROM");
 
-    deserializeJson(doc, file);
+        deserializeJson(doc, file);
+        file.close();
+    }
 
     //serializeJsonPretty(doc, Serial);
     //Serial.println();
