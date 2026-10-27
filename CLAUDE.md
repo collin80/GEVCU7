@@ -32,13 +32,26 @@ Upload scripts for special builds:
 
 ### Core Execution Model
 
-The main loop (`src/GEVCU7.cpp`) is minimal. All real work happens through two mechanisms:
+The firmware is preemptively multithreaded using **TeensyThreads**. Arduino `loop()` (`src/GEVCU7.cpp`) is thread 0, the "idle" thread; its only job is running queued serial console commands (`serialConsole->runQueuedCommands()`). All other work happens in threads:
 
-1. **TickHandler** — periodic timers (backed by `TeensyTimerTool`). Devices register with `tickHandler.attach(this, intervalMicros)` and receive `handleTick()` calls. With `CFG_TIMER_USE_QUEUING` defined (it is), ticks are queued and dispatched from the main loop rather than running directly in interrupt context.
+1. **TickHandler** — each `tickHandler.attach(this, intervalMicros, name)` gives the observer its own thread that calls `handleTick()` and then `threads.delay()`s for the rest of the interval. `detach()` leaves the thread running idle and a later `attach()` reuses it (TeensyThreads can't cleanly end a single thread). `directAddThread()` starts a thread that runs an arbitrary function instead.
 
 2. **CanHandler** — three CAN bus instances (`canHandlerBus0/1/2`). Devices implement `CanObserver` and call `handler.attach(observer, id, mask, extended)` to receive `handleCanFrame()` callbacks. `canHandlerBus1` is the isolated bus alias (`canHandlerIsolated`), `canHandlerBus2` is CAN-FD (`canHandlerFD`).
 
-The main loop calls `canEvents()` each iteration to drain incoming CAN frames and dispatch them.
+Fixed system threads started at the end of `setup()`: **MainLoop** (GVRET on SerialUSB1, feeds the watchdog), **CANProc** (calls `canEvents()` to drain and dispatch CAN frames, so every `handleCanFrame()` runs on this thread while it holds `canbusMutex`), and **SDCard** (`Logger::loop()`, writes the log ring buffer to the card).
+
+A device's `handleTick()` and its `handleCanFrame()` run on different threads, and other devices read its state from their own threads.
+
+### Thread Safety and Locking
+
+**Read the "Threading and mutex rules" section of `README.md` before adding shared state or taking any lock.** It holds the required lock order. In short:
+
+- Use `RecursiveMutex` / `RecursiveScope` from `src/RecursiveMutex.h`, never `Threads::Mutex` directly. The TeensyThreads mutex doesn't track its owner, so re-locking it from the same thread deadlocks.
+- Lock order, outermost first: `canbusMutex` → `sdAccessMutex` → `faultMutex` → `cacheMutex` → `i2cMutex` → (`tickMutex`, `statusMutex`, `jsonMutex`, `adcMutex`) → `logMutex` → `consoleMutex`. Logging is allowed while holding any lock.
+- `Serial` writes can call `yield()`, which runs `serialEvent()` / `serialEvent2()` inside whatever thread is writing. Code reached from those may only take `consoleMutex`; queue real work for elsewhere.
+- Don't call other devices or observers while holding a lock. Return copies, not pointers into shared data.
+- The heap is protected for threads by `src/MallocLock.cpp` (`__malloc_lock` pauses the scheduler). Never allocate from an ISR.
+- Holding a lock across `threads.delay()` stalls every thread waiting on it.
 
 ### Device System
 
@@ -98,6 +111,8 @@ Device type IDs are defined in each device's own header (not a central enum). Sy
 
 `SerialConsole` provides a runtime menu over USB serial. Commands follow the pattern `SETTINGNAME=value`. The console enumerates all registered `ConfigEntry` items from all devices, so new settings become accessible automatically once added to `cfgEntries`.
 
+Input arrives from USB serial (`serialEvent()`) and from telnet via the ESP32 (`ESP32Driver::injectChar()`), both from inside `yield()` on arbitrary threads. Each source builds lines in its own buffer and finished lines are only queued; `runQueuedCommands()` executes them from `loop()` (thread 0) with no locks held.
+
 ## Adding a New Device Driver
 
 Use `docs/ExampleDevice.h` and `docs/ExampleDevice.cpp` as a template. Key points:
@@ -106,6 +121,7 @@ Use `docs/ExampleDevice.h` and `docs/ExampleDevice.cpp` as a template. Key point
 3. Inherit from `CanObserver` as well if you need CAN.
 4. In `earlyInit()`, create `prefsHandler = new PrefHandler(YOUR_ID)`.
 5. In `setup()`, call `tickHandler.attach(this, interval)` and `canHandlerBusN.attach(this, id, mask, extended)`.
+   `handleTick()` then runs on the device's own thread and `handleCanFrame()` on the CANProc thread, so state shared between them (beyond single aligned 32-bit values) needs a `RecursiveMutex`. See "Thread Safety and Locking" above.
 6. Instantiate a global instance at the bottom of the `.cpp` — this self-registers.
 
 ## localconfig.h
@@ -119,5 +135,5 @@ Use `docs/ExampleDevice.h` and `docs/ExampleDevice.cpp` as a template. Key point
 - **Target MCU**: Teensy MicroMod (i.MX RT1062, Cortex-M7 @ 600 MHz)
 - **CAN buses**: 3 buses — Bus 0 (standard), Bus 1 (isolated), Bus 2 (CAN-FD capable)
 - **I/O**: 8 analog inputs, 12 digital inputs, 8 digital outputs, 4 PWM outputs, 24 extended I/O via PCA I²C expander
-- **Watchdog**: `WDT_T4<WDT3>` (RTWDT), 5-second timeout, must call `wdt.feed()` in the loop
+- **Watchdog**: `WDT_T4<WDT3>` (RTWDT), 5-second timeout, fed by the MainLoop thread (`mainWorkLoop` in `GEVCU7.cpp`). If that thread blocks (e.g. deadlocked on a mutex) the board resets
 - **System variants**: `GEVCU7A` through `GEVCU7D` (enum in `sys_io.h`)
