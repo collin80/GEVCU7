@@ -31,6 +31,48 @@ code to using TeensyThreads which causes a variety of code to run in
 separate preemptively multitasked threads. Care should be taken when 
 passing data between threads. The multithreading is still being worked on.
 
+Threading and mutex rules
+-------------------------
+
+Every device's handleTick() runs in its own thread. CAN frames are dispatched
+from the CANProc thread, the SD log is written from the SDCard thread and
+console commands run from loop() (thread 0). Anything shared between these
+must be protected.
+
+Use RecursiveMutex / RecursiveScope (src/RecursiveMutex.h), not
+Threads::Mutex directly. The TeensyThreads mutex does not track its owner so a
+thread that locks one it already holds waits on itself forever.
+
+When more than one lock is needed they must ALWAYS be taken in this order
+(a lock may only be taken while holding locks that appear above it):
+
+1. canbusMutex     (CanHandler.cpp)  - CAN hardware. Held while CAN frames are dispatched to observers
+2. sdAccessMutex   (GEVCU7.cpp)      - anything touching the SD card
+3. faultMutex      (FaultHandler)    - fault list and pointers
+4. cacheMutex      (MemCache)        - EEPROM page cache
+5. i2cMutex        (GEVCU7.cpp)      - I2C bus, PCA output cache and PWM state in SystemIO
+6. tickMutex (TickHandler), statusMutex (DeviceManager), jsonMutex (ESP32Driver),
+   adcMutex (SystemIO) - none of these may take any lock above while held
+7. logMutex        (Logger.cpp)      - Logger::log / Logger::console output
+8. consoleMutex    (SerialConsole)   - console line queue. Nothing may be locked while holding it
+
+Logging is allowed while holding any lock above it. Serial writes can call
+yield() which can run serialEvent() / serialEvent2() in whatever thread is
+writing, which is why the console queue sits below the logger.
+
+Other rules:
+- Code that runs from yield() (serialEvent, serialEvent2 and anything they call)
+  may only take consoleMutex. Queue the work and do it elsewhere, as
+  SerialConsole does with runQueuedCommands().
+- Don't call into other devices or observers while holding a lock. Copy what
+  you need, release the lock, then call (see DeviceManager::handleTick).
+- Hand out copies, not pointers into shared data (see FaultHandler::getFault
+  and DeviceManager::getStatusEntryByHash).
+- Never allocate memory from an interrupt handler. Heap use from threads is
+  made safe by src/MallocLock.cpp but that does not cover ISRs.
+- A lock held across threads.delay() blocks every other thread that wants it.
+  MemCache does this on purpose while an EEPROM page write finishes.
+
 The canbus is supposed to be terminated on both ends of the bus. 
 If you are testing with a DMOC and GEVCU then you've got two devices, 
 each on opposing ends of the bus. GEVCU7 hardware is selectively terminated.
