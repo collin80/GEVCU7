@@ -40,6 +40,17 @@ extern bool sdCardWorking;
 DMAMEM RingBuf<FsFile, RING_BUF_CAPACITY> csvRingBuf;
 extern RecursiveMutex sdAccessMutex;
 
+//Big enough for a full line of every table entry. Lines that would overflow are truncated.
+#define CSV_LINE_BUFFER_SIZE 4096
+#define CSV_VALUE_BUFFER_SIZE 64
+
+//Appends src to buf at *pos, never writing past bufSize - 1, and keeps buf null terminated.
+static void appendToBuffer(char *buf, size_t bufSize, size_t *pos, const char *src)
+{
+    while (*src && (*pos < bufSize - 1)) buf[(*pos)++] = *src++;
+    buf[*pos] = 0;
+}
+
 /*
  * Constructor.
  */
@@ -168,7 +179,10 @@ void StatusCSV::handleTick()
     StatusEntry ent;
     esp32 = static_cast<ESP32Driver *>(deviceManager.getDeviceByID(0x0800));
     int c;
-    String builder;
+    //static so these large buffers don't live on this thread's stack. Only the StatusCSV tick thread uses them.
+    static char lineBuffer[CSV_LINE_BUFFER_SIZE];
+    static char valueBuffer[CSV_VALUE_BUFFER_SIZE];
+    size_t linePos = 0;
 
     //if status output is enabled, we are doing file output, the sdCard is working, 
     //and the file hasn't been initialized yet, then initialize it.
@@ -207,19 +221,21 @@ void StatusCSV::handleTick()
     if (isEnabled && needHeader)
     {
         needHeader = false;
-        builder = "TimeStamp,";
+        lineBuffer[0] = 0;
+        appendToBuffer(lineBuffer, sizeof(lineBuffer), &linePos, "TimeStamp,");
         for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
         {
             if (!config->enabledStatusEntries[i]) continue;
             if (deviceManager.getStatusEntryByHash(config->enabledStatusEntries[i], ent))
             {
-                builder += ent.statusName + ",";                
+                appendToBuffer(lineBuffer, sizeof(lineBuffer), &linePos, ent.statusName.c_str());
+                appendToBuffer(lineBuffer, sizeof(lineBuffer), &linePos, ",");
             }
         }
-        builder += "\n";
-        SerialUSB1.print(builder);
-        if (config->bFileOutput && sdCardWorking) csvRingBuf.print(builder);
-        if (esp32 && config->bESPOutput) esp32->sendStatusCSV(builder);
+        appendToBuffer(lineBuffer, sizeof(lineBuffer), &linePos, "\n");
+        SerialUSB1.print(lineBuffer);
+        if (config->bFileOutput && sdCardWorking) csvRingBuf.print(lineBuffer);
+        if (esp32 && config->bESPOutput) esp32->sendStatusCSV(lineBuffer);
     }
 
     if (sdCardWorking)
@@ -246,22 +262,21 @@ void StatusCSV::handleTick()
     if (++tickCounter > config->ticksPerUpdate)
     {
         tickCounter = 0;
-        builder = "";
-        builder += millis();
-        builder += ",";
+        linePos = snprintf(lineBuffer, sizeof(lineBuffer), "%lu,", millis());
         //do processing
         for (int i = 0; i < NUM_ENTRIES_IN_TABLE; i++)
         {
             if (!config->enabledStatusEntries[i]) continue;
             if (deviceManager.getStatusEntryByHash(config->enabledStatusEntries[i], ent))
             {
-                String val = ent.getValueAsString();
-                builder += val + ",";
+                ent.getValueAsCString(valueBuffer, sizeof(valueBuffer));
+                appendToBuffer(lineBuffer, sizeof(lineBuffer), &linePos, valueBuffer);
+                appendToBuffer(lineBuffer, sizeof(lineBuffer), &linePos, ",");
             }
         }
-        SerialUSB1.println(builder);
-        if (config->bFileOutput && sdCardWorking) csvRingBuf.println(builder);
-        if (esp32 && config->bESPOutput) esp32->sendStatusCSV(builder);
+        SerialUSB1.println(lineBuffer);
+        if (config->bFileOutput && sdCardWorking) csvRingBuf.println(lineBuffer);
+        if (esp32 && config->bESPOutput) esp32->sendStatusCSV(lineBuffer);
     }
 }
 

@@ -211,6 +211,28 @@ struct StatusEntry
         return out;
     }
 
+    //same formatting as getValueAsString but writes into a caller supplied buffer instead of
+    //allocating a String. Returns the number of characters written (truncated to fit len - 1)
+    int getValueAsCString(char *buf, size_t len)
+    {
+        int n = 0;
+        if (!buf || len == 0) return 0;
+        switch (varType)
+        {
+        case BYTE:   n = snprintf(buf, len, "%u", *((uint8_t*)varPtr)); break;
+        case STRING: n = snprintf(buf, len, "%s", (char *)varPtr); break;
+        case INT16:  n = snprintf(buf, len, "%d", *((int16_t*)varPtr)); break;
+        case UINT16: n = snprintf(buf, len, "%u", *((uint16_t*)varPtr)); break;
+        case INT32:  n = snprintf(buf, len, "%ld", (long)*((int32_t*)varPtr)); break;
+        case UINT32: n = snprintf(buf, len, "%lu", (unsigned long)*((uint32_t*)varPtr)); break;
+        case FLOAT:  n = snprintf(buf, len, "%.3f", *((float*)varPtr)); break;
+        default:     buf[0] = 0; break;
+        }
+        if (n < 0) n = 0;
+        if ((size_t)n >= len) n = len - 1;
+        return n;
+    }
+
     double getValueAsDouble()
     {
         double out = 0.0;

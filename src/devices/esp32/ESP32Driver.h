@@ -40,7 +40,7 @@ public:
     ESP32Driver();
     void processSerial();
     void sendLogString(const char *str);
-    void sendStatusCSV(String str);
+    void sendStatusCSV(const char *str);
     void doTeensyUpdate();
     void doESP32Update();
     bool isReady();

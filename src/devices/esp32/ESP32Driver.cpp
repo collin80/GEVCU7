@@ -311,11 +311,12 @@ void ESP32Driver::sendLogString(const char *str)
     Serial2.println(str);
 }
 
-void ESP32Driver::sendStatusCSV(String str)
+void ESP32Driver::sendStatusCSV(const char *str)
 {
     if (!isReady()) return; //can't do anything until the system is actually up
-    if (Serial2.availableForWrite() < (str.length() + 2)) return; //not enough room to send the whole string. Drop it.
-    Serial2.println("`" + str); //` prefix means this is a StatusCSV message which should go to the second telnet interface
+    if (Serial2.availableForWrite() < (int)(strlen(str) + 3)) return; //not enough room for `, the string, and CRLF. Drop it.
+    Serial2.print('`'); //` prefix means this is a StatusCSV message which should go to the second telnet interface
+    Serial2.println(str);
 }
 
 bool ESP32Driver::isReady()
