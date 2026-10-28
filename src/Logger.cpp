@@ -73,8 +73,8 @@ ESP32Driver* Logger::esp32 = nullptr;
 
 void Logger::initializeFile()
 {
-    char fn1[100];
-    char fn2[100];
+    char fn1[30];
+    char fn2[30];
 
     {
         RecursiveScope m(sdAccessMutex);
@@ -83,13 +83,13 @@ void Logger::initializeFile()
         //as the current log
         for (int i = MAX_LOGFILES - 1; i > 0; i--)
         {
-            snprintf(fn1, 200, "%s%d.txt", LOG_FILENAME, i);
-            snprintf(fn2, 200, "%s%d.txt", LOG_FILENAME, i - 1);
+            snprintf(fn1, 30, "%s%d.txt", LOG_FILENAME, i);
+            snprintf(fn2, 30, "%s%d.txt", LOG_FILENAME, i - 1);
             SD.sdfs.remove(fn1); //delete any file that may have been there
             SD.sdfs.rename(fn2, fn1); //rename the file to the name we just (maybe) deleted
         }
-        snprintf(fn1, 200, "%s1.txt", LOG_FILENAME);
-        snprintf(fn2, 200, "%s.txt", LOG_FILENAME);
+        snprintf(fn1, 30, "%s1.txt", LOG_FILENAME);
+        snprintf(fn2, 30, "%s.txt", LOG_FILENAME);
         SD.sdfs.remove(fn1);
         SD.sdfs.rename(fn2, fn1);
 

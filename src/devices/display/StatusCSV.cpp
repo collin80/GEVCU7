@@ -112,29 +112,29 @@ void StatusCSV::setup() {
 void StatusCSV::initializeFile()
 {
     RecursiveScope m(sdAccessMutex);
-    char fn1[100];
-    char fn2[100];
+    char fn1[30];
+    char fn2[30];
     //basically, rename all files one number higher than they were then start a new log with no numbers
     //as the current log
     for (int i = MAX_LOGFILES - 1; i > 0; i--)
     {
-        snprintf(fn1, 200, "%s%d.csv", LOG_FILENAME, i);
-        snprintf(fn2, 200, "%s%d.csv", LOG_FILENAME, i - 1);
+        snprintf(fn1, 30, "%s%d.csv", LOG_FILENAME, i);
+        snprintf(fn2, 30, "%s%d.csv", LOG_FILENAME, i - 1);
         SD.sdfs.remove(fn1); //delete any file that may have been there
         SD.sdfs.rename(fn2, fn1); //rename the file to the name we just (maybe) deleted
     }
-    snprintf(fn1, 200, "%s1.csv", LOG_FILENAME);
-    snprintf(fn2, 200, "%s.csv", LOG_FILENAME);
+    snprintf(fn1, 30, "%s1.csv", LOG_FILENAME);
+    snprintf(fn2, 30, "%s.csv", LOG_FILENAME);
     SD.sdfs.remove(fn1);
     SD.sdfs.rename(fn2, fn1);
 
     logFile = SD.sdfs.open(fn2, O_RDWR | O_CREAT | O_TRUNC);
     if (!logFile) {
-        Serial.println("CSV status file creation failed\n");
+        Logger::error("CSV status file creation failed\n");
         fileInitialized = false;
         return;
     }
-    else Serial.println("CSV status output has been opened for writing.");
+    else Logger::info("CSV status output has been opened for writing.");
     fileInitialized = true;
     // File must be pre-allocated to avoid huge
     // delays searching for free clusters.
@@ -160,7 +160,7 @@ void StatusCSV::flushFile()
     int writeBytes = min(n, 512u);
     ret = csvRingBuf.writeOut(writeBytes);
     if (writeBytes != ret) {
-        Serial.printf("Writeout failed. Want to write %u bytes but wrote %u\n", writeBytes, ret);
+        Logger::error("Writeout failed. Want to write %u bytes but wrote %u\n", writeBytes, ret);
         logFile.close();
         fileInitialized = false;
         return;
@@ -183,13 +183,6 @@ void StatusCSV::handleTick()
     static char lineBuffer[CSV_LINE_BUFFER_SIZE];
     static char valueBuffer[CSV_VALUE_BUFFER_SIZE];
     size_t linePos = 0;
-
-    //if status output is enabled, we are doing file output, the sdCard is working, 
-    //and the file hasn't been initialized yet, then initialize it.
-    if (isEnabled && config->bFileOutput && sdCardWorking && !fileInitialized)
-    {
-        initializeFile();
-    }
 
     if (config->enableString[0] > 0)
     {
@@ -218,6 +211,14 @@ void StatusCSV::handleTick()
         }
     }
 
+    //if status output is enabled, we are doing file output, the sdCard is working,
+    //and the file hasn't been initialized yet, then initialize it. This has to come after the
+    //serial check above so the file is open before the header line goes out on the tick output starts.
+    if (isEnabled && config->bFileOutput && sdCardWorking && !fileInitialized)
+    {
+        initializeFile();
+    }
+
     if (isEnabled && needHeader)
     {
         needHeader = false;
@@ -234,11 +235,13 @@ void StatusCSV::handleTick()
         }
         appendToBuffer(lineBuffer, sizeof(lineBuffer), &linePos, "\n");
         SerialUSB1.print(lineBuffer);
-        if (config->bFileOutput && sdCardWorking) csvRingBuf.print(lineBuffer);
+        //csvRingBuf lives in DMAMEM which isn't zeroed at boot and RingBuf's constructor doesn't
+        //initialize its counters, so it must not be touched until initializeFile() has called begin()
+        if (config->bFileOutput && sdCardWorking && fileInitialized) csvRingBuf.print(lineBuffer);
         if (esp32 && config->bESPOutput) esp32->sendStatusCSV(lineBuffer);
     }
 
-    if (sdCardWorking)
+    if (sdCardWorking && fileInitialized)
     {
         size_t n = csvRingBuf.bytesUsed();
         //Serial.println(n);
@@ -248,7 +251,7 @@ void StatusCSV::handleTick()
             //isBusy() talks to the card so it has to be under the lock too. Re-check sdCardWorking
             //in case the card was pulled while we waited for the lock.
             RecursiveScope m(sdAccessMutex);
-            if (sdCardWorking && !logFile.isBusy())
+            if (sdCardWorking && fileInitialized && !logFile.isBusy())
             {
                 // Not busy only allows one sector before possible busy wait.
                 // Write one sector from RingBuf to file.
@@ -275,7 +278,7 @@ void StatusCSV::handleTick()
             }
         }
         SerialUSB1.println(lineBuffer);
-        if (config->bFileOutput && sdCardWorking) csvRingBuf.println(lineBuffer);
+        if (config->bFileOutput && sdCardWorking && fileInitialized) csvRingBuf.println(lineBuffer);
         if (esp32 && config->bESPOutput) esp32->sendStatusCSV(lineBuffer);
     }
 }
