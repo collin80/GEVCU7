@@ -230,96 +230,16 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
 {
     Device *deviceMatched;
     const ConfigEntry *entry = deviceManager.findConfigEntry(settingName, &deviceMatched);
-    uint8_t ui8;
-    float fl;
-    int16_t i16;
-    int32_t i32;
-    uint16_t ui16;
-    uint32_t ui32;
 
-    int result = 0;
     if (!entry)
     {
         Logger::console("No such configuration parameter exists!");
         return;
     }
-    switch (entry->varType)
-    {
-    case CFG_ENTRY_VAR_TYPE::BYTE:
-        ui8 = (uint8_t)strtol(valu, NULL, 0);
-        if (ui8 < entry->minValue.u_int) result = 1;
-        else if (ui8 > entry->maxValue.u_int) result = 2;
-        else 
-        {
-            *(uint8_t *)entry->varPtr = ui8;
-        }
-        break;
-    case CFG_ENTRY_VAR_TYPE::FLOAT:
-        fl = strtof(valu, NULL);
-        if (fl < entry->minValue.floating) result = 1;
-        else if (fl > entry->maxValue.floating) result = 2;
-        else *(float *)entry->varPtr = fl;
-        break;
-    case CFG_ENTRY_VAR_TYPE::INT16:
-        i16 = (int16_t)strtol(valu, NULL, 0);
-        if (i16 < entry->minValue.s_int) result = 1;
-        else if (i16 > entry->maxValue.s_int) result = 2;
-        else
-        {
-            if (entry->precision < 0) i16 = i16 * (abs(entry->precision));
-            if (entry->precision > 0 && entry->precision != 16) i16 = i16 / entry->precision;
-            *(int16_t *)entry->varPtr = i16;
-        }
-        break;
-    case CFG_ENTRY_VAR_TYPE::INT32:
-        i32 = (int32_t)strtol(valu, NULL, 0);
-        if (i32 < entry->minValue.s_int) result = 1;
-        else if (i32 > entry->maxValue.s_int) result = 2;
-        else
-        {
-            if (entry->precision < 0) i32 = i32 * (abs(entry->precision));
-            if (entry->precision > 0 && entry->precision != 16) i32 = i32 / entry->precision;
-            *(int32_t *)entry->varPtr = i32;
-        }
-        break;
-    case CFG_ENTRY_VAR_TYPE::STRING:
-        //this is an interesting one. It's easy in principle but we don't know
-        //the actual size of the storage buffer so it could overwrite memory.
-        //If this GEVCU thing gets popular it might be necessary to fix this
-        //otherwise this is the entry point to smashing the stack for fun and profit.
-        strcpy((char *)entry->varPtr, valu);
-        break;
-    case CFG_ENTRY_VAR_TYPE::UINT16:
-        ui16 = (uint16_t)strtoul(valu, NULL, 0);
-        if (ui16 < entry->minValue.u_int) result = 1;
-        else if (ui16 > entry->maxValue.u_int) result = 2;
-        else
-        {
-            if (entry->precision < 0) ui16 = ui16 * (abs(entry->precision));
-            if (entry->precision > 0 && entry->precision != 16) ui16 = ui16 / entry->precision;
-            *(uint16_t *)entry->varPtr = ui16;
-        }
-        break;
-    case CFG_ENTRY_VAR_TYPE::UINT32:
-        ui32 = (uint32_t)strtoul(valu, NULL, 0);
-        if (ui32 < entry->minValue.u_int) result = 1;
-        else if (ui32 > entry->maxValue.u_int) result = 2;
-        else
-        {
-            if (entry->precision < 0) ui32 = ui32 * (abs(entry->precision));
-            if (entry->precision > 0 && entry->precision != 16) ui32 = ui32 / entry->precision;
-            *(uint32_t *)entry->varPtr = ui32;
-        }
-        break;
-    }
+    int result = deviceManager.applyConfigValue(deviceMatched, entry, valu);
     if (result == 0) //value was stored
     {
         Logger::console("%s was set as value for parameter %s", valu, settingName);
-        deviceMatched->saveConfiguration(); //devices are responsible for doing their own saving and writing to eeprom
-        if (entry->afterUpdateFunc)
-        {
-            CALL_MEMBER_FN(deviceMatched, entry->afterUpdateFunc)();
-        }
     }
     if (result == 1) //value was too low
     {

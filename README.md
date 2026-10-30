@@ -54,7 +54,8 @@ When more than one lock is needed they must ALWAYS be taken in this order
 6. tickMutex (TickHandler), statusMutex (DeviceManager), jsonMutex (ESP32Driver),
    adcMutex (SystemIO) - none of these may take any lock above while held
 7. logMutex        (Logger.cpp)      - Logger::log / Logger::console output
-8. consoleMutex    (SerialConsole)   - console line queue. Nothing may be locked while holding it
+8. txMutex         (ESP32Driver)     - writes to Serial2 (the ESP32). Don't log while holding it
+9. consoleMutex    (SerialConsole)   - console line queue. Nothing may be locked while holding it
 
 Logging is allowed while holding any lock above it. Serial writes can call
 yield() which can run serialEvent() / serialEvent2() in whatever thread is
@@ -63,7 +64,8 @@ writing, which is why the console queue sits below the logger.
 Other rules:
 - Code that runs from yield() (serialEvent, serialEvent2 and anything they call)
   may only take consoleMutex. Queue the work and do it elsewhere, as
-  SerialConsole does with runQueuedCommands().
+  SerialConsole does with runQueuedCommands() and ESP32Driver does with
+  processQueuedRequests() (both run from loop()).
 - Don't call into other devices or observers while holding a lock. Copy what
   you need, release the lock, then call (see DeviceManager::handleTick).
 - Hand out copies, not pointers into shared data (see FaultHandler::getFault

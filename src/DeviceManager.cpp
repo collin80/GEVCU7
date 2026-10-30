@@ -509,6 +509,104 @@ const ConfigEntry* DeviceManager::findConfigEntry(const char *settingName, Devic
     return nullptr;
 }
 
+/*
+Parse a value given as text and store it into the variable a ConfigEntry points to. The text is
+interpreted in display units (see the precision notes in DeviceTypes.h) exactly as if it had been
+typed on the serial console. If the value is stored the device saves its configuration and the
+entry's afterUpdateFunc (if any) is called.
+Returns 0 if the value was stored, 1 if it was below the minimum, 2 if it was above the maximum.
+This saves to EEPROM so it must not be called from yield() (serialEvent and friends).
+*/
+int DeviceManager::applyConfigValue(Device *dev, const ConfigEntry *entry, const char *valu)
+{
+    uint8_t ui8;
+    float fl;
+    int16_t i16;
+    int32_t i32;
+    uint16_t ui16;
+    uint32_t ui32;
+
+    int result = 0;
+    switch (entry->varType)
+    {
+    case CFG_ENTRY_VAR_TYPE::BYTE:
+        ui8 = (uint8_t)strtol(valu, NULL, 0);
+        if (ui8 < entry->minValue.u_int) result = 1;
+        else if (ui8 > entry->maxValue.u_int) result = 2;
+        else
+        {
+            *(uint8_t *)entry->varPtr = ui8;
+        }
+        break;
+    case CFG_ENTRY_VAR_TYPE::FLOAT:
+        fl = strtof(valu, NULL);
+        if (fl < entry->minValue.floating) result = 1;
+        else if (fl > entry->maxValue.floating) result = 2;
+        else *(float *)entry->varPtr = fl;
+        break;
+    case CFG_ENTRY_VAR_TYPE::INT16:
+        i16 = (int16_t)strtol(valu, NULL, 0);
+        if (i16 < entry->minValue.s_int) result = 1;
+        else if (i16 > entry->maxValue.s_int) result = 2;
+        else
+        {
+            if (entry->precision < 0) i16 = i16 * (abs(entry->precision));
+            if (entry->precision > 0 && entry->precision != 16) i16 = i16 / entry->precision;
+            *(int16_t *)entry->varPtr = i16;
+        }
+        break;
+    case CFG_ENTRY_VAR_TYPE::INT32:
+        i32 = (int32_t)strtol(valu, NULL, 0);
+        if (i32 < entry->minValue.s_int) result = 1;
+        else if (i32 > entry->maxValue.s_int) result = 2;
+        else
+        {
+            if (entry->precision < 0) i32 = i32 * (abs(entry->precision));
+            if (entry->precision > 0 && entry->precision != 16) i32 = i32 / entry->precision;
+            *(int32_t *)entry->varPtr = i32;
+        }
+        break;
+    case CFG_ENTRY_VAR_TYPE::STRING:
+        //this is an interesting one. It's easy in principle but we don't know
+        //the actual size of the storage buffer so it could overwrite memory.
+        //If this GEVCU thing gets popular it might be necessary to fix this
+        //otherwise this is the entry point to smashing the stack for fun and profit.
+        strcpy((char *)entry->varPtr, valu);
+        break;
+    case CFG_ENTRY_VAR_TYPE::UINT16:
+        ui16 = (uint16_t)strtoul(valu, NULL, 0);
+        if (ui16 < entry->minValue.u_int) result = 1;
+        else if (ui16 > entry->maxValue.u_int) result = 2;
+        else
+        {
+            if (entry->precision < 0) ui16 = ui16 * (abs(entry->precision));
+            if (entry->precision > 0 && entry->precision != 16) ui16 = ui16 / entry->precision;
+            *(uint16_t *)entry->varPtr = ui16;
+        }
+        break;
+    case CFG_ENTRY_VAR_TYPE::UINT32:
+        ui32 = (uint32_t)strtoul(valu, NULL, 0);
+        if (ui32 < entry->minValue.u_int) result = 1;
+        else if (ui32 > entry->maxValue.u_int) result = 2;
+        else
+        {
+            if (entry->precision < 0) ui32 = ui32 * (abs(entry->precision));
+            if (entry->precision > 0 && entry->precision != 16) ui32 = ui32 / entry->precision;
+            *(uint32_t *)entry->varPtr = ui32;
+        }
+        break;
+    }
+    if (result == 0) //value was stored
+    {
+        dev->saveConfiguration(); //devices are responsible for doing their own saving and writing to eeprom
+        if (entry->afterUpdateFunc)
+        {
+            CALL_MEMBER_FN(dev, entry->afterUpdateFunc)();
+        }
+    }
+    return result;
+}
+
 //caller preallocates the json document and we fill it out
 //send only details for given deviceID
 //might need it to be enabled to actually get the details?
@@ -551,6 +649,7 @@ void DeviceManager::__populateJsonEntry(DynamicJsonDocument &doc, Device *dev)
         //devEntry["CfgName"] = ent.cfgName.c_str();
         devEntry["HelpTxt"] = ent.helpText.c_str();
         devEntry["Precision"] = ent.precision;
+        if (ent.descFunc) devEntry["Desc"] = CALL_MEMBER_FN(dev, ent.descFunc)(); //String temporary so json copies it
         switch (ent.varType)
         {
         case CFG_ENTRY_VAR_TYPE::BYTE:

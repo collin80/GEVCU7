@@ -24,6 +24,8 @@
 #include "../../Logger.h"
 #include "gevcu_port.h"
 #include <Watchdog_t4.h>
+#include <DeviceManager.h>
+#include <devices/esp32/ESP32Driver.h>
 
 extern WDT_T4<WDT3> wdt;
 
@@ -144,6 +146,7 @@ FLASHMEM bool flashESP32(const char *filename, uint32_t address)
     if (file.open(filename, O_READ))
     {
         Logger::info("Found an esp32 update image. Flashing %s to esp32", filename);
+
         loader_port_gevcu_init(115200);
         esp_loader_connect_args_t conn = ESP_LOADER_CONNECT_DEFAULT();
         esp_loader_error_t err = esp_loader_connect(&conn);

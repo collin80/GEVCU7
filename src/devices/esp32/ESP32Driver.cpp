@@ -24,50 +24,33 @@ character to determine that it's JSON and we should process it that way.
 For #2 it should be possible for the other side (esp32 running web server) to
 query what devices are possible and which are enabled. Enabled devices should
 then be able to be queried to get their configuration items. All of this can be
-done via json, even the queries. 
-{"GetDevices":1} is sufficient to ask for device list. 
-The returned list (obviously without all the whitespace):
-{
-    "DeviceList":[
-        {
-            "DeviceID":"0x1000"
-            "DeviceName":"DMOC645 Inverter",
-            "DeviceEnabled":0,
-            "DeviceType":"Motor Controller"
-        },
-        {
-            "DeviceID":"0x2000"
-            "DeviceName":"Potentiometer Accelerator",
-            "DeviceEnabled":1,
-            "DeviceType":"Throttle"
-        }
-    ]
-}
-Then ask for parameters for a specific device:
-{"GetDevConfig":"0x1000"}
-This returns a list of all parameters with their details:
-{
-    "DeviceID":"0x1000",
-    "DeviceDetails":[
-        {
-            "CfgName":"SomeSetting",
-            "HelpTxt":"Describe what this thing does",
-            "Valu":"SomeValue or integer",
-            "ValType":"INT16",
-            "MinValue":"-10",
-            "MaxValue":"10",
-            "Precision":4
-        }
-    ]
-}
-if the ESP32 side changes the value it must reply back with the change:
-{
-    "DeviceID":"0x1000",
-    "CfgName":"SomeSetting",
-    "Valu":"New Value"
-}
-GEVCU knows the way the value should be interpreted so it can process things
-and do the actual setting update.
+done via json, even the queries. Every message is one line of minified JSON.
+Device IDs are always plain JSON numbers (4096, not "0x1000").
+
+Requests from the ESP32 (processed from loop(), never from inside yield()):
+{"GetDevices":1}          -> DeviceList reply
+{"GetDevConfig":4096}     -> DevConfig reply for that device
+{"DeviceID":4096,"CfgName":"SomeSetting","Valu":"12.5"}
+                          -> sets a value. Valu is text interpreted exactly as if typed on
+                             the serial console (display units, 0x prefix allowed). Replies
+                             with CfgResult then a fresh DevConfig for the device.
+{"GetStatusList":1}       -> StatusList reply
+{"GetStatus":1}           -> re-send every status entry value in the regular status updates
+
+Replies from GEVCU7:
+{"DeviceList":{"DMOC645":{"DeviceID":4096,"DeviceName":"DMOC645 Inverter","DeviceEnabled":1,"DeviceType":"MOTORCTRL"}, ...}}
+{"DevConfig":{"DMOC645":{"DevID":4096,
+    "SomeSetting":{"HelpTxt":"Describe it","Precision":0,"Desc":"optional describe-func text",
+                   "Valu":5,"ValType":"INT16","MinValue":-10,"MaxValue":10}, ...}}}
+    Valu is the raw stored value. Precision is decimal places for FLOAT. For integers 16 means
+    show as hex, negative N means display = stored / |N|, positive N means display = stored * N.
+    Min/MaxValue are in display units.
+{"CfgResult":{"DeviceID":4096,"CfgName":"SomeSetting","Valu":"12.5","Result":0}}
+    Result: 0 = stored, 1 = below minimum, 2 = above maximum, 3 = no such device/setting
+{"StatusList":{"DMOC645":["MotorRPM","MotorTorque", ...], ...}}  StatusEntry names grouped by device
+
+Status updates are sent once a second as a flat object of every StatusEntry that changed:
+{"MotorRPM":"1234","MotorTorque":"20.5","timeRunning":"1:02:03","systemState":8}
 
 #6 is trickier. We do NOT want this active unless the owner of the GEVCU7
 has specifically requested it but the case is waterproof, sealed, and hard to open.
@@ -122,7 +105,11 @@ ESP32Driver::ESP32Driver() : Device()
     statusIdx = 0;
     lastTime = 0;
     gotIPAddr = false;
-    websocket_json = new DynamicJsonDocument(3000);
+    needWifiConfig = false;
+    reqHead = 0;
+    reqTail = 0;
+    //big enough to hold the initial dump of every status entry in one update
+    websocket_json = new DynamicJsonDocument(12000);
 }
 
 void ESP32Driver::packageAndSendEntry(StatusEntry *entry)
@@ -226,7 +213,6 @@ void ESP32Driver::disableDevice()
 }
 
 void ESP32Driver::handleTick() {
-
     Device::handleTick(); //kick the ball up to papa
     crashHandler.addBreadcrumb(ENCODE_BREAD("ESPTT") + 1);
 
@@ -246,14 +232,25 @@ void ESP32Driver::handleTick() {
 
     if (currState == ESP32NS::NORMAL && systemAlive)
     {
-        if (!didInitialStatus)
+        if (needWifiConfig)
         {
-            StatusEntry entry;
-            if (deviceManager.getStatusEntryByIdx(statusIdx++, entry)) packageAndSendEntry(&entry);
-            else 
+            needWifiConfig = false;
+            sendWirelessConfig();
+        }
+
+        //packageAndSendEntry drops entries until isReady() so wait for that or the dump is lost
+        if (!didInitialStatus && isReady())
+        {
+            //a chunk of entries per tick gets the whole list into the next once a second update or two
+            for (int i = 0; i < 25 && !didInitialStatus; i++)
             {
-                statusIdx = 0; //start over
-                didInitialStatus = true; //getting a nullptr means we hit the end of the list. Stop sending initial full update
+                StatusEntry entry;
+                if (deviceManager.getStatusEntryByIdx(statusIdx++, entry)) packageAndSendEntry(&entry);
+                else
+                {
+                    statusIdx = 0; //start over
+                    didInitialStatus = true; //hit the end of the list. Stop sending initial full update
+                }
             }
         }
         if (millis() > (lastTime + 1000)) //every second send an update to the web server giving the uptime
@@ -279,15 +276,17 @@ void ESP32Driver::handleTick() {
             (*websocket_json)["systemState"] = 8;
             if (!inhibitJSON)
             {
-                if (Serial2.availableForWrite() >= (measureJson((*websocket_json)) + 2))
+                bool sent = false;
                 {
-                    serializeJson((*websocket_json), Serial2);
-                    Serial2.println();
+                    RecursiveScope tx(txMutex);
+                    if (Serial2.availableForWrite() >= (int)(measureJson((*websocket_json)) + 2))
+                    {
+                        serializeJson((*websocket_json), Serial2);
+                        Serial2.println();
+                        sent = true;
+                    }
                 }
-                else
-                {
-                    Logger::warn("ESP32 TX buffer full. Dropping JSON update");
-                }
+                if (!sent) Logger::warn("ESP32 TX buffer full. Dropping JSON update"); //not while holding txMutex
 
                 //shall we send it to the serial console for debugging?
                 if (config->debugMode)
@@ -306,6 +305,7 @@ void ESP32Driver::handleTick() {
 void ESP32Driver::sendLogString(const char *str)
 {
     if (!isReady()) return; //can't do anything until the system is actually up
+    RecursiveScope tx(txMutex);
     if (Serial2.availableForWrite() < (int)(strlen(str) + 3)) return; //not enough room for ~, the string, and CRLF. Drop it.
     Serial2.print('~'); //~ prefix means this is a telnet message
     Serial2.println(str);
@@ -314,6 +314,7 @@ void ESP32Driver::sendLogString(const char *str)
 void ESP32Driver::sendStatusCSV(const char *str)
 {
     if (!isReady()) return; //can't do anything until the system is actually up
+    RecursiveScope tx(txMutex);
     if (Serial2.availableForWrite() < (int)(strlen(str) + 3)) return; //not enough room for `, the string, and CRLF. Drop it.
     Serial2.print('`'); //` prefix means this is a StatusCSV message which should go to the second telnet interface
     Serial2.println(str);
@@ -355,7 +356,10 @@ void ESP32Driver::processSerial()
                 {
                     systemAlive = true;
                     Logger::info("ESP32 Booted OK");
-                    sendWirelessConfig();
+                    needWifiConfig = true; //sent from handleTick, can't write Serial2 under txMutex from in here
+                    //ESP32 (re)booted so it has no status values cached. Send it all of them again.
+                    statusIdx = 0;
+                    didInitialStatus = false;
                 }
 
                 if (bufferedLine.indexOf("IP:") > -1)
@@ -367,31 +371,7 @@ void ESP32Driver::processSerial()
 
                 if (bufferedLine[0] == '{')
                 {
-                    StaticJsonDocument<1300>doc;
-                    DeserializationError err = deserializeJson(doc, bufferedLine.c_str());
-                    if (err)
-                    {
-                        Logger::error("deserializeJson() failed with code %s", err.f_str());
-                    }
-                    else
-                    {
-                        if (doc["GetDevices"] == 1)
-                        {
-                            sendDeviceList();
-                        }
-
-                        uint16_t devID = doc["GetDevConfig"];
-                        if (devID > 0)
-                        {
-                            sendDeviceDetails(devID);
-                        }
-
-                        devID = doc["DeviceID"];
-                        if (devID > 0)
-                        {
-                            processConfigReply(&doc);
-                        }
-                    }
+                    queueRequest(bufferedLine); //handled later by processQueuedRequests from loop()
                 }
                 
                 if (bufferedLine[0] == '~')
@@ -414,9 +394,48 @@ void ESP32Driver::processSerial()
 
                 bufferedLine = "";
             }
-            else if ((c < 128) && bufferedLine.length() < 100) bufferedLine += c;
+            else if ((c < 128) && bufferedLine.length() < ESP32_REQ_MAX_LEN) bufferedLine += c;
         }
     }    
+}
+
+//Write prefix + minified doc + suffix to the ESP32 as one line. The whole line is put into the TX buffer
+//in one go under txMutex so nothing else can get spliced into the middle of it. Waits (without holding
+//any lock) up to half a second for the buffer to have room. Must not be called from inside yield().
+bool ESP32Driver::sendJsonLine(const char *prefix, JsonDocument &doc, const char *suffix)
+{
+    int len = strlen(prefix) + measureJson(doc) + strlen(suffix) + 2;
+    if (len > (int)sizeof(serialWriteBuffer))
+    {
+        Logger::warn("ESP32 JSON message of %i bytes is too large to send", len);
+        return false;
+    }
+
+    bool sent = false;
+    uint32_t start = millis();
+    while (!sent && (millis() - start) < 500)
+    {
+        {
+            RecursiveScope tx(txMutex);
+            if (Serial2.availableForWrite() >= len)
+            {
+                Serial2.print(prefix);
+                serializeJson(doc, Serial2);
+                Serial2.println(suffix);
+                sent = true;
+            }
+        }
+        if (!sent) threads.delay(5);
+    }
+    if (!sent) Logger::warn("ESP32 TX buffer full. Dropping JSON message");
+
+    //shall we send it to the serial console for debugging?
+    if (config->debugMode)
+    {
+        serializeJsonPretty(doc, Serial);
+        Serial.println();
+    }
+    return sent;
 }
 
 //send wireless configuration to ESP32 and cause it to attempt to start up wireless comm
@@ -425,23 +444,12 @@ void ESP32Driver::sendWirelessConfig()
 {
     Logger::debug("Sending wifi cfg to ESP32");
 
-    StaticJsonDocument<300> doc;
+    DynamicJsonDocument doc(512); //tick threads have small stacks so keep json docs on the heap
     doc["SSID"] = config->ssid;
     doc["WIFIPW"] = config->ssid_pw;
     doc["WiFiMode"] = config->esp32_mode;
     doc["HostName"] = config->hostName;
-    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
-    {
-        serializeJson(doc, Serial2);
-        Serial2.println();
-    }
-
-    //shall we send it to the serial console for debugging?
-    if (config->debugMode)
-    {
-        serializeJsonPretty(doc, Serial);
-        Serial.println();
-    }
+    sendJsonLine("", doc, "");
 }
 
 void ESP32Driver::sendDeviceList()
@@ -449,48 +457,112 @@ void ESP32Driver::sendDeviceList()
     DynamicJsonDocument doc(10000);
 
     deviceManager.createJsonDeviceList(doc);
-    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
-    {
-        serializeJson(doc, Serial2);
-        Serial2.println();
-    }
-
-    //shall we send it to the serial console for debugging?
-    if (config->debugMode)
-    {
-        serializeJsonPretty(doc, Serial);
-        Serial.println();
-    }
+    sendJsonLine("{\"DeviceList\":", doc, "}");
 }
 
 void ESP32Driver::sendDeviceDetails(uint16_t deviceID)
 {
     Device *dev = nullptr;
-    DynamicJsonDocument doc(10000);
+    DynamicJsonDocument doc(12000);
 
     dev = deviceManager.getDeviceByID(deviceID);
     if (!dev) return;
 
     deviceManager.createJsonConfigDocForID(doc, deviceID);
-
-    //send minified json to ESP32
-    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
-    {
-        serializeJson(doc, Serial2);
-        Serial2.println();
-    }
-
-    //shall we send it to the serial console for debugging?
-    if (config->debugMode)
-    {
-        serializeJsonPretty(doc, Serial);
-        Serial.println();
-    }
+    if (doc.overflowed()) Logger::warn("Config for device %X did not fit in the JSON document", deviceID);
+    sendJsonLine("{\"DevConfig\":", doc, "}");
 }
 
+//names of every StatusEntry grouped by the short name of the device that registered it
+void ESP32Driver::sendStatusList()
+{
+    DynamicJsonDocument doc(12000);
+    StatusEntry entry;
+    for (unsigned int idx = 0; deviceManager.getStatusEntryByIdx(idx, entry); idx++)
+    {
+        const char *devName = entry.device ? entry.device->getShortName() : "Other";
+        JsonArray arr = doc[devName];
+        if (arr.isNull()) arr = doc.createNestedArray(devName);
+        arr.add(entry.statusName); //String so json copies it
+    }
+    if (doc.overflowed()) Logger::warn("Status list did not fit in the JSON document");
+    sendJsonLine("{\"StatusList\":", doc, "}");
+}
+
+//The ESP32 (web page) wants to set a configuration value.
+//{"DeviceID":4096,"CfgName":"SomeSetting","Valu":"12.5"}
 void ESP32Driver::processConfigReply(JsonDocument* doc)
 {
+    uint16_t devID = (*doc)["DeviceID"];
+    const char *cfgName = (*doc)["CfgName"] | "";
+    String valu = (*doc)["Valu"].as<String>(); //accepts the value whether sent as a string or a number
 
+    int result = 3;
+    Device *dev = deviceManager.getDeviceByID(devID);
+    const ConfigEntry *entry = nullptr;
+    if (dev && dev->isEnabled()) entry = dev->findConfigEntry(cfgName);
+    if (entry)
+    {
+        //applyConfigValue takes a C string. Make a private copy as STRING entries are strcpy'd from it
+        char valBuf[ESP32_REQ_MAX_LEN + 1];
+        strlcpy(valBuf, valu.c_str(), sizeof(valBuf));
+        result = deviceManager.applyConfigValue(dev, entry, valBuf);
+        if (result == 0) Logger::info("Web interface set %s to %s", cfgName, valBuf);
+    }
+
+    DynamicJsonDocument reply(512);
+    reply["DeviceID"] = devID;
+    reply["CfgName"] = cfgName;
+    reply["Valu"] = valu;
+    reply["Result"] = result;
+    sendJsonLine("{\"CfgResult\":", reply, "}");
+
+    if (dev) sendDeviceDetails(devID); //so the page shows what is actually stored now
+}
+
+//Called from processSerial inside yield() so only copy the line. Drops it if the queue is full.
+void ESP32Driver::queueRequest(const String &line)
+{
+    uint8_t head = reqHead.load();
+    uint8_t next = (head + 1) % ESP32_REQ_QUEUE_SIZE;
+    if (next == reqTail.load()) return; //full
+    strlcpy(reqQueue[head], line.c_str(), sizeof(reqQueue[head]));
+    reqHead.store(next); //publish only after the slot is fully written
+}
+
+//Runs from loop() on thread 0 where no locks are held and there's plenty of stack. Setting a value saves
+//to EEPROM and may run an afterUpdate function so this must not happen inside yield() or a tick thread.
+void ESP32Driver::processQueuedRequests()
+{
+    if (!systemEnabled) return;
+    while (reqTail.load() != reqHead.load())
+    {
+        uint8_t tail = reqTail.load();
+        DynamicJsonDocument doc(1024);
+        DeserializationError err = deserializeJson(doc, (const char *)reqQueue[tail]);
+        reqTail.store((tail + 1) % ESP32_REQ_QUEUE_SIZE); //doc has its own copy now so free the slot
+        if (err)
+        {
+            Logger::error("deserializeJson() failed with code %s", err.f_str());
+            continue;
+        }
+
+        if (doc["GetDevices"] == 1) sendDeviceList();
+
+        uint16_t devID = doc["GetDevConfig"];
+        if (devID > 0) sendDeviceDetails(devID);
+
+        if (doc["GetStatusList"] == 1) sendStatusList();
+
+        if (doc["GetStatus"] == 1)
+        {
+            statusIdx = 0;
+            didInitialStatus = false; //handleTick will send every status entry again
+        }
+
+        devID = doc["DeviceID"];
+        if (devID > 0) processConfigReply(&doc);
+    }
 }
 
 uint32_t ESP32Driver::getTickInterval()
@@ -505,20 +577,9 @@ void ESP32Driver::doTeensyUpdate()
 
     inhibitJSON = true;
 
-    StaticJsonDocument<300> doc;
+    DynamicJsonDocument doc(512);
     doc["FWUPD"] = config->firmwareFile;
-    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
-    {
-        serializeJson(doc, Serial2);
-        Serial2.println();
-    }
-
-    //shall we send it to the serial console for debugging?
-    if (config->debugMode)
-    {
-        serializeJsonPretty(doc, Serial);
-        Serial.println();
-    }
+    sendJsonLine("", doc, "");
 }
 
 //send json request to esp32 to start an update on itself
@@ -528,20 +589,9 @@ void ESP32Driver::doESP32Update()
 
     inhibitJSON = true;
 
-    StaticJsonDocument<300> doc;
+    DynamicJsonDocument doc(512);
     doc["ESPUPD"] = config->espUpdateType;
-    if (Serial2.availableForWrite() >= (measureJson(doc) + 2))
-    {
-        serializeJson(doc, Serial2);
-        Serial2.println();
-    }
-
-    //shall we send it to the serial console for debugging?
-    if (config->debugMode)
-    {
-        serializeJsonPretty(doc, Serial);
-        Serial.println();
-    }
+    sendJsonLine("", doc, "");
 }
 
 void ESP32Driver::loadConfiguration() {

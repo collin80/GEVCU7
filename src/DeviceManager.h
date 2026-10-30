@@ -71,6 +71,7 @@ public:
     Device *getDeviceByIdx(int idx);
     void printDeviceList();
     const ConfigEntry* findConfigEntry(const char *settingName, Device **matchingDevice);
+    int applyConfigValue(Device *dev, const ConfigEntry *entry, const char *valu);
     void handleTick();
     void setup();
     void createJsonConfigDoc(DynamicJsonDocument &doc);

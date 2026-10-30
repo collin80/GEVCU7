@@ -75,6 +75,7 @@ controlling the inverter then you aren't going unless it's working. So, this mig
 #include "Watchdog_t4.h"
 #include "devices/esp32/esp_loader.h"
 #include "devices/esp32/gevcu_port.h"
+#include "devices/esp32/ESP32Driver.h"
 #include "FlasherX.h"
 #include "devices/misc/SystemDevice.h"
 #include "CrashHandler.h"
@@ -515,12 +516,14 @@ If you put a threads.delay or threads.yield in here then it will cause more task
 which causes more overhead and other tasks will show more usage that's not real.
 But, I'm not your mother. It won't actually break anything to yield in here. 
 It just makes the CPU usage numbers less accurate.
-The one thing done here is running console commands. Input is only queued from inside yield() (which can
-happen in any thread, even one holding locks) and the commands themselves are run here where nothing is held.
+The one thing done here is running console commands and requests from the ESP32 (web page). Input is only
+queued from inside yield() (which can happen in any thread, even one holding locks) and the commands
+themselves are run here where nothing is held.
 */
-void loop() 
+void loop()
 {
     if (serialConsole) serialConsole->runQueuedCommands();
+    esp32Driver.processQueuedRequests();
 }
 
 //Not interrupt driven but the callbacks should still happen quickly.
