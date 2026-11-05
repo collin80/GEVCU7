@@ -45,7 +45,7 @@ class LightingConfiguration: public DeviceConfiguration {
 public:
     uint8_t brakeLightOutput;
     uint8_t reverseLightOutput;
-    float reqRegenLevel; //how much negative throttle request is needed to turn on brake light
+    int16_t reqRegenLevel; //how much negative throttle request is needed to turn on brake light
 };
 
 class LightController: public Device {
