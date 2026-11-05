@@ -56,7 +56,7 @@ void LightController::setup() {
     cfgEntries.push_back(entry);
     entry = {"REVLIGHT", "Set reverse light output (255 = disabled)", &config->reverseLightOutput, CFG_ENTRY_VAR_TYPE::BYTE, 0, 255, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"REQLEVEL","Required regen to trigger brake light (in 1/10 Nm) 0=Disabled", &config->reqRegenLevel, CFG_ENTRY_VAR_TYPE::INT16, {.s_int = -1000}, 0, 1, nullptr, nullptr};
+    entry = {"REQLEVEL","Required regen to trigger brake light (in 1/10%% torque output) 0=Disabled, Value should be negative", &config->reqRegenLevel, CFG_ENTRY_VAR_TYPE::INT16, {.s_int = -1000}, 0, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     tickHandler.attach(this, CFG_TICK_INTERVAL_LIGHTING);
@@ -74,19 +74,19 @@ void LightController::handleTick() {
     Throttle *throttle = static_cast<Throttle *>(deviceManager.getDeviceByType(DeviceType::DEVICE_THROTTLE));
     Throttle *brake = static_cast<Throttle *>(deviceManager.getDeviceByType(DeviceType::DEVICE_BRAKE));
 
-    if (config->brakeLightOutput < 255)
+    if (config->reverseLightOutput < 255)
     {
         if (mctl)
         {
             if (mctl->getSelectedGear() == MotorController::Gears::REVERSE)
             {
-                systemIO.setDigitalOutput(config->brakeLightOutput, true);
+                systemIO.setDigitalOutput(config->reverseLightOutput, true);
             }
-            else systemIO.setDigitalOutput(config->brakeLightOutput, false);
+            else systemIO.setDigitalOutput(config->reverseLightOutput, false);
         }
     }
 
-    if (config->reverseLightOutput < 255)
+    if (config->brakeLightOutput < 255)
     {
         int16_t level = 0;
         if (throttle) level = throttle->getLevel();
@@ -97,9 +97,9 @@ void LightController::handleTick() {
         }
         if (level < config->reqRegenLevel)
         {
-            systemIO.setDigitalOutput(config->reverseLightOutput, true);
+            systemIO.setDigitalOutput(config->brakeLightOutput, true);
         }
-        else systemIO.setDigitalOutput(config->reverseLightOutput, false);
+        else systemIO.setDigitalOutput(config->brakeLightOutput, false);
     }
 }
 
@@ -121,7 +121,7 @@ void LightController::loadConfiguration() {
 
     prefsHandler->read("BrakeLightOut", &config->brakeLightOutput, 255);
     prefsHandler->read("ReverseLightOut", &config->reverseLightOutput, 255);
-    prefsHandler->read("ReqTorque", &config->reqRegenLevel, -30);
+    prefsHandler->read("ReqTorque", (uint16_t *)&config->reqRegenLevel, -30);
 }
 
 /*
@@ -133,7 +133,7 @@ void LightController::saveConfiguration() {
     Device::saveConfiguration(); // call parent
     prefsHandler->write("BrakeLightOut", config->brakeLightOutput);
     prefsHandler->write("ReverseLightOut", config->reverseLightOutput);
-    prefsHandler->write("ReqTorque", config->reqRegenLevel);
+    prefsHandler->write("ReqTorque", (uint16_t)config->reqRegenLevel);
 
     prefsHandler->saveChecksum();
     prefsHandler->forceCacheWrite();
