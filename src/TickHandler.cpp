@@ -203,7 +203,7 @@ void TickHandler::handleInterrupt(int threadNumber) {
     //we track the total time spent doing the work and then delay for the remainder of the interval. 
     //If the work took longer than the interval, we log a warning.
     if (elapsed > threadEntry[threadNumber].interval) {
-        Logger::warn("TickHandler thread %d took %u us to process, longer than interval of %u us", threadNumber + 1, elapsed, threadEntry[threadNumber].interval);
+        Logger::debug("TickHandler thread %d took %u us to process, longer than interval of %u us", threadNumber + 1, elapsed, threadEntry[threadNumber].interval);
     }
     else threads.delay(threadEntry[threadNumber].interval / 1000 - elapsed / 1000);
 }

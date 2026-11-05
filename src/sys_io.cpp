@@ -518,7 +518,7 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
         else
         {
             pin = pin - 128;
-            Logger::info("Expander pin %i", pin);
+            //Logger::avalanche("Expander pin %i", pin);
             //PWM must be turned off before setting the pin or the tick could overwrite it in between
             RecursiveScope m(i2cMutex);
             digPWMOutput[which].pwmActive = false;
@@ -528,7 +528,7 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
     }
     else if (which < NUM_OUTPUT)
     {
-        Logger::debug("Setting io extender pin to digital output %i", which);
+        //Logger::debug("Setting io extender pin to digital output %i", which);
         //PWM must be turned off before setting the pin or the tick could overwrite it in between
         RecursiveScope m(i2cMutex);
         digPWMOutput[which].pwmActive = false;
