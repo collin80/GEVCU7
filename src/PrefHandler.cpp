@@ -625,4 +625,5 @@ FLASHMEM void PrefHandler::resetEEPROM()
         memCache->Write((uint32_t)idx + base_address + lkg_address, val);
     }
     memCache->FlushAllPages();
+    memCache->InvalidateAll(); //clear the cache so the next read is from EEPROM not the cache
 }
