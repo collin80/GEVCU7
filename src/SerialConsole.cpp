@@ -476,7 +476,7 @@ FLASHMEM void SerialConsole::handleConfigCmd() {
     //most all config stuff is done via a generic interface now. So for device settings there is 
     //nothing here any longer. The call to updateSetting handles all that now.
 
-/*} else */if (cmdString == String("ENABLE")) {
+    if (cmdString == String("ENABLE")) {
         if (PrefHandler::setDeviceStatus(newValue, true)) {
             memCache->FlushAllPages();
             Logger::console("Successfully enabled device.(%X, %d) Trying to start it immediately!", newValue, newValue);
@@ -492,6 +492,14 @@ FLASHMEM void SerialConsole::handleConfigCmd() {
         else {
             Logger::console("Invalid device ID (%X, %d)", newValue, newValue);
         }
+    } else if (cmdString == String("ZAPDEV")) {
+        Device *dev = deviceManager.getDeviceByID(newValue);
+        if (dev)
+        {
+            dev->zapConfiguration();
+            Logger::console("Zapped configuration space for ID %x", newValue);
+        } 
+        else Logger::error("Couldn't find the device to zap!");        
     } else if (cmdString == String("DISABLE")) {
         if (PrefHandler::setDeviceStatus(newValue, false)) {
             memCache->FlushAllPages();
