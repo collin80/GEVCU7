@@ -1,7 +1,11 @@
 GEVCU7
 ======
 
-Generalized Electric Vehicle Control Unit
+Generalized Electric Vehicle Control Unit 7
+
+This version does not use any sort of multi-threading. Everything runs strictly round robin with cooperative tasking.
+This is predictable and simple. The master branch instead uses preemptive multitasking. Which should you use?
+The choice is yours but the master branch has more development going into it.
 
 Our website can be found at : http://www.evtv.me
 
