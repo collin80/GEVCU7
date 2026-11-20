@@ -59,6 +59,7 @@ public:
     uint16_t raiseFault(uint16_t device, uint16_t code); //raise a new fault. Returns the fault # where this was stored
     void cancelOngoingFault(uint16_t device, uint16_t code); //if this fault was registered as ongoing then cancel it (set not ongoing) otherwise do nothing
     void cancelDeviceFaults(uint16_t device);
+    FAULT *getFirstFaultForDevice(uint16_t device); //get the first un-ack'd fault for a specific device
     void cancelAllFaults();
     FAULT* getNextFault(); //get the next un-ack'd fault. Will also get first fault if the first call and you forgot to call getFirstFault
     FAULT* getFault(uint16_t fault);
@@ -66,6 +67,7 @@ public:
     uint16_t getUnAckFaultCount();
     void handleTick();
     void setup();
+    uint32_t getGlobalTime() { return globalTime; }
 
     uint16_t setFaultACK(uint16_t fault); //acknowledge the fault # - returns fault # if successful (0xFFFF otherwise)
     uint16_t setAckForDevice(uint16_t device);
@@ -80,7 +82,7 @@ private:
     uint16_t  faultWritePointer; //fault # we're up to for writing. Location in EEPROM is start + (fault_ptr * sizeof(FAULT))
     uint16_t  faultReadPointer;  //fault # we're at when reading.
     FAULT faultList[CFG_FAULT_HISTORY_SIZE]; //store up to 50 faults for a long history. 50*9 = 450 bytes of EEPROM
-    uint32_t globalTime; //how long the unit has been running in total (across all start ups).
+    uint32_t globalTime; //how long the unit has been running in total (across all start ups) in tenths of a second.
     uint32_t baseTime; //the time loaded at system start up. millis() / 100 is added to this to get the above time
 };
 

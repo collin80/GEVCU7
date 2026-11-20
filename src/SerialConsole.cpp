@@ -658,6 +658,29 @@ FLASHMEM void SerialConsole::handleShortCmd() {
     case 'S':
         deviceManager.printAllStatusEntries();
         break;
+    case 'F':
+        int faults = faultHandler.getStoredFaultCount();
+        if (faults > 0)
+        {   
+            Logger::console("Current global time: %f", faultHandler.getGlobalTime() / 10.0f);
+            Logger::console("%i faults found in eeprom", faults);
+            while (faults--)
+            {
+                FAULT *fault;
+                if (!(fault = faultHandler.getNextFault())) break;
+                char buff[40];
+                buff[0] = 0;
+                Device *dev = deviceManager.getDeviceByID(fault->device);
+                if (dev) snprintf(buff, 40, "(%s)", dev->getShortName());
+                else snprintf(buff, 40, " (Unk dev)");
+                Logger::console("Time Stamp: %f Device: %s Fault Code: %d", fault->timeStamp / 10.0f, buff, fault->faultCode);
+            }
+        }
+        else
+        {
+            Logger::console("Good news, no stored faults!");
+        }
+        break;
     }
 }
 

@@ -141,24 +141,6 @@ void initializeDevices() {
     //asynchronous or threaded messages at some point but that opens up many other cans of worms.
     deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_STARTUP, NULL); //allows each device to register its preference handler
     deviceManager.sendMessage(DEVICE_ANY, INVALID, MSG_SETUP, NULL); //then use the preference handler to initialize only enabled devices
-/* testing code to test the fault handler system.
-    int faults = faultHandler.getFaultCount();
-    if (faults > 0)
-    {
-        Logger::info("%i faults found in eeprom", faults);
-        while (faults--)
-        {
-            FAULT *fault;
-            if (!(fault = faultHandler.getNextFault())) break;
-            Logger::info("Fault address: %x", fault);
-            Logger::info("Time Stamp: %i Device: %x Fault Code: %x", fault->timeStamp, fault->device, fault->faultCode);
-        }
-    }
-    else
-    {
-        Logger::info("Good news, no stored faults!");
-    }
-*/
 }
 
 //called when the watchdog triggers because it was not reset properly. Probably means a hangup has occurred.

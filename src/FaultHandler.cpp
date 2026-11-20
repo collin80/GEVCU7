@@ -156,6 +156,17 @@ uint16_t FaultHandler::getUnAckFaultCount()
     return count;
 }
 
+FAULT* FaultHandler::getFirstFaultForDevice(uint16_t device)
+{
+    for (int i = 0; i < CFG_FAULT_HISTORY_SIZE; i++)
+    {
+        if (faultList[i].device == device && faultList[i].ack == false)
+        {
+            return &faultList[i];
+        }
+    }
+    return nullptr;
+}
 
 //the fault handler isn't a device per se and uses more memory than a device would normally be allocated so
 //it does not use PrefHandler
