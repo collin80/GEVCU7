@@ -36,6 +36,8 @@ extern bool sdCardWorking;
 #define LOG_FILENAME "StatusOutput"
 #define MAX_LOGFILES 200
 
+//#define DEBUG_STATUSCSV
+
 // RingBuf for File type FsFile.
 DMAMEM RingBuf<FsFile, RING_BUF_CAPACITY> csvRingBuf;
 
@@ -75,9 +77,9 @@ void StatusCSV::setup() {
     ConfigEntry entry;
     entry = {"TICKUPDATE", "Set number of timer ticks per update (20ms intervals)", &config->ticksPerUpdate, CFG_ENTRY_VAR_TYPE::UINT16, {.u_int = 1}, {.u_int = 10000}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"STATUS-EN", "Status entries to enable (or ALL for all of them)", &config->enableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr, nullptr};
+    entry = {"STATUS-EN", "Status entries to enable (or ALL for all of them)", &config->enableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 0}, {.u_int = sizeof(config->enableString)}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
-    entry = {"STATUS-DIS", "Status entries to disable (or ALL)", &config->disableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 1}, {.u_int = 0xFFFFFFFF}, 1, nullptr, nullptr};
+    entry = {"STATUS-DIS", "Status entries to disable (or ALL)", &config->disableString, CFG_ENTRY_VAR_TYPE::STRING, {.u_int = 0}, {.u_int = sizeof(config->disableString)}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
     entry = {"STATUS-AUTO", "Automatically start sending status lines? (0 = No 1 = Yes)", &config->bAutoStart, CFG_ENTRY_VAR_TYPE::BYTE, {.u_int = 0}, {.u_int = 0x1}, 1, nullptr, nullptr};
     cfgEntries.push_back(entry);
@@ -268,11 +270,20 @@ void StatusCSV::enableStatusHash(char * str)
         char *tok = strtok(str, ",");
         while (tok)
         {
-            idx = strtoul(tok, NULL, 0) - 1; //arrays are 0 based but indexes in program are 1 based
+#ifdef DEBUG_STATUSCSV
+            Logger::console("Enabling status entry %s", tok);
+#endif
+            idx = atoi(tok) - 1; //arrays are 0 based but indexes in program are 1 based
+#ifdef DEBUG_STATUSCSV
+            Logger::console("Decoded index %d", idx);
+#endif
             ent = deviceManager.FindStatusEntryByIdx(idx);
             if (ent)
             {
                 hash = ent->getHash();
+#ifdef DEBUG_STATUSCSV
+            Logger::console("Enabling status entry with hash %x", (unsigned long)hash);
+#endif
                 enableByHash(hash);
             }
             tok = strtok(NULL, ","); //get next one
@@ -320,6 +331,9 @@ void StatusCSV::enableByHash(uint32_t hash)
         if (config->enabledStatusEntries[i] == 0)
         {
             config->enabledStatusEntries[i] = hash;
+#ifdef DEBUG_STATUSCSV
+            Logger::console("Enabling status entry with hash %x in position %d", (unsigned long)hash, i);
+#endif
             break;
         }
     }

@@ -247,7 +247,7 @@ FLASHMEM void setup() {
     digitalWrite(ESP32_ENABLE, LOW); //ESP32 starts turned off
     digitalWrite(ESP32_BOOT, HIGH); //high = normal mode, low = bootloader
 
-    Logger::setLoglevel((Logger::LogLevel)0); //force debugging logging on during early start up
+    //Logger::setLoglevel((Logger::LogLevel)0); //force debugging logging on during early start up
        
 	digitalWrite(BLINK_LED, LOW);
     //Serial.begin will cause the stack to wait until things are initialized (or 2 seconds)
@@ -428,6 +428,9 @@ FLASHMEM void setup() {
     //    *(volatile uint32_t *)0x30000000 = 0; 
 
     Logger::flushFile();
+
+    //temporary for debugging. Force debug mode on.
+    //Logger::setLoglevel((Logger::LogLevel)0);
 }
 
 //there really isn't much in the loop here. Most everything is done via interrupts and timer ticks. If you have
