@@ -95,7 +95,7 @@ void LightController::handleTick() {
             int16_t brklvl = brake->getLevel();
             if ( (brklvl < 0) && (brklvl < level) ) level = brklvl;
         }
-        if (level < config->reqRegenLevel)
+        if (level < config->reqRegenLevel && mctl && mctl->getSpeedActual() > 20)
         {
             systemIO.setDigitalOutput(config->brakeLightOutput, true);
         }
