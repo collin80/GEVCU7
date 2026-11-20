@@ -89,17 +89,23 @@ void LightController::handleTick() {
     if (config->brakeLightOutput < 255)
     {
         int16_t level = 0;
-        if (throttle) level = throttle->getLevel();
+        if (throttle)
+        {
+            level = throttle->getLevel();
+            if (level < config->reqRegenLevel && mctl && mctl->getSpeedActual() > 20)
+            {
+                systemIO.setDigitalOutput(config->brakeLightOutput, true);
+                return;
+            }
+        }
         if (brake)
         {
             int16_t brklvl = brake->getLevel();
-            if ( (brklvl < 0) && (brklvl < level) ) level = brklvl;
+            //For the brake pedal, basically if we're pressing it at all, light it up
+            if ( (brklvl < -10) ) systemIO.setDigitalOutput(config->brakeLightOutput, true);
+            return;
         }
-        if (level < config->reqRegenLevel && mctl && mctl->getSpeedActual() > 20)
-        {
-            systemIO.setDigitalOutput(config->brakeLightOutput, true);
-        }
-        else systemIO.setDigitalOutput(config->brakeLightOutput, false);
+        systemIO.setDigitalOutput(config->brakeLightOutput, false);
     }
 }
 
