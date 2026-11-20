@@ -403,7 +403,7 @@ void CanHandler::sendFrameToUSB(const CANFD_message_t &msg, int busNum)
 {
     //if (!binOutput) return;
     if (!gvretMode) return;
-    uint8_t buff[70];
+    uint8_t buff[80]; //13 bytes of header/trailer + up to 64 data bytes
     uint32_t now = micros();
     buff[0] = 0xF1;
     buff[1] = 0;

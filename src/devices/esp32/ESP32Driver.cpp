@@ -162,13 +162,13 @@ void ESP32Driver::setup()
     loadConfiguration();
 
     ConfigEntry entry;
-    entry = {"ESP32-SSID", "Set SSID to create or connect to", &config->ssid, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, nullptr};
+    entry = {"ESP32-SSID", "Set SSID to create or connect to", &config->ssid, CFG_ENTRY_VAR_TYPE::STRING, 0, sizeof(config->ssid), 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-PW", "Set WiFi password / WPA2 Key", &config->ssid_pw, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, nullptr};
+    entry = {"ESP32-PW", "Set WiFi password / WPA2 Key", &config->ssid_pw, CFG_ENTRY_VAR_TYPE::STRING, 0, sizeof(config->ssid_pw), 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-HOSTNAME", "Set wireless host name (mDNS / OTA)", &config->hostName, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, nullptr};
+    entry = {"ESP32-HOSTNAME", "Set wireless host name (mDNS / OTA)", &config->hostName, CFG_ENTRY_VAR_TYPE::STRING, 0, sizeof(config->hostName), 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     entry = {"ESP32-MODE", "Set ESP32 Mode (0 = Create AP, 1 = Connect to SSID)", &config->esp32_mode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
@@ -177,13 +177,13 @@ void ESP32Driver::setup()
     entry = {"ESP32-DEBUG", "Enable debugging at module level (0 = obey log level, 1 = force debugging on)", &config->debugMode, CFG_ENTRY_VAR_TYPE::BYTE, 0, 1, 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-FWUPD", "Update main processor firmware", &config->firmwareFile, CFG_ENTRY_VAR_TYPE::STRING, 0, 4096, 0, nullptr, UPD_PTR(&ESP32Driver::doTeensyUpdate)};
+    entry = {"ESP32-FWUPD", "Update main processor firmware", &config->firmwareFile, CFG_ENTRY_VAR_TYPE::STRING, 0, sizeof(config->firmwareFile), 0, nullptr, UPD_PTR(&ESP32Driver::doTeensyUpdate)};
     cfgEntries.push_back(entry);
 
     entry = {"ESP32-ESPUPD", "Update ESP32 firmware with type", &config->espUpdateType, CFG_ENTRY_VAR_TYPE::BYTE, 0, 9999, 0, nullptr, UPD_PTR(&ESP32Driver::doESP32Update)};
     cfgEntries.push_back(entry);
 
-    entry = {"ESP32-IPADDR", "The current IP address of the ESP32 (DO NOT TRY CHANGING THIS)", &config->ipAddr, CFG_ENTRY_VAR_TYPE::STRING, 0, 40, 0, nullptr, nullptr};
+    entry = {"ESP32-IPADDR", "The current IP address of the ESP32 (DO NOT TRY CHANGING THIS)", &config->ipAddr, CFG_ENTRY_VAR_TYPE::STRING, 0, sizeof(config->ipAddr), 0, nullptr, nullptr};
     cfgEntries.push_back(entry);
 
     Device::setup(); // run the parent class version of this function

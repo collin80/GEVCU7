@@ -540,7 +540,7 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
         else
         {
             pin = pin - 128;
-            Logger::info("Expander pin %i", pin);
+            //Logger::info("Expander pin %i", pin);
             _pSetDigitalOutput(pin, active);
             digPWMOutput[which].pwmActive = false;
             digOutState[which] = active;
@@ -548,7 +548,7 @@ void SystemIO::setDigitalOutput(uint8_t which, boolean active) {
     }
     else if (which < NUM_OUTPUT)
     {
-        Logger::debug("Setting io extender pin to digital output %i", which);
+        //Logger::debug("Setting io extender pin to digital output %i", which);
         _pSetDigitalOutput(which, active);
         digPWMOutput[which].pwmActive = false;
         digOutState[which] = active;

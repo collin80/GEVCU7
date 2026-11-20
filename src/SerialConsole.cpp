@@ -277,11 +277,15 @@ void SerialConsole::updateSetting(const char *settingName, char *valu)
         }
         break;
     case CFG_ENTRY_VAR_TYPE::STRING:
-        //this is an interesting one. It's easy in principle but we don't know
-        //the actual size of the storage buffer so it could overwrite memory.
-        //If this GEVCU thing gets popular it might be necessary to fix this
-        //otherwise this is the entry point to smashing the stack for fun and profit.
-        strcpy((char *)entry->varPtr, valu);
+        //For STRING entries maxValue holds the size of the destination buffer (including the terminator).
+        //Reject anything that won't fit rather than truncating it. A truncated list or password is worse than none.
+        if (entry->maxValue.u_int == 0 || strlen(valu) >= entry->maxValue.u_int)
+        {
+            Logger::console("Value is too long for parameter %s (max %u characters)", settingName,
+                (unsigned int)(entry->maxValue.u_int ? entry->maxValue.u_int - 1 : 0));
+            result = 3;
+        }
+        else strcpy((char *)entry->varPtr, valu);
         break;
     case CFG_ENTRY_VAR_TYPE::UINT16:
         ui16 = (uint16_t)strtoul(valu, NULL, 0);
@@ -812,8 +816,16 @@ FLASHMEM void SerialConsole::loadEEPROMJSON()
                         *(int32_t *)cfgEntry->varPtr = devObj.value()["Valu"].as<int32_t>();
                         break;
                     case CFG_ENTRY_VAR_TYPE::STRING:
-                        strcpy((char *)cfgEntry->varPtr, devObj.value()["Valu"].as<String>().c_str());
+                    {
+                        String strVal = devObj.value()["Valu"].as<String>();
+                        if (cfgEntry->maxValue.u_int == 0 || strVal.length() >= cfgEntry->maxValue.u_int)
+                        {
+                            Serial.printf("\tValue for %s is too long (max %u characters). Skipped.\n", devObj.key().c_str(),
+                                (unsigned int)(cfgEntry->maxValue.u_int ? cfgEntry->maxValue.u_int - 1 : 0));
+                        }
+                        else strcpy((char *)cfgEntry->varPtr, strVal.c_str());
                         break;
+                    }
                     case CFG_ENTRY_VAR_TYPE::UINT16:
                         *(uint16_t *)cfgEntry->varPtr = devObj.value()["Valu"].as<uint16_t>();
                         break;

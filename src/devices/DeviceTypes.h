@@ -87,7 +87,7 @@ struct ConfigEntry
     void *varPtr; //pointer to the variable whose value we'd like to get or set
     CFG_ENTRY_VAR_TYPE varType; //what sort of variable were we pointing to?
     minMaxType minValue; //minimum acceptable value
-    minMaxType maxValue; //maximum acceptable value
+    minMaxType maxValue; //maximum acceptable value. For STRING entries this is the size of the buffer in bytes (including the terminator)
     int8_t precision; //number of decimal places to display for floats. For int types this is scaling factor
     DescribeValue descFunc; //if this function pointer is non-null it'll be used to turn values into strings.
     AfterUpdate afterUpdateFunc; //called after this value is updated 
@@ -223,7 +223,8 @@ struct StatusEntry
         if (varType == STRING) //this one is special. Sum all characters to give a numeric result
         {
             char *str = (char *)varPtr;
-            while (str) out += *str++;
+            out = 0.0;
+            while (*str) out += *str++;
             return out;
         }
         if (varType == INT16)

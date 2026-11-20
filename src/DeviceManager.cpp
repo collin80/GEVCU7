@@ -264,7 +264,7 @@ void DeviceManager::printAllStatusEntries()
         else 
         {
             //Logger::console("%03i. <%08x>   [%s:%s]   value: %s   ", 
-              //  idx, it->getHash(), dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
+            //    idx, it->getHash(), dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
 
             Logger::console("%03i.   [%s:%s]   value: %s", 
                 idx, dev->getShortName(), it->statusName.c_str(), it->getValueAsString().c_str());
