@@ -168,6 +168,27 @@ FAULT* FaultHandler::getFirstFaultForDevice(uint16_t device)
     return nullptr;
 }
 
+FAULT* FaultHandler::getLatestOngoingFaultForDevice(uint16_t device)
+{
+    uint32_t latestTime = 0;
+    int latestIndex = -1;
+    for (int i = CFG_FAULT_HISTORY_SIZE - 1; i >= 0; i--)
+    {
+        if (faultList[i].device == device && faultList[i].ongoing)
+        {
+            if (faultList[i].timeStamp > latestTime)
+            {
+                latestTime = faultList[i].timeStamp;
+                latestIndex = i;
+            }
+        }
+    }
+    if (latestIndex != -1) {
+        return &faultList[latestIndex];
+    }
+    return nullptr;
+}
+
 //the fault handler isn't a device per se and uses more memory than a device would normally be allocated so
 //it does not use PrefHandler
 void FaultHandler::loadFromEEPROM()

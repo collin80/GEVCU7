@@ -60,6 +60,7 @@ public:
     void cancelOngoingFault(uint16_t device, uint16_t code); //if this fault was registered as ongoing then cancel it (set not ongoing) otherwise do nothing
     void cancelDeviceFaults(uint16_t device);
     FAULT *getFirstFaultForDevice(uint16_t device); //get the first un-ack'd fault for a specific device
+    FAULT *getLatestOngoingFaultForDevice(uint16_t device); //get the latest ongoing fault for a specific device
     void cancelAllFaults();
     FAULT* getNextFault(); //get the next un-ack'd fault. Will also get first fault if the first call and you forgot to call getFirstFault
     FAULT* getFault(uint16_t fault);

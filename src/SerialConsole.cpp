@@ -673,7 +673,7 @@ FLASHMEM void SerialConsole::handleShortCmd() {
                 Device *dev = deviceManager.getDeviceByID(fault->device);
                 if (dev) snprintf(buff, 40, "(%s)", dev->getShortName());
                 else snprintf(buff, 40, " (Unk dev)");
-                Logger::console("Time Stamp: %f Device: %s Fault Code: %d", fault->timeStamp / 10.0f, buff, fault->faultCode);
+                Logger::console("Time Stamp: %f Device: %s Fault Code: %d Ack: %d Ongoing: %d", fault->timeStamp / 10.0f, buff, fault->faultCode, fault->ack, fault->ongoing);
             }
         }
         else
